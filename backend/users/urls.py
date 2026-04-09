@@ -1,7 +1,16 @@
-from rest_framework.routers import DefaultRouter
-from .views import UserViewSet
+# urls.py
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenSerializer
+from django.urls import path
+from .views import StudentListCreateView,TeacherListCreateView
 
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
+class CustomTokenView(TokenObtainPairView):
+    serializer_class = CustomTokenSerializer
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('login/', CustomTokenView.as_view()),
+    path('refresh/', TokenRefreshView.as_view()),
+    path('teachers/', TeacherListCreateView.as_view()),
+    path('students/', StudentListCreateView.as_view()),
+]

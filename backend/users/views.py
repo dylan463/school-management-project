@@ -11,7 +11,7 @@ from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from django.core.mail import send_mail
+from .utils import send_email
 
 class StudentViewSet(ModelViewSet):
     permission_classes = [IsStaffOrSuperUser]
@@ -22,29 +22,10 @@ class StudentViewSet(ModelViewSet):
         return UserSerializer
 
     def perform_create(self, serializer):
-        # ✅ création de l'étudiant
         student = serializer.save()
-
-        # récupérer mot de passe généré depuis le serializer
         password = getattr(student, "_plain_password", "non disponible")
-
-        # ✅ envoi email
-        send_mail(
-            subject="Votre compte étudiant",
-            message=f"""
-Bonjour {student.username},
-
-Votre compte a été créé.
-
-Identifiant : {student.username}
-Mot de passe : {password}
-
-Veuillez vous connecter et changer votre mot de passe.
-""",
-            from_email="no-reply@school.com",
-            recipient_list=[student.email],
-            fail_silently=False
-        )
+        send_email(student.username,password,student.email)
+        
 
 class TeacherViewSet(ModelViewSet):
     permission_classes = [IsStaffOrSuperUser]
@@ -81,6 +62,11 @@ class TeacherViewSet(ModelViewSet):
         teacher.is_staff = False
         teacher.save()
         return Response({"status":"demoted"})
+
+    def perform_create(self, serializer):
+        teacher = serializer.save()
+        password = getattr(teacher, "_plain_password", "non disponible")
+        send_email(teacher.username,password,teacher.email)
         
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]

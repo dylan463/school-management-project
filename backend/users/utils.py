@@ -3,7 +3,7 @@ from .models import MatriculeCounter,CustomUser
 from django.db import transaction
 import secrets
 import string
-
+from django.core.mail import send_mail
 
 def generate_matricule(role):
     prefix = 'STU' if role == CustomUser.Role.STUDENT else 'TEA'
@@ -20,3 +20,22 @@ def generate_password(length=10):
     """Génère un mot de passe aléatoire sécurisé"""
     characters = string.ascii_letters + string.digits
     return ''.join(secrets.choice(characters) for _ in range(length))
+
+
+def send_email(username,password,email):
+    send_mail(
+            subject="Votre compte étudiant",
+            message=f"""
+Bonjour {username},
+
+Votre compte a été créé.
+
+Identifiant : {username}
+Mot de passe : {password}
+
+Veuillez vous connecter et changer votre mot de passe.
+""",
+            from_email="no-reply@school.com",
+            recipient_list=[email],
+            fail_silently=False
+        )

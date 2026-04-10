@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'corsheaders',
     # application interne
     'users',
+    'structures',
+    'timetable',
 ]
 
 MIDDLEWARE = [

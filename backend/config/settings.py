@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # application interne
     'users',
     'structures',
+    'timetable',
 ]
 
 MIDDLEWARE = [

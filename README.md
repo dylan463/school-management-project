@@ -1,3 +1,0 @@
-# school management project
-
-### installation

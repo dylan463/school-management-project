@@ -21,7 +21,7 @@ class Semester(models.Model):
 class TeachingUnit(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE,related_name="teachingunit")
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE,related_name="teachingunits")
     description = models.TextField(blank=True)
 
     @property
@@ -34,7 +34,7 @@ class CourseComponent(models.Model):
     name = models.CharField(max_length=100)
     teaching_unit = models.ForeignKey(TeachingUnit, on_delete=models.CASCADE,related_name="components")
     course_credits = models.PositiveIntegerField()
-    teacher = models.ForeignKey(TeacherUser)
+    teacher = models.ForeignKey(TeacherUser,on_delete=models.SET_NULL,null=True,blank=True)
 
 class Enrollement(models.Model):
     student = models.ForeignKey(StudentUser,on_delete=models.CASCADE, related_name="enrollements")

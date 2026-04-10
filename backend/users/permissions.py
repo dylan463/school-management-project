@@ -19,6 +19,6 @@ class IsStaff(BasePermission):
 
 class IsStaffOrSuperUser(BasePermission):
     def has_permission(self,request,view):
-        return (request.user.is_staff or request.user.is_superuser) and request.user.is_anthenticated
+        return (request.user.is_staff or request.user.is_superuser) and request.user.is_authenticated
 
 

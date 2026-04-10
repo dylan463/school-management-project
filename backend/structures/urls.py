@@ -8,5 +8,6 @@ router.register(r"formations",FormationViewSet)
 router.register(r"semesters",SemesterViewSet)
 router.register(r"teaching_units",TeachingUnitViewSet)
 router.register(r"cours_components",CourseComponentViewSet)
+router.register(r"enrollements",EnrollementViewSet)
 
 urlpatterns = router.urls

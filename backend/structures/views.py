@@ -15,7 +15,7 @@ from rest_framework.response import Response
 class LevelViewSet(viewsets.ModelViewSet):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
-    permission_classes = [IsStaffOrSuperUser]  # Seul l'admin peut modifier
+    permission_classes = [IsStaffOrSuperUser]
 
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
@@ -30,7 +30,7 @@ class SemesterViewSet(viewsets.ModelViewSet):
     @action(detail=True,methods=["GET"])
     def students(self,request,pk = None):
         semester = self.get_object()
-        students = StudentUser.objects.filter(enrollements__semester = Semester)
+        students = StudentUser.objects.filter(enrollements__semester = semester)
         serializer = UserSerializer(students,many= True)
         return Response(serializer.data)
 
@@ -56,18 +56,27 @@ class CourseComponentViewSet(viewsets.ModelViewSet):
     def my_students(self,request):
         courses = CourseComponent.objects.filter(teacher=request.user)
         students = StudentUser.objects.filter(enrollements__semester__teachingunits__components__in=courses).distinct()
-        serializer = UserSerializer(students)
+        serializer = UserSerializer(students,many = True)
         return Response(serializer.data)
 
 class EnrollementViewSet(viewsets.ModelViewSet):
     queryset = Enrollement.objects.all()
     serializer_class = EnrollementSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaffOrSuperUser]
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
-            return [IsAdminUser()]
-        return [IsAuthenticated()]
+            return [IsStaffOrSuperUser()]
+        
+        elif self.action == 'create':
+            return [IsStudent()]
+        
+        elif self.action in ['list', 'retrieve']:
+            if self.request.user.is_staff or self.request.user.is_superuser:
+                return [IsStaffOrSuperUser()]
+            return [IsStudent()]
+        
+        return super().get_permissions()
 
     def get_queryset(self):
         user = self.request.user

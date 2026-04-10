@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import CustomUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .utils import generate_matricule,generate_password
-from django.core.mail import send_mail
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""

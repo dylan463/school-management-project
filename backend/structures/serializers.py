@@ -7,7 +7,7 @@ from rest_framework.serializers import ModelSerializer
 class LevelSerializer(ModelSerializer):
     class Meta:
         model = Level
-        fields = ["id", "name", "code"]
+        fields = ["id", "code", "number"]
         read_only_fields = ["id"]
 
 
@@ -30,6 +30,7 @@ class TeachingUnitSerializer(ModelSerializer):
         model = TeachingUnit
         fields = ["id", "name", "code", "semester", "description"]
         read_only_fields = ["id"]
+
 
 
 class CourseComponentSerializer(ModelSerializer):

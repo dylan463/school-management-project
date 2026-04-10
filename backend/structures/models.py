@@ -3,8 +3,8 @@ from users.models import TeacherUser,StudentUser
 
 # Create your models here.
 class Level(models.Model):
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10, unique=True)
+    code = models.CharField(max_length=100)
+    number = models.PositiveIntegerField(unique=True, null=True, blank=True)
 
 class Formation(models.Model):
     name = models.CharField(max_length=100)
@@ -38,7 +38,7 @@ class CourseComponent(models.Model):
 
 class Enrollement(models.Model):
     student = models.ForeignKey(StudentUser,on_delete=models.CASCADE, related_name="enrollements")
-    Semester = models.ForeignKey(Semester,on_delete=models.CASCADE,related_name="enrollements")
+    semester = models.ForeignKey(Semester,on_delete=models.CASCADE,related_name="enrollements")
     date_registered = models.DateTimeField(auto_now_add=True)
 
     def clean(self):

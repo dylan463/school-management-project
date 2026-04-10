@@ -1,5 +1,27 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not username:
+            raise ValueError("Le username est requis")
+        email = self.normalize_email(email)
+        user = self.model(username=username, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", CustomUser.Role.TEACHER)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser doit avoir is_staff=True")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser doit avoir is_superuser=True")
+
+        return self.create_user(username, email, password, **extra_fields)
 
 
 class CustomUser(AbstractUser):
@@ -12,6 +34,8 @@ class CustomUser(AbstractUser):
         choices=Role.choices,
         default=Role.STUDENT,
     )
+    
+    objects = CustomUserManager()
 
     def save(self, *args, **kwargs):
         # # Un étudiant ne peut JAMAIS être admin ou staff
@@ -20,13 +44,6 @@ class CustomUser(AbstractUser):
             self.is_superuser = False
         super().save(*args, **kwargs)
 
-    @property
-    def is_teacher(self):
-        return self.role == self.Role.TEACHER
-
-    @property
-    def is_student(self):
-        return self.role == self.Role.STUDENT
     
 
 class StudentManager(models.Manager):
@@ -46,3 +63,7 @@ class TeacherUser(CustomUser):
     objects = TeacherManager()
     class Meta:
         proxy = True
+
+class MatriculeCounter(models.Model):
+    role = models.CharField(max_length=20, unique=True)
+    last_number = models.IntegerField(default=0)

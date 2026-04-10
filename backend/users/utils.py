@@ -1,17 +1,20 @@
 # utils.py
-from .models import CustomUser
+from .models import MatriculeCounter,CustomUser
+from django.db import transaction
 import secrets
 import string
 
-def generate_matricule(role):
-    """Génère un matricule incrémental selon le rôle"""
-    prefix = 'STU' if role == CustomUser.Role.STUDENT else 'TEA'
-    
-    # Compter les utilisateurs existants avec ce rôle
-    count = CustomUser.objects.filter(role=role).count() + 1
-    
-    return f"{prefix}-{count}"
 
+def generate_matricule(role):
+    prefix = 'STU' if role == CustomUser.Role.STUDENT else 'TEA'
+
+    with transaction.atomic():
+        counter, created = MatriculeCounter.objects.select_for_update().get_or_create(role=role)
+
+        counter.last_number += 1
+        counter.save()
+
+        return f"{prefix}-{counter.last_number}"
 
 def generate_password(length=10):
     """Génère un mot de passe aléatoire sécurisé"""

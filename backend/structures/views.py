@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from users.models import StudentUser
 from users.serializers import UserSerializer
 from rest_framework.response import Response
+from django.db.models import Count
 
 class LevelViewSet(viewsets.ModelViewSet):
     queryset = Level.objects.all()
@@ -35,16 +36,14 @@ class SemesterViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class TeachingUnitViewSet(viewsets.ModelViewSet):
-    queryset = TeachingUnit.objects.all()
     serializer_class = TeachingUnitSerializer
     permission_classes = [IsStaffOrSuperUser]
 
-    @action(detail=True,methods=["GET"])
-    def courses(self,request,pk=None):
-        unit = self.get_object()
-        courses = CourseComponent.objects.filter(teaching_unit=unit)
-        serializer = CourseComponentSerializer(courses,many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        return TeachingUnit.objects.prefetch_related('courses').annotate(
+            courses_count=Count('courses')
+        )
+
 
 
 class CourseComponentViewSet(viewsets.ModelViewSet):
@@ -52,10 +51,10 @@ class CourseComponentViewSet(viewsets.ModelViewSet):
     serializer_class = CourseComponentSerializer
     permission_classes = [IsStaffOrSuperUser]
 
-    @action(detail=False,methods=["GET"])
+    @action(detail=False,methods=["GET"],url_path="my-students")
     def my_students(self,request):
         courses = CourseComponent.objects.filter(teacher=request.user)
-        students = StudentUser.objects.filter(enrollements__semester__teachingunits__components__in=courses).distinct()
+        students = StudentUser.objects.filter(enrollements__semester__teachingunits__courses__in=courses).distinct()
         serializer = UserSerializer(students,many = True)
         return Response(serializer.data)
 

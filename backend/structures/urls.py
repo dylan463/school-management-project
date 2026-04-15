@@ -6,7 +6,7 @@ router = DefaultRouter()
 router.register(r"levels",LevelViewSet)
 router.register(r"formations",FormationViewSet)
 router.register(r"semesters",SemesterViewSet)
-router.register(r"teaching_units",TeachingUnitViewSet)
+router.register(r"teaching_units",TeachingUnitViewSet,basename="teachingunits")
 router.register(r"cours_components",CourseComponentViewSet)
 router.register(r"enrollements",EnrollementViewSet)
 

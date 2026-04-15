@@ -24,7 +24,7 @@ def generate_password(length=10):
 
 def send_email(username,password,email):
     send_mail(
-            subject="Votre compte étudiant",
+            subject="Votre compte TELECOM a été créé",
             message=f"""
 Bonjour {username},
 

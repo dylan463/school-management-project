@@ -1,13 +1,14 @@
 # permissions.py
 from rest_framework.permissions import BasePermission
+from .models import CustomUser
 
 class IsTeacher(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.is_teacher
+        return request.user.is_authenticated and request.user.role == CustomUser.Role.TEACHER
 
 class IsStudent(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.is_student
+        return request.user.is_authenticated and request.user.role == CustomUser.Role.STUDENT
 
 class IsSuperUser(BasePermission):
     def has_permission(self,request,view):

@@ -32,7 +32,7 @@ class TeachingUnit(models.Model):
 
 class CourseComponent(models.Model):
     name = models.CharField(max_length=100)
-    teaching_unit = models.ForeignKey(TeachingUnit, on_delete=models.CASCADE,related_name="components")
+    teaching_unit = models.ForeignKey(TeachingUnit, on_delete=models.CASCADE,related_name="courses")
     course_credits = models.PositiveIntegerField()
     teacher = models.ForeignKey(TeacherUser,on_delete=models.SET_NULL,null=True,blank=True)
 
@@ -43,7 +43,7 @@ class Enrollement(models.Model):
 
     def clean(self):
         if self.semester.is_active:
-            enrollment = Enrollment.objects.filter(
+            enrollment = self.__class__.objects.filter(
                 student=self.student,
                 semester__is_active=True
             ).exclude(pk=self.pk)
@@ -52,7 +52,7 @@ class Enrollement(models.Model):
                 raise ValidationError(
                     "Cet étudiant est déjà inscrit dans un semestre actif."
                 )
-
+                
     def save(self, *args, **kwargs):
         self.clean()  # on vérifie la règle
         super().save(*args, **kwargs)  # on sauvegarde

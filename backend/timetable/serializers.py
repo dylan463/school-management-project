@@ -1,65 +1,85 @@
-# timetable/serializers.py
 from rest_framework import serializers
-from .models import TeacherAvailability, TimeSlot
+from .models import Schedule, ScheduleEntry
+from structures.models import CourseComponent
 
-class TeacherAvailabilitySerializer(serializers.ModelSerializer):
-    teacher_name = serializers.CharField(
-        source='teacher.get_full_name', read_only=True
-    )
+
+# 🔹 Serializer pour les lignes d'emploi du temps
+class ScheduleEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model  = TeacherAvailability
-        fields = [
-            'id', 'teacher', 'teacher_name', 'semester',
-            'day', 'start_time', 'end_time'
-        ]
-        read_only_fields = ['id', 'teacher']  # teacher injecté depuis la vue
+        model = ScheduleEntry
+        fields = "__all__"
 
     def validate(self, data):
-        if data['end_time'] <= data['start_time']:
-            raise serializers.ValidationError(
-                "L'heure de fin doit être après l'heure de début."
+        start = data.get("start_time")
+        end = data.get("end_time")
+        teacher = data.get("teacher")
+        classroom = data.get("classroom")
+        day = data.get("day")
+        schedule = data.get("schedule")
+
+        # 🔴 1. Vérifier cohérence horaire
+        if start >= end:
+            raise serializers.ValidationError("start_time doit être inférieur à end_time")
+
+        # 🔴 2. Vérifier conflit PROF
+        if teacher:
+            conflict_teacher = ScheduleEntry.objects.filter(
+                teacher=teacher,
+                day=day,
+                start_time__lt=end,
+                end_time__gt=start,
             )
+
+            if self.instance:
+                conflict_teacher = conflict_teacher.exclude(id=self.instance.id)
+
+            if conflict_teacher.exists():
+                raise serializers.ValidationError(
+                    "Ce professeur a déjà un cours à cet horaire"
+                )
+
+        # 🔴 3. Vérifier conflit SALLE
+        conflict_room = ScheduleEntry.objects.filter(
+            classroom=classroom,
+            day=day,
+            start_time__lt=end,
+            end_time__gt=start,
+        )
+
+        if self.instance:
+            conflict_room = conflict_room.exclude(id=self.instance.id)
+
+        if conflict_room.exists():
+            raise serializers.ValidationError(
+                "Cette salle est déjà occupée à cet horaire"
+            )
+
+        # 🔴 4. Vérifier même schedule (optionnel mais propre)
+        if schedule:
+            conflict_schedule = ScheduleEntry.objects.filter(
+                schedule=schedule,
+                day=day,
+                start_time__lt=end,
+                end_time__gt=start,
+            )
+
+            if self.instance:
+                conflict_schedule = conflict_schedule.exclude(id=self.instance.id)
+
+            if conflict_schedule.exists():
+                raise serializers.ValidationError(
+                    "Conflit dans cet emploi du temps (chevauchement)"
+                )
+
         return data
 
 
-class TimeSlotSerializer(serializers.ModelSerializer):
-    """Lecture seule enrichie — pour étudiant et enseignant."""
-    course_name  = serializers.CharField(
-        source='course_component.name', read_only=True
-    )
-    teacher_name = serializers.CharField(
-        source='teacher.get_full_name', read_only=True
-    )
+# 🔹 Serializer global (emploi du temps)
+class ScheduleSerializer(serializers.ModelSerializer):
+
+    entries = ScheduleEntrySerializer(many=True, read_only=True)
 
     class Meta:
-        model  = TimeSlot
-        fields = [
-            'id', 'semester', 'course_component', 'course_name',
-            'teacher', 'teacher_name', 'day',
-            'start_time', 'end_time', 'room', 'is_published'
-        ]
-        read_only_fields = ['id']
-
-
-class TimeSlotWriteSerializer(serializers.ModelSerializer):
-    """Écriture — pour admin uniquement."""
-    class Meta:
-        model  = TimeSlot
-        fields = [
-            'id', 'semester', 'course_component', 'teacher',
-            'day', 'start_time', 'end_time', 'room', 'is_published'
-        ]
-        read_only_fields = ['id']
-
-    def validate(self, data):
-        if data['end_time'] <= data['start_time']:
-            raise serializers.ValidationError(
-                "L'heure de fin doit être après l'heure de début."
-            )
-        # Vérifier cohérence enseignant ↔ EC
-        if data['course_component'].teacher_id != data['teacher'].pk:
-            raise serializers.ValidationError(
-                "Ce professeur n'est pas affecté à cet EC."
-            )
-        return data
+        model = Schedule
+        fields = ["id", "semester", "is_published", "entries"]

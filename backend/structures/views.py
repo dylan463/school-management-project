@@ -120,10 +120,15 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
     def classmates(self, request):
         student = request.user
 
-        semester = Enrollement.objects.get(
+        enrollement = Enrollement.objects.filter(
             student=student,
             semester__is_active=True
-        ).semester
+        ).select_related("semester").first()
+
+        if not enrollement:
+            return Response({"detail": "No active semester"}, status=404)
+
+        semester = enrollement.semester
 
         classmates = StudentUser.objects.filter(
             enrollements__semester=semester

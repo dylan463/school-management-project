@@ -1,9 +1,11 @@
-# timetable/urls.py
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TeacherAvailabilityViewSet, TimeSlotViewSet
+from .views import (AdminScheduleViewSet,StudentScheduleViewSet,TeacherScheduleViewSet
+)
 
 router = DefaultRouter()
-router.register(r'availabilities', TeacherAvailabilityViewSet, basename='availability')
-router.register(r'timeslots',      TimeSlotViewSet,             basename='timeslot')
+router.register(r"admin/schedules", AdminScheduleViewSet, basename="admin-schedules")
+router.register(r"student/schedules", StudentScheduleViewSet, basename="student-schedules")
+router.register(r"teacher/schedules", TeacherScheduleViewSet, basename="teacher-schedules")
 
 urlpatterns = router.urls

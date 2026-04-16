@@ -2,6 +2,7 @@ from .models import (
     Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement
 )
 from rest_framework.serializers import ModelSerializer,IntegerField
+from rest_framework.exceptions import ValidationError
 
 
 class LevelSerializer(ModelSerializer):
@@ -41,8 +42,21 @@ class TeachingUnitSerializer(ModelSerializer):
         fields = ["id", "name", "code", "semester", "description", "courses", "courses_count"]
         read_only_fields = ["id","courses","courses_count"]
 
+
 class EnrollementSerializer(ModelSerializer):
     class Meta:
         model = Enrollement
-        fields = ["id", "student", "semester", "date_registered"]
-        read_only_fields = ["date_registered","id","date_registered"]
+        fields = ["id", "student", "semester", "enrollement_date"]
+        read_only_fields = ["id", "enrollement_date"]
+
+    def validate(self, attrs):
+        student = attrs["student"]
+        semester = attrs["semester"]
+
+        if Enrollement.objects.filter(student=student, semester=semester).exists():
+            raise ValidationError("L'étudiant est déjà inscrit dans ce semestre")
+
+        if not semester.is_active:
+            raise ValidationError("Le semestre n'est pas actif")
+
+        return attrs

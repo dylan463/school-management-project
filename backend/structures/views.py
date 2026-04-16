@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 from users.permissions import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from users.models import StudentUser
+from users.models import StudentUser, TeacherUser
 from users.serializers import UserSerializer
 from rest_framework.response import Response
 from django.db.models import Count
@@ -48,6 +48,28 @@ class CourseComponentViewSet(viewsets.ModelViewSet):
     queryset = CourseComponent.objects.all()
     serializer_class = CourseComponentSerializer
     permission_classes = [IsStaffOrSuperUser]
+
+    @action(detail=True, methods=["post"])    
+    def assign_teacher(self, request, pk=None):    
+        course = self.get_object()    
+
+        teacher_id = request.data.get("teacher")    
+        if not teacher_id:    
+            raise ValidationError({"teacher": "This field is required"})    
+
+        try:    
+            teacher = TeacherUser.objects.get(pk=teacher_id)    
+        except TeacherUser.DoesNotExist:    
+            raise ValidationError({"teacher": "Teacher not found"})    
+
+        course.teacher = teacher    
+        course.save()    
+
+        return Response({    
+            "status": "teacher assigned",    
+            "course_id": course.id,    
+            "teacher_id": teacher.id    
+        })
 
 class EnrollementViewSet(viewsets.ModelViewSet):
     queryset = Enrollement.objects.all()
@@ -143,3 +165,6 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         ).distinct()
 
         return Response(SemesterSerializer(semesters, many=True).data)
+    
+
+

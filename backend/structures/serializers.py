@@ -30,7 +30,7 @@ class CourseComponentSerializer(ModelSerializer):
     class Meta:
         model = CourseComponent
         fields = ["id", "name", "teaching_unit", "course_credits", "teacher"]
-        read_only_fields = ["id"]
+        read_only_fields = ["id","teacher"]
 
 
 class TeachingUnitSerializer(ModelSerializer):

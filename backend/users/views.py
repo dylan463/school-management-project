@@ -16,6 +16,7 @@ from .utils import send_email
 class StudentViewSet(ModelViewSet):
     permission_classes = [IsStaffOrSuperUser]
     queryset = StudentUser.objects.all()
+
     def get_serializer_class(self):
         if self.action == "create":
             return StudentCreateSerializer
@@ -59,6 +60,10 @@ class TeacherViewSet(ModelViewSet):
     @action(detail=True,methods=["post"])
     def demote(self,request,pk=None):
         teacher : TeacherUser = self.get_object()
+        if teacher.is_superuser or not teacher.is_staff:
+            raise PermissionDenied("You cannot demote this user.")
+        if teacher == request.user:
+            raise PermissionDenied("You cannot demote yourself.")
         teacher.is_staff = False
         teacher.save()
         return Response({"status":"demoted"})

@@ -102,6 +102,31 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
             "level": semester.level.code,
             "formation": semester.formation.name
         })
+    
+    @action(detail=False, methods=["post"])
+    def enrolle(self, request):
+        student = request.user
+        semester_id = request.data.get("semester")
+
+        if not semester_id:
+            raise ValidationError({"semester": "This field is required"})
+        try:
+            semester = Semester.objects.get(pk=semester_id)
+        except Semester.DoesNotExist:
+            raise ValidationError({"semester": "Semester not found"})
+        
+        if Enrollement.objects.filter(student=student, semester=semester).exists():
+            raise ValidationError("L'étudiant est déjà inscrit dans ce semestre")
+        
+        if not semester.is_active:
+            raise ValidationError("Le semestre n'est pas actif")
+        
+        enrollement = Enrollement.objects.create(student=student, semester=semester)
+        return Response({
+            "status": "enrolled",
+            "enrollement_id": enrollement.id
+        })
+
 
     @action(detail=False, methods=["get"])
     def my_teaching_units(self, request):

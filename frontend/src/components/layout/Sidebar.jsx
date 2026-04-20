@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { NavLink, useNavigate } from 'react-router-dom'
+=======
+import { NavLink } from 'react-router-dom'
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
 import { useAuth } from '../../context/AuthContext'
 import { ROUTES, ROLES } from '../../utils/constants'
 
@@ -21,6 +25,7 @@ const LogoutIcon  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 16 1
 
 /* ── Nav items per role ── */
 const ETU_NAV = [
+<<<<<<< HEAD
   { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,   Icon: DashIcon,  section: 'Principal' },
   { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS, Icon: CalIcon,   section: 'Académique' },
   { label: 'Mes notes',        to: ROUTES.NOTES,           Icon: NoteIcon,  section: null },
@@ -44,6 +49,32 @@ function SidebarItem({ label, to, Icon: ItemIcon, badge }) {
     return (
       <div className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-slate-400 cursor-default border-l-2 border-transparent">
         <ItemIcon />
+=======
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,   iconComponent: DashIcon,  section: 'Principal' },
+  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS, iconComponent: CalIcon,   section: 'Académique' },
+  { label: 'Mes notes',        to: ROUTES.NOTES,           iconComponent: NoteIcon,  section: null },
+  { label: 'Cours en ligne',   to: ROUTES.COURS,           iconComponent: FileIcon,  section: null },
+  { label: 'Pointage',         to: ROUTES.POINTAGE,        iconComponent: ClockIcon, section: null },
+  { label: 'Notifications',    to: '#',                    iconComponent: BellIcon,  section: 'Système', badge: 3 },
+]
+
+const ENS_NAV = [
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,  iconComponent: DashIcon,   section: 'Principal' },
+  { label: 'Mes étudiants',    to: ROUTES.ETUDIANTS_LIST, iconComponent: UsersIcon,  section: 'Pédagogie' },
+  { label: 'Saisie des notes', to: ROUTES.SAISIE_NOTES,   iconComponent: NoteIcon,   section: null },
+  { label: 'Mon planning',     to: ROUTES.PLANNING,       iconComponent: CalIcon,    section: null },
+  { label: 'Ressources',       to: ROUTES.RESSOURCES,     iconComponent: UploadIcon, section: null },
+  { label: 'Notifications',    to: '#',                   iconComponent: BellIcon,   section: 'Système', badge: 1 },
+]
+
+/* ── SidebarItem ── */
+// eslint-disable-next-line no-unused-vars
+function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
+  if (to === '#') {
+    return (
+      <div className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-blue-100 cursor-default border-l-2 border-transparent">
+        <IconComponent />
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
         <span>{label}</span>
         {badge && <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">{badge}</span>}
       </div>
@@ -55,12 +86,21 @@ function SidebarItem({ label, to, Icon: ItemIcon, badge }) {
       className={({ isActive }) =>
         `flex items-center gap-2.5 px-4 py-2 text-[13px] transition-all duration-100 border-l-2
          ${isActive
+<<<<<<< HEAD
            ? 'text-slate-100 bg-white/[0.07] border-blue-500'
            : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border-transparent'
          }`
       }
     >
       <ItemIcon />
+=======
+           ? 'text-white bg-white/[0.15] border-white'
+           : 'text-blue-100 hover:text-white hover:bg-white/[0.1] border-transparent'
+         }`
+      }
+    >
+      <IconComponent />
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
       <span>{label}</span>
       {badge && <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">{badge}</span>}
     </NavLink>
@@ -85,6 +125,7 @@ export default function Sidebar({ role }) {
   })
 
   return (
+<<<<<<< HEAD
     <aside className="w-52 bg-slate-900 flex flex-col flex-shrink-0 min-h-screen">
       {/* Logo */}
       <div className="px-4 py-5 border-b border-white/[0.07]">
@@ -102,13 +143,25 @@ export default function Sidebar({ role }) {
             </p>
           </div>
         </div>
+=======
+    <aside className="w-52 bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col flex-shrink-0 min-h-screen shadow-lg">
+      {/* Header */}
+      <div className="px-4 py-6 border-b border-white/[0.1]">
+        <h1 className="text-lg font-bold text-white">
+          {role === ROLES.ETUDIANT ? 'Espace étudiant' : 'Espace enseignant'}
+        </h1>
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
       </div>
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {sections.map(sec => (
           <div key={sec.label}>
+<<<<<<< HEAD
             <p className="px-4 pt-4 pb-1.5 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">
+=======
+            <p className="px-4 pt-4 pb-1.5 text-[10px] font-semibold text-blue-200 uppercase tracking-widest">
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
               {sec.label}
             </p>
             {sec.items.map(item => (
@@ -119,6 +172,7 @@ export default function Sidebar({ role }) {
       </nav>
 
       {/* Footer / logout */}
+<<<<<<< HEAD
       <div className="p-3 border-t border-white/[0.07]">
         <div className="flex items-center gap-2 px-1 mb-2">
           <div className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center text-[10px] font-semibold text-slate-300">
@@ -129,11 +183,27 @@ export default function Sidebar({ role }) {
               {user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}
             </p>
             <p className="text-[10px] text-slate-600 truncate">{user?.matricule}</p>
+=======
+      <div className="p-3 border-t border-white/[0.1]">
+        <div className="flex items-center gap-2 px-1 mb-2">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-semibold text-white">
+            {user?.prenom?.[0]}{user?.nom?.[0]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-medium text-white truncate">
+              {user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}
+            </p>
+            <p className="text-[10px] text-blue-200 truncate">{user?.matricule}</p>
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
           </div>
         </div>
         <button
           onClick={logout}
+<<<<<<< HEAD
           className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 hover:bg-white/[0.05] rounded-lg transition-all"
+=======
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-100 hover:text-white hover:bg-white/[0.1] rounded-lg transition-all"
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
         >
           <LogoutIcon />
           Déconnexion

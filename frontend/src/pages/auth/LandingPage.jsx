@@ -15,12 +15,17 @@ export default function LandingPage() {
   }, [isAuthenticated, role, navigate])
 
   return (
+<<<<<<< HEAD
     <div 
       className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative"
       style={{ backgroundImage: "url('src/assets/Departement.jpeg')" }}
     >
       <div className="absolute inset-0 bg-black/20"></div>
       <div className="w-full max-w-3xl bg-white/20 rounded-2xl p-10 text-center shadow-xl relative z-10">
+=======
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-white to-blue-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-3xl bg-white rounded-2xl p-10 text-center shadow-xl">
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
         
         {/* Logo et titre centré */}
         <div className="flex flex-col items-center mb-10">
@@ -29,12 +34,17 @@ export default function LandingPage() {
             alt="Logo ESPA"
             className="w-20 h-20 mb-3"
           />
+<<<<<<< HEAD
           <span className="text-lg font-bold text-white uppercase tracking-wide">
+=======
+          <span className="text-lg font-bold text-slate-800 uppercase tracking-wide">
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
             ÉCOLE SUPÉRIEURE POLYTECHNIQUE D’ANTANANARIVO
           </span>
         </div>
 
         {/* Hero text */}
+<<<<<<< HEAD
         <h1 className="text-4xl font-extrabold text-white leading-snug mb-5 tracking-wide">
           PLATEFORME DE GESTION DE MENTION <br/>
           <span className="text-2xl italic font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-sm font-serif">
@@ -43,6 +53,16 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-sm text-gray-100 leading-relaxed mb-8 max-w-md mx-auto">
+=======
+        <h1 className="text-4xl font-extrabold text-slate-900 leading-snug mb-5 tracking-wide">
+          PLATEFORME DE GESTION <br/>
+          <span className="text-2xl italic font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-sm font-serif">
+           MENTION TELECOMMUNICATION
+          </span>
+        </h1>
+
+        <p className="text-sm text-slate-600 leading-relaxed mb-8 max-w-md mx-auto">
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
           Accédez à vos cours, notes, emploi du temps et ressources pédagogiques depuis un espace centralisé et sécurisé.
         </p>
 

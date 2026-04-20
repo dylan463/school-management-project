@@ -4,6 +4,10 @@ import { useAuth } from '../../context/AuthContext'
 import { ROUTES, ROLES } from '../../utils/constants'
 import Input  from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
+<<<<<<< HEAD
+=======
+import '../../index.css' // Assure-toi que la police Poppins est importée dans ton CSS global
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
 
 export default function LoginPage() {
   const { login, loading, error, setError, isAuthenticated, role } = useAuth()
@@ -27,10 +31,17 @@ export default function LoginPage() {
 
   return (
     <div
+<<<<<<< HEAD
       className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative"
       style={{ backgroundImage: "url('src/assets/fondlogin.jpg')" }} // mets ici le chemin réel vers ton image
     >
       {/* Overlay sombre pour lisibilité (sans flou) */}
+=======
+      className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative font-[Poppins]"
+      style={{ backgroundImage: "url('src/assets/fondlogin.jpg')" }}
+    >
+      {/* Overlay sombre */}
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
       <div className="absolute inset-0 bg-black/40"></div>
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center">
@@ -42,14 +53,25 @@ export default function LoginPage() {
             alt="Logo Mention Télécommunication"
             className="w-40 h-auto mb-4 drop-shadow-lg"
           />
+<<<<<<< HEAD
           <p className="text-lg font-bold text-slate-800 text-center">
             TELECOMMUNICATION
+=======
+          <p className="text-lg font-semibold text-slate-800 text-center">
+            Bienvenue sur notre plateforme!
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
           </p>
         </div>
 
         {/* Formulaire */}
         <div className="w-full">
+<<<<<<< HEAD
           <h2 className="text-xl font-semibold text-slate-900 mb-2 text-center">Connexion</h2>
+=======
+          <h2 className="text-xl font-bold text-slate-900 mb-2 text-center tracking-wide uppercase">
+            Connexion
+          </h2>
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
           <p className="text-sm text-slate-500 mb-6 text-center">
             Entrez votre matricule et votre mot de passe pour accéder.
           </p>
@@ -63,6 +85,10 @@ export default function LoginPage() {
               onChange={e => setMatricule(e.target.value)}
               autoComplete="username"
               required
+<<<<<<< HEAD
+=======
+              className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
             />
             <Input
               id="mot-de-passe"
@@ -73,6 +99,10 @@ export default function LoginPage() {
               onChange={e => setMotDePasse(e.target.value)}
               autoComplete="current-password"
               required
+<<<<<<< HEAD
+=======
+              className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
             />
 
             {error && (
@@ -85,7 +115,16 @@ export default function LoginPage() {
               </div>
             )}
 
+<<<<<<< HEAD
             <Button type="submit" variant="navy" fullWidth disabled={loading} className="mt-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+=======
+            <Button
+              type="submit"
+              fullWidth
+              disabled={loading}
+              className="mt-2 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 active:scale-95"
+            >
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -98,6 +137,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
+<<<<<<< HEAD
           <p className="text-center text-sm text-slate-500 mt-4">
             <button
               onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
@@ -108,6 +148,9 @@ export default function LoginPage() {
           </p>
 
           <p className="text-center text-[12px] text-slate-500 mt-2">
+=======
+          <p className="text-center text-[12px] text-slate-500 mt-6">
+>>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
             Problème de connexion ?{' '}
             <span className="text-blue-600 cursor-pointer hover:underline">
               Contactez l'administration

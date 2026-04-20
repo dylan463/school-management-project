@@ -7,10 +7,6 @@ import RoleRoute      from './RoleRoute'
 // Public
 import LandingPage    from '../pages/auth/LandingPage'
 import LoginPage      from '../pages/auth/LoginPage'
-<<<<<<< HEAD
-import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage'
-=======
->>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
 
 // Layouts
 import AppLayout      from '../components/layout/AppLayout'
@@ -35,10 +31,6 @@ export default function AppRouter() {
       {/* ── Public ── */}
       <Route path={ROUTES.HOME}  element={<LandingPage />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-<<<<<<< HEAD
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-=======
->>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
 
       {/* ── Étudiant (protected) ── */}
       <Route element={<PrivateRoute />}>

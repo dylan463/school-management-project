@@ -6,10 +6,6 @@ export const ROLES = {
 export const ROUTES = {
   HOME:               '/',
   LOGIN:              '/login',
-<<<<<<< HEAD
-  FORGOT_PASSWORD:    '/forgot-password',
-=======
->>>>>>> 95a80630d4f265bee20b2c4ad8927941e319003d
   DASHBOARD_ETU:      '/dashboard-etudiant',
   DASHBOARD_ENS:      '/dashboard-enseignant',
   NOTES:              '/dashboard-etudiant/notes',

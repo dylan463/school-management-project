@@ -32,15 +32,9 @@ export default function LandingPage() {
 
         {/* Hero text */}
         <h1 className="text-4xl font-extrabold text-slate-900 leading-snug mb-5 tracking-wide">
-<<<<<<< HEAD
           PLATEFORME DE GESTION <br/>
           <span className="text-2xl italic font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-sm font-serif">
            MENTION TELECOMMUNICATION
-=======
-          PLATEFORME DE GESTION DE MENTION <br/>
-          <span className="text-2xl italic font-semibold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent drop-shadow-sm font-serif">
-           TELECOMMUNICATION
->>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
           </span>
         </h1>
 

@@ -11,9 +11,16 @@
   },
   "dependencies": {
     "axios": "^1.15.0",
+<<<<<<< HEAD
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^6.30.3"
+=======
+    "jwt-decode": "^4.0.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.1"
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

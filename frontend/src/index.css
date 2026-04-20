@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+=======
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+<<<<<<< HEAD
 
 @layer base {
   * {
@@ -14,6 +18,18 @@
     @apply bg-slate-50 text-slate-900 antialiased;
   }
 
+=======
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;

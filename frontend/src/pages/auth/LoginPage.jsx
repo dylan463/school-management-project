@@ -4,7 +4,10 @@ import { useAuth } from '../../context/AuthContext'
 import { ROUTES, ROLES } from '../../utils/constants'
 import Input  from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
+<<<<<<< HEAD
 import '../../index.css' // Assure-toi que la police Poppins est importée dans ton CSS global
+=======
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
 
 export default function LoginPage() {
   const { login, loading, error, setError, isAuthenticated, role } = useAuth()
@@ -28,10 +31,17 @@ export default function LoginPage() {
 
   return (
     <div
+<<<<<<< HEAD
       className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative font-[Poppins]"
       style={{ backgroundImage: "url('src/assets/fondlogin.jpg')" }}
     >
       {/* Overlay sombre */}
+=======
+      className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative"
+      style={{ backgroundImage: "url('src/assets/fondlogin.jpg')" }} // mets ici le chemin réel vers ton image
+    >
+      {/* Overlay sombre pour lisibilité (sans flou) */}
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
       <div className="absolute inset-0 bg-black/40"></div>
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center">
@@ -50,9 +60,13 @@ export default function LoginPage() {
 
         {/* Formulaire */}
         <div className="w-full">
+<<<<<<< HEAD
           <h2 className="text-xl font-bold text-slate-900 mb-2 text-center tracking-wide uppercase">
             Connexion
           </h2>
+=======
+          <h2 className="text-xl font-semibold text-slate-900 mb-2 text-center">Connexion</h2>
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
           <p className="text-sm text-slate-500 mb-6 text-center">
             Entrez votre matricule et votre mot de passe pour accéder.
           </p>
@@ -66,7 +80,10 @@ export default function LoginPage() {
               onChange={e => setMatricule(e.target.value)}
               autoComplete="username"
               required
+<<<<<<< HEAD
               className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+=======
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
             />
             <Input
               id="mot-de-passe"
@@ -77,7 +94,10 @@ export default function LoginPage() {
               onChange={e => setMotDePasse(e.target.value)}
               autoComplete="current-password"
               required
+<<<<<<< HEAD
               className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+=======
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
             />
 
             {error && (
@@ -90,12 +110,16 @@ export default function LoginPage() {
               </div>
             )}
 
+<<<<<<< HEAD
             <Button
               type="submit"
               fullWidth
               disabled={loading}
               className="mt-2 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 active:scale-95"
             >
+=======
+            <Button type="submit" variant="navy" fullWidth disabled={loading} className="mt-2">
+>>>>>>> 48f443108b5c8fe935880c201f85ac819895b3a2
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">

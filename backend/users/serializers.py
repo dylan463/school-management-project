@@ -9,8 +9,8 @@ class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser']
-        read_only_fields = ['id', 'role', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name','role','is_superuser']
+        read_only_fields = ['id','role', 'is_superuser']
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -18,78 +18,54 @@ class UserSerializer(serializers.ModelSerializer):
 
         if not request:
             data.pop("is_superuser", None)
-            data.pop("is_staff", None)
             return data
 
         user = request.user
-        # seulement staff ou superuser peuvent voir
-        if not (user.is_staff or user.is_superuser):
-            print("not staff or superuser")
+        # seulement superuser peuvent voir
+        if not user.role == CustomUser.Role.SUPERUSER:
             data.pop("is_superuser", None)
-            data.pop("is_staff", None)
 
         return data
 
-# serializer pour créer un étudiant
-class StudentCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=CustomUser.Role.choices) # on ne peut pas créer un superuser via cette endpoint, il faut le faire via la ligne de commande
+
     class Meta:
         model = CustomUser
-        fields = ['email']
+        fields = ['email', 'role']
 
     def create(self, validated_data):
-        matricule = generate_matricule(CustomUser.Role.STUDENT)
-        password = generate_password()
+        role = validated_data.pop("role")
 
-        user = CustomUser.objects.create_user(
-            username=matricule,  # STU-1, STU-2...
-            password=password,
-            role=CustomUser.Role.STUDENT,
-            **validated_data
-        )
-
-        user._plain_password = password
-
-        return user
-
-    def validate_email(self, value):
-        if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("cet email est déjà utilisé")
-        return value
-
-# serializer pour créer un enseignant
-class TeacherCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ['email']
-
-    def create(self, validated_data):
-        matricule = generate_matricule(CustomUser.Role.TEACHER)
+        matricule = generate_matricule(role)
         password = generate_password()
 
         user = CustomUser.objects.create_user(
             username=matricule,
             password=password,
-            role=CustomUser.Role.TEACHER,
+            role=role,
             **validated_data
         )
 
         user._plain_password = password
-
         return user
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("cet email est déjà utilisé")
         return value
-
+    
+    def validate_role(self, value):
+        if value == CustomUser.Role.SUPERUSER:
+            raise serializers.ValidationError("veuillez utiliser la ligne de commande pour créer un superuser")
+        return value
+        
 # serializer pour le JWT
 class CustomTokenSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['role'] = user.role
-        token['is_staff'] = user.is_staff
-        token["is_superuser"] =  user.is_superuser
+        token["role"] = user.role
         return token
 
 # serializer pour changer le mot de passe

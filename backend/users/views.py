@@ -15,94 +15,32 @@ from rest_framework.response import Response
 from .models import CustomUser, TeacherUser, StudentUser
 from .serializers import (
     UserSerializer,
-    StudentCreateSerializer,
-    TeacherCreateSerializer,
+    UserCreateSerializer,
     ChangePasswordSerializer,
 )
 from .permissions import (
     IsTeacher,
     IsStudent,
     IsSuperUser,
-    IsStaff,
-    IsStaffOrSuperUser,
+    CannotDeleteAdmin
 )
 from .utils import send_email
 
-
-#  ceci est utiliser juste pour creer un etudiants et faire la liste des etudiants
-class StudentViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.ListModelMixin):
-    permission_classes = [IsStaffOrSuperUser]
-    queryset = StudentUser.objects.all()
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return StudentCreateSerializer
-        return UserSerializer
-
-    def perform_create(self, serializer):
-        student = serializer.save()
-        password = getattr(student, "_plain_password", "non disponible")
-        send_email(student.username,password,student.email)
-        
-#  ceci est utiliser juste pour creer un enseignant et faire la liste des enseignants, et aussi promouvoir ou rétrograder un enseignant en staff ou non staff
-class TeacherViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.ListModelMixin):
-    permission_classes = [IsStaffOrSuperUser]
-    queryset = TeacherUser.objects.all()
-
-    def get_permissions(self):
-        if self.action in ["promote", "demote"]:
-            permission_classes = [IsSuperUser]  # superuser only
-        else:
-            permission_classes = [IsStaffOrSuperUser]
-        return [permission() for permission in permission_classes]
-
-
-    def get_serializer_class(self):
-        if self.action in ["create"]:
-            return TeacherCreateSerializer
-        return UserSerializer
-    
-
-    @action(detail=True,methods=["post"])
-    def promote(self,request,pk=None):
-        teacher : TeacherUser = self.get_object()
-        if teacher.is_superuser or teacher.is_staff:
-            raise PermissionDenied("You cannot promote this user.")
-        if teacher == request.user:
-            raise PermissionDenied("You cannot promote yourself.")
-        teacher.is_staff = True
-        teacher.save()
-        return Response({"status":"promoted"})
-    
-    @action(detail=True,methods=["post"])
-    def demote(self,request,pk=None):
-        teacher : TeacherUser = self.get_object()
-        if teacher.is_superuser or (not teacher.is_staff):
-            raise PermissionDenied("You cannot demote this user.")
-        if teacher == request.user:
-            raise PermissionDenied("You cannot demote yourself.")
-        teacher.is_staff = False
-        teacher.save()
-        return Response({"status":"demoted"})
-
-    def perform_create(self, serializer):
-        teacher = serializer.save()
-        password = getattr(teacher, "_plain_password", "non disponible")
-        send_email(teacher.username,password,teacher.email)
-
-#  ceci est utiliser pour faire les opérations de base sur les utilisateurs (récupérer, mettre à jour, supprimer) et aussi pour récupérer ou mettre à jour son propre profil
-class UserViewSet(GenericViewSet,mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
+class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = CustomUser.objects.all()
 
     def get_permissions(self):
-        if self.action in ["retrieve","me"]:
+        if self.action in ["me"]:
             permission_classes = [IsAuthenticated]
-        elif self.action in ["update","partial_update"]:
-            permission_classes = [IsStaffOrSuperUser]
-        elif self.action == "destroy":
-            permission_classes = [IsSuperUser]
+        else:
+            permission_classes = [IsSuperUser, CannotDeleteAdmin]
         return [permission() for permission in permission_classes]
+    
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+        return UserSerializer
     
 
     @action(detail=False, methods=["get", "patch"])

@@ -16,17 +16,17 @@ from django.db.models import Count
 class LevelViewSet(viewsets.ModelViewSet):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
 class SemesterViewSet(viewsets.ModelViewSet):
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
     @action(detail=True,methods=["GET"])
     def students(self,request,pk = None):
@@ -37,7 +37,7 @@ class SemesterViewSet(viewsets.ModelViewSet):
 
 class TeachingUnitViewSet(viewsets.ModelViewSet):
     serializer_class = TeachingUnitSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
     def get_queryset(self):
         return TeachingUnit.objects.prefetch_related('courses').annotate(
@@ -47,7 +47,7 @@ class TeachingUnitViewSet(viewsets.ModelViewSet):
 class CourseComponentViewSet(viewsets.ModelViewSet):
     queryset = CourseComponent.objects.all()
     serializer_class = CourseComponentSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
     @action(detail=True, methods=["post"])    
     def assign_teacher(self, request, pk=None):    
@@ -74,7 +74,7 @@ class CourseComponentViewSet(viewsets.ModelViewSet):
 class EnrollementViewSet(viewsets.ModelViewSet):
     queryset = Enrollement.objects.all()
     serializer_class = EnrollementSerializer
-    permission_classes = [IsStaffOrSuperUser]
+    permission_classes = [IsSuperUser]
 
 
 # ici on définit une endpoint des etudiants et professeurs avec les intercations avec les modeles de l'application structure

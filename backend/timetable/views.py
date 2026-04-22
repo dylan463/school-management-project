@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from users.permissions import IsTeacher, IsStudent, IsStaffOrSuperUser
+from users.permissions import *
 from .permissions import IsOwnerTeacher
 from .models import TeacherAvailability, TimeSlot
 from .serializers import (
@@ -29,7 +29,7 @@ class TeacherAvailabilityViewSet(viewsets.ModelViewSet):
             return [IsTeacher()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsTeacher(), IsOwnerTeacher()]
-        return [IsStaffOrSuperUser()]
+        return [IsSuperUser()]
 
     def get_queryset(self):
         user = self.request.user
@@ -65,7 +65,7 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
         # Seul l'admin crée, modifie, supprime, publie
-        return [IsStaffOrSuperUser()]
+        return [IsSuperUser()]
 
     def get_queryset(self):
         user = self.request.user
@@ -102,7 +102,7 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
 
         return TimeSlot.objects.none()
 
-    @action(detail=True, methods=['post'], permission_classes=[IsStaffOrSuperUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsSuperUser])
     def publish(self, request, pk=None):
         """POST /timetable/timeslots/{id}/publish/ — publier un créneau."""
         slot = self.get_object()
@@ -110,7 +110,7 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
         slot.save()
         return Response({'status': 'publié'}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsStaffOrSuperUser])
+    @action(detail=False, methods=['post'], permission_classes=[IsSuperUser])
     def publish_all(self, request):
         """POST /timetable/timeslots/publish_all/?semester=X — tout publier d'un semestre."""
         semester_id = request.query_params.get('semester')

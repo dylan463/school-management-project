@@ -14,7 +14,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, username, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("role", CustomUser.Role.TEACHER)
+        extra_fields.setdefault("role", CustomUser.Role.SUPERUSER)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser doit avoir is_staff=True")
@@ -28,6 +28,7 @@ class CustomUser(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = 'STUDENT', 'Étudiant'
         TEACHER = 'TEACHER', 'Professeur'
+        SUPERUSER = 'SUPERUSER', 'Superutilisateur'
 
     role = models.CharField(
         max_length=10,
@@ -39,7 +40,7 @@ class CustomUser(AbstractUser):
 
     def save(self, *args, **kwargs):
         # # Un étudiant ne peut JAMAIS être admin ou staff
-        if self.role == self.Role.STUDENT:
+        if not (self.role == self.Role.SUPERUSER):
             self.is_staff = False
             self.is_superuser = False
         super().save(*args, **kwargs)

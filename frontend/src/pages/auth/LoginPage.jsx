@@ -7,23 +7,32 @@ import Button from '../../components/ui/Button'
 import '../../index.css' // Assure-toi que la police Poppins est importée dans ton CSS global
 
 export default function LoginPage() {
-  const { login, loading, error, setError, isAuthenticated, role } = useAuth()
+  const { login, loading, isAuthenticated, role} = useAuth()
   const navigate = useNavigate()
 
   const [matricule,   setMatricule]   = useState('')
   const [motDePasse,  setMotDePasse]  = useState('')
+  const [error,       setError]        = useState(null)
 
+  // Rediriger vers le dashboard approprié après la connexion
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(role === ROLES.ENSEIGNANT ? ROUTES.DASHBOARD_ENS : ROUTES.DASHBOARD_ETU, { replace: true })
+    if (isAuthenticated && role) {
+      if (role === ROLES.ETUDIANT) {
+        navigate(ROUTES.DASHBOARD_ETU, { replace: true })
+      } else if ([ROLES.ENSEIGNANT, ROLES.STAFF, ROLES.SUPERUSER].includes(role)) {
+        navigate(ROUTES.DASHBOARD_ENS, { replace: true })
+      }
     }
   }, [isAuthenticated, role, navigate])
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setError(null)
-    if (!matricule.trim() || !motDePasse.trim()) return
-    login(matricule.trim(), motDePasse)
+    try {
+      if (!matricule.trim() || !motDePasse.trim()) return
+      login(matricule.trim(), motDePasse)
+    } catch (err) {
+      setError("Erreur lors de la connexion")
+    }
   }
 
   return (

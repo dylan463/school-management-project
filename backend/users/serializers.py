@@ -11,24 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser']
         read_only_fields = ['id', 'role', 'is_staff', 'is_superuser']
-    
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get("request")
 
-        if not request:
-            data.pop("is_superuser", None)
-            data.pop("is_staff", None)
-            return data
-
-        user = request.user
-        # seulement staff ou superuser peuvent voir
-        if not (user.is_staff or user.is_superuser):
-            print("not staff or superuser")
-            data.pop("is_superuser", None)
-            data.pop("is_staff", None)
-
-        return data
 
 # serializer pour créer un étudiant
 class StudentCreateSerializer(serializers.ModelSerializer):
@@ -89,7 +72,8 @@ class CustomTokenSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['role'] = user.role
         token['is_staff'] = user.is_staff
-        token["is_superuser"] =  user.is_superuser
+        token["is_superuser"] = user.is_superuser
+        token["user_id"] = user.id
         return token
 
 # serializer pour changer le mot de passe

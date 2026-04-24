@@ -2,13 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
 from .models import Schedule, ScheduleEntry
 from .serializers import ScheduleSerializer, ScheduleEntrySerializer
 
 from users.permissions import IsStudent, IsTeacher, IsStaffOrSuperUser
-from structures.models import Enrollement, Semester, CourseComponent
+from structures.models import Enrollement, Semester
 
 
 # 🔹 ADMIN VIEWSET
@@ -17,23 +17,22 @@ class AdminScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleSerializer
     permission_classes = [IsStaffOrSuperUser]
 
-    def get_serializer_class(self):
-        if self.action in ["add_entry"]:
-            return ScheduleEntrySerializer
-
-        return ScheduleSerializer
-
-
-
-    # 🔸 ajouter une ligne d'emploi du temps
+    # 🔸 Ajouter une ligne
     @action(detail=True, methods=["post"])
     def add_entry(self, request, pk=None):
+
         schedule = self.get_object()
+
+        # 🔒 BLOQUER si publié
+        if schedule.is_published:
+            raise ValidationError(
+                "Impossible de modifier un emploi du temps publié"
+            )
 
         data = request.data.copy()
         data["schedule"] = schedule.id
 
-        serializer = self.get_serializer(data=data)
+        serializer = ScheduleEntrySerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
@@ -41,7 +40,48 @@ class AdminScheduleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=400)
 
-    # 🔸 publier emploi du temps
+    # 🔸 Modifier une ligne
+    @action(detail=True, methods=["patch"], url_path="update_entry/(?P<entry_id>[^/.]+)")
+    def update_entry(self, request, pk=None, entry_id=None):
+
+        schedule = self.get_object()
+
+        if schedule.is_published:
+            raise ValidationError("Modification interdite après publication")
+
+        entry = get_object_or_404(
+            ScheduleEntry, id=entry_id, schedule=schedule
+        )
+
+        serializer = ScheduleEntrySerializer(
+            entry,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+
+    # 🔸 Supprimer une ligne
+    @action(detail=True, methods=["delete"], url_path="delete_entry/(?P<entry_id>[^/.]+)")
+    def delete_entry(self, request, pk=None, entry_id=None):
+
+        schedule = self.get_object()
+
+        if schedule.is_published:
+            raise ValidationError("Suppression interdite après publication")
+
+        entry = get_object_or_404(
+            ScheduleEntry, id=entry_id, schedule=schedule
+        )
+
+        entry.delete()
+        return Response({"status": "deleted"}, status=204)
+
+    # 🔸 Publier
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
         schedule = self.get_object()
@@ -49,6 +89,13 @@ class AdminScheduleViewSet(viewsets.ModelViewSet):
         schedule.save()
         return Response({"status": "published"})
 
+    # 🔸 Annuler la Publication
+    @action(detail=True, methods=["post"])
+    def unpublish(self, request, pk=None):
+        schedule = self.get_object()
+        schedule.is_published = False
+        schedule.save()
+        return Response({"status": "unpublished"})
 
 # 🔹 ETUDIANT
 class StudentScheduleViewSet(viewsets.ViewSet):
@@ -57,21 +104,17 @@ class StudentScheduleViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def my_schedule(self, request):
 
-        student = request.user
-
         enrollement = Enrollement.objects.filter(
-            student=student,
+            student=request.user,
             semester__is_active=True
         ).select_related("semester").first()
 
         if not enrollement:
             return Response({"detail": "No active semester"}, status=404)
 
-        semester = enrollement.semester
-
         try:
             schedule = Schedule.objects.get(
-                semester=semester,
+                semester=enrollement.semester,
                 is_published=True
             )
         except Schedule.DoesNotExist:
@@ -80,18 +123,15 @@ class StudentScheduleViewSet(viewsets.ViewSet):
         return Response(ScheduleSerializer(schedule).data)
 
 
-# 🔹 PROFESSEUR
+# 🔹 PROF
 class TeacherScheduleViewSet(viewsets.ViewSet):
     permission_classes = [IsTeacher]
 
     @action(detail=False, methods=["get"])
     def my_schedules(self, request):
 
-        teacher = request.user
-
-        # récupérer les semestres actifs où il enseigne
         semesters = Semester.objects.filter(
-            teachingunits__courses__teacher=teacher,
+            teachingunits__courses__teacher=request.user,
             is_active=True
         ).distinct()
 

@@ -1,7 +1,7 @@
 # timetable/models.py
 from django.db import models
 from users.models import TeacherUser, CustomUser
-from structures.models import CourseComponent, Semester
+from structures.models import Semester
 
 class TeacherAvailability(models.Model):
     """Un enseignant soumet ses disponibilités."""

@@ -10,6 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 # 🔹 Local apps
 from .models import CustomUser, TeacherUser, StudentUser
@@ -29,6 +31,9 @@ from .utils import send_email
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = CustomUser.objects.all()
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    filterset_fields = ['role', 'is_active']
 
     def get_permissions(self):
         if self.action in ["me"]:

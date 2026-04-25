@@ -46,10 +46,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_filters',
     # application interne
     'users',
     'structures',
-    'timetable',
 ]
 
 MIDDLEWARE = [

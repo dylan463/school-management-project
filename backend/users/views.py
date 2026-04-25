@@ -47,6 +47,15 @@ class UserViewSet(ModelViewSet):
             return UserCreateSerializer
         return UserSerializer
     
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        # Envoyer un email avec les informations de connexion
+        send_email(user.username, user._plain_password, user.email)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
 
     @action(detail=False, methods=["get", "patch"])
     def me(self, request):

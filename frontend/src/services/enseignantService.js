@@ -1,18 +1,26 @@
 import api from './api'
 
 const enseignantService = {
-  getAll:    ()      => api.get('/enseignants').then(r => r.data),
-  getById:   (id)    => api.get(`/enseignants/${id}`).then(r => r.data),
-  create:    (data)  => api.post('/enseignants', data).then(r => r.data),
-  update:    (id, d) => api.put(`/enseignants/${id}`, d).then(r => r.data),
-  delete:    (id)    => api.delete(`/enseignants/${id}`).then(r => r.data),
+  // Modules enseignés par l'enseignant
+  getMyModules: () => api.get('/structures/teacher/my_modules/').then(r => r.data),
 
-  getEtudiants:  (id)          => api.get(`/enseignants/${id}/etudiants`).then(r => r.data),
-  getPlanning:   (id, semaine) => api.get(`/enseignants/${id}/planning`, { params: { semaine } }).then(r => r.data),
-  getRessources: (id)          => api.get(`/enseignants/${id}/ressources`).then(r => r.data),
-  getEvaluations:(id)          => api.get(`/enseignants/${id}/evaluations`).then(r => r.data),
-  saisirNote:    (evalId, data)=> api.post(`/evaluations/${evalId}/notes`, data).then(r => r.data),
-  deposerRessource:(data)      => api.post('/ressources', data).then(r => r.data),
+  // Étudiants des cours de l'enseignant
+  getMyStudents: () => api.get('/structures/teacher/my_students/').then(r => r.data),
+
+  // Semestres des cours de l'enseignant
+  getMySemesters: () => api.get('/structures/teacher/my_semesters/').then(r => r.data),
+
+  // Unités d'enseignement de l'enseignant
+  getMyCourseUnits: () => api.get('/structures/teacher/my_course_units/').then(r => r.data),
+
+  // Disponibilités de l'enseignant
+  getAvailabilities: (semester) => api.get('/timetable/availabilities/', { params: { semester } }).then(r => r.data),
+  createAvailability: (data) => api.post('/timetable/availabilities/', data).then(r => r.data),
+  updateAvailability: (id, data) => api.patch(`/timetable/availabilities/${id}/`, data).then(r => r.data),
+  deleteAvailability: (id) => api.delete(`/timetable/availabilities/${id}/`).then(r => r.data),
+
+  // Emploi du temps
+  getTimeSlots: () => api.get('/timetable/timeslots/').then(r => r.data),
 }
 
 export default enseignantService

@@ -1,18 +1,20 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
+# Django
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Prefetch
 
+# Django REST Framework
+from rest_framework import viewsets, status, filters
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
+# Third-party
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
-from .filter import StudentFilter,TeacherFilter
 
-
+# Local apps
+from .filter import StudentFilter, TeacherFilter
 from .models import (
-    Level, Formation, Semester, CourseUnit, CourseModule, 
-    SchoolYear, StudentSchoolYear, Enrollment,FormationLevel
+    Level, Formation, Semester, CourseUnit, CourseModule,
+    SchoolYear, StudentSchoolYear, Enrollment, FormationLevel
 )
 from .serializers import (
     LevelSerializer, FormationSerializer, SemesterSerializer,
@@ -33,12 +35,15 @@ from .services import (
     toggle_school_year_lock,
     promote_or_repeat_for_new_school_years,
     force_create_student_school_year_for_new_year,
-    get_last_student_school_year,go_to_first_periode,go_to_second_periode,get_open_school_year
+    get_last_student_school_year,
+    go_to_first_periode,
+    go_to_second_periode,
+    get_open_school_year
 )
 
 from users.permissions import IsSuperUser, IsStudent, IsTeacher
 from users.models import StudentUser, TeacherUser
-from users.serializers import UserSerializer,UserCreateSerializer
+from users.serializers import UserSerializer, UserCreateSerializer
 
 
 # ─────────────────────────────────────────

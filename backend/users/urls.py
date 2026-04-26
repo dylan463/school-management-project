@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenSerializer
 from django.urls import path
-from .views import ChangePasswordView,UserViewSet
+from .views import ChangePasswordView,UserViewSet,PasswordResetConfirmView,PasswordResetRequestView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -16,4 +16,6 @@ urlpatterns = router.urls + [
     path('login/', CustomTokenView.as_view()),
     path('refresh/', TokenRefreshView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
+    path("password-reset/", PasswordResetRequestView.as_view()),
+    path("password-reset-confirm/", PasswordResetConfirmView.as_view()),
 ]

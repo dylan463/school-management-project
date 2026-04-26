@@ -13,7 +13,12 @@ def get_current_enrollment(student_school_year: StudentSchoolYear):
     """
     Récupère l'inscription semestrielle actuellement active.
     """
-    return student_school_year.enrollments.filter(is_current=True).first()
+    return (
+        student_school_year.enrollments
+        .select_related('semester')
+        .filter(is_current=True)
+        .first()
+    )
 
 
 def change_enrollement_decision(enrollment: Enrollment, decision: Enrollment.Decision):
@@ -29,7 +34,11 @@ def get_student_enrollment_summary(student_school_year: StudentSchoolYear):
     """
     Retourne un résumé des enrollments de l'étudiant pour l'année scolaire.
     """
-    enrollments = student_school_year.enrollments.order_by('semester__order')
+    enrollments = (
+        student_school_year.enrollments
+        .select_related('semester')
+        .order_by('semester__order')
+    )
     
     summary = {
         'total_semesters': enrollments.count(),

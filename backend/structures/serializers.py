@@ -79,7 +79,7 @@ class StudentSchoolYearSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "enrollments_count"]
     
     def get_enrollments_count(self, obj):
-        return obj.enrollments.count()
+        return getattr(obj, 'enrollments_count', obj.enrollments.count())
 
 class StudentlatestSerializer(serializers.Serializer):
     student_id = serializers.IntegerField(write_only = True)
@@ -147,7 +147,7 @@ class CourseUnitSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "modules", "modules_count"]
     
     def get_modules_count(self, obj):
-        return obj.modules.filter(is_active=True).count()
+        return getattr(obj, 'modules_count', obj.modules.filter(is_active=True).count())
 
 
 class CourseUnitDetailSerializer(CourseUnitSerializer):

@@ -13,34 +13,39 @@ def create_year_enrollments(student_school_year: StudentSchoolYear):
     Crée automatiquement les enrollments pour tous les semestres de l'année.
     Synchronise le semestre actuel avec les autres étudiants du même niveau.
     """
-    # Trouver le semestre actuel des autres étudiants du même niveau et même année scolaire
     current_semester_for_level = get_current_semester_for_level(
-        student_school_year.level, 
+        student_school_year.level,
         student_school_year.school_year
     )
-    
+
+    semesters = list(
+        Semester.objects
+        .filter(level=student_school_year.level)
+        .order_by('order')
+    )
+
     enrollments = []
     first = True
-
-    Semesters = Semester.objects.filter(level=student_school_year.level).distinct()
 
     for semester in semesters:
         if current_semester_for_level is None:
             is_current_semester = first
         else:
-            is_current_semester = level_semester.semester == current_semester_for_level
-        
-        enrollment = Enrollment.objects.create(
+            is_current_semester = semester == current_semester_for_level
+
+        enrollments.append(Enrollment(
             student_school_year=student_school_year,
-            semester=level_semester.semester,
+            semester=semester,
             decision=Enrollment.Decision.IN_PROGRESS,
             is_current=is_current_semester,
             opened_at=timezone.now() if is_current_semester else None
-        )
-        enrollments.append(enrollment)
+        ))
         first = False
-    
-    return enrollments
+
+    if enrollments:
+        return Enrollment.objects.bulk_create(enrollments)
+
+    return []
 
 
 @transaction.atomic

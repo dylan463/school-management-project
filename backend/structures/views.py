@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -208,7 +208,11 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                                 viewsets.mixins.RetrieveModelMixin,
                                 viewsets.mixins.DestroyModelMixin 
                             ):
-    queryset = StudentSchoolYear.objects.all()
+    queryset = (
+        StudentSchoolYear.objects
+        .select_related('student', 'school_year', 'formation', 'level')
+        .annotate(enrollments_count=Count('enrollments'))
+    )
     serializer_class = StudentSchoolYearSerializer
     permission_classes = [IsSuperUser]
 
@@ -284,7 +288,16 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
                         viewsets.mixins.ListModelMixin,
                         viewsets.mixins.RetrieveModelMixin,
                         ):
-    queryset = Enrollment.objects.all()
+    queryset = (
+        Enrollment.objects
+        .select_related(
+            'student_school_year__student',
+            'student_school_year__school_year',
+            'student_school_year__formation',
+            'student_school_year__level',
+            'semester'
+        )
+    )
     serializer_class = EnrollmentSerializer
     permission_classes = [IsSuperUser]
 
@@ -315,12 +328,22 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
     permission_classes = [IsSuperUser]
 
     def get_queryset(self):
-        return CourseUnit.objects.prefetch_related('modules').annotate(
-            modules_count=Count('modules')
+        return (
+            CourseUnit.objects
+            .select_related('formation', 'semester', 'semester__level')
+            .prefetch_related(
+                Prefetch(
+                    'modules',
+                    queryset=CourseModule.objects.select_related('teacher')
+                )
+            )
+            .annotate(modules_count=Count('modules'))
         )
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
-    queryset = CourseModule.objects.all()
+    queryset = CourseModule.objects.select_related(
+        'course_unit', 'course_unit__semester', 'teacher'
+    )
     serializer_class = CourseModuleSerializer
     permission_classes = [IsSuperUser]
 
@@ -363,7 +386,9 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
         student = request.user
         
         try:
-            current_school_year = StudentSchoolYear.objects.get(
+            current_school_year = StudentSchoolYear.objects.select_related(
+                'formation', 'level', 'school_year'
+            ).get(
                 student=student,
                 school_year__status=SchoolYear.Status.ACTIVE
             )
@@ -380,7 +405,9 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
         student = request.user
         
         try:
-            current_school_year = StudentSchoolYear.objects.get(
+            current_school_year = StudentSchoolYear.objects.select_related(
+                'formation', 'level', 'school_year'
+            ).get(
                 student=student,
                 school_year__status=SchoolYear.Status.ACTIVE
             )
@@ -431,9 +458,19 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
                     'error': 'Aucun semestre actif trouvé'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-            course_units = CourseUnit.objects.filter(
-                formation=current_school_year.formation,
-                semester=current_enrollment.semester
+            course_units = (
+                CourseUnit.objects
+                .filter(
+                    formation=current_school_year.formation,
+                    semester=current_enrollment.semester
+                )
+                .select_related('formation', 'semester', 'semester__level')
+                .prefetch_related(
+                    Prefetch(
+                        'modules',
+                        queryset=CourseModule.objects.select_related('teacher')
+                    )
+                )
             )
             serializer = CourseUnitSerializer(course_units, many=True)
             return Response(serializer.data)
@@ -480,7 +517,9 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
         student = request.user
         
         try:
-            current_school_year = StudentSchoolYear.objects.get(
+            current_school_year = StudentSchoolYear.objects.select_related(
+                'formation', 'level', 'school_year'
+            ).get(
                 student=student,
                 school_year__status=SchoolYear.Status.ACTIVE
             )
@@ -540,9 +579,18 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         """Unités d'enseignement de l'enseignant"""
         teacher = request.user
         
-        course_units = CourseUnit.objects.filter(
-            modules__teacher=teacher
-        ).distinct()
+        course_units = (
+            CourseUnit.objects
+            .filter(modules__teacher=teacher)
+            .select_related('formation', 'semester', 'semester__level')
+            .prefetch_related(
+                Prefetch(
+                    'modules',
+                    queryset=CourseModule.objects.select_related('teacher')
+                )
+            )
+            .distinct()
+        )
         
         serializer = CourseUnitSerializer(course_units, many=True)
         return Response(serializer.data)

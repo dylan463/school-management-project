@@ -26,7 +26,7 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
 class TimeSlotSerializer(serializers.ModelSerializer):
     """Lecture seule enrichie — pour étudiant et enseignant."""
     course_name  = serializers.CharField(
-        source='course_component.name', read_only=True
+        source='course_component.label', read_only=True
     )
     teacher_name = serializers.CharField(
         source='teacher.get_full_name', read_only=True
@@ -60,6 +60,6 @@ class TimeSlotWriteSerializer(serializers.ModelSerializer):
         # Vérifier cohérence enseignant ↔ EC
         if data['course_component'].teacher_id != data['teacher'].pk:
             raise serializers.ValidationError(
-                "Ce professeur n'est pas affecté à cet EC."
+                "Ce professeur n'est pas affecté à ce Module."
             )
         return data

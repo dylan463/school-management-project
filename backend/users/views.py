@@ -28,34 +28,10 @@ from .permissions import (
 )
 from .utils import send_email
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(GenericViewSet):
     serializer_class = UserSerializer
     queryset = CustomUser.objects.all()
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    search_fields = ['username', 'email', 'first_name', 'last_name']
-    filterset_fields = ['role', 'is_active']
-
-    def get_permissions(self):
-        if self.action in ["me"]:
-            permission_classes = [IsAuthenticated]
-        else:
-            permission_classes = [IsSuperUser, CannotDeleteAdmin]
-        return [permission() for permission in permission_classes]
-    
-    def get_serializer_class(self):
-        if self.action == "create":
-            return UserCreateSerializer
-        return UserSerializer
-    
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        # Envoyer un email avec les informations de connexion
-        send_email(user.username, user._plain_password, user.email)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["get", "patch"])
     def me(self, request):

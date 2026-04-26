@@ -12,7 +12,17 @@ from .serializers import (
     TimeSlotSerializer,
     TimeSlotWriteSerializer,
 )
-from structures.models import Enrollement
+from .services import (
+    create_teacher_availability,
+    get_teacher_availabilities,
+    get_availabilities_for_semester,
+    create_timeslot,
+    publish_timeslot,
+    publish_all_timeslots_for_semester,
+    get_timeslots_for_semester,
+    get_student_timeslots,
+    get_teacher_timeslots,
+)
 
 
 # ─────────────────────────────────────────────
@@ -35,19 +45,24 @@ class TeacherAvailabilityViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_staff or user.is_superuser:
             # Admin : toutes les dispos, filtrables par semester
-            qs = TeacherAvailability.objects.select_related('teacher', 'semester')
             semester_id = self.request.query_params.get('semester')
-            if semester_id:
-                qs = qs.filter(semester_id=semester_id)
-            return qs
-        if user.is_teacher:
+            return get_availabilities_for_semester(semester_id) if semester_id else TeacherAvailability.objects.select_related('teacher', 'semester')
+        if user.role == 'TEACHER':
             # Enseignant : seulement ses propres dispos
-            return TeacherAvailability.objects.filter(teacher=user)
+            semester_id = self.request.query_params.get('semester')
+            return get_teacher_availabilities(user, semester_id)
         return TeacherAvailability.objects.none()
 
     def perform_create(self, serializer):
-        # Le teacher est toujours l'utilisateur connecté
-        serializer.save(teacher=self.request.user)
+        # Utiliser le service pour créer la disponibilité
+        data = serializer.validated_data
+        create_teacher_availability(
+            teacher=self.request.user,
+            semester=data['semester'],
+            day=data['day'],
+            start_time=data['start_time'],
+            end_time=data['end_time']
+        )
 
 
 # ─────────────────────────────────────────────
@@ -72,42 +87,44 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
 
         if user.is_staff or user.is_superuser:
             # Admin : tout, filtrables par semester
-            qs = TimeSlot.objects.select_related(
-                'course_component', 'teacher', 'semester'
-            )
             semester_id = self.request.query_params.get('semester')
-            if semester_id:
-                qs = qs.filter(semester_id=semester_id)
-            return qs
+            return get_timeslots_for_semester(semester_id) if semester_id else TimeSlot.objects.select_related('course_component', 'teacher', 'semester')
 
-        if user.is_student:
+        if user.role == 'STUDENT':
             # Étudiant : seulement les créneaux publiés de SA classe (son semestre actif)
-            enrollment = Enrollement.objects.filter(
-                student=user,
-                Semester__is_active=True
+            from structures.models import Enrollment
+            enrollment = Enrollment.objects.filter(
+                student_school_year__student=user,
+                is_current=True,
             ).first()
             if not enrollment:
                 return TimeSlot.objects.none()
-            return TimeSlot.objects.filter(
-                semester=enrollment.Semester,
-                is_published=True
-            ).select_related('course_component', 'teacher')
+            return get_student_timeslots(user, enrollment.semester)
 
-        if user.is_teacher:
+        if user.role == 'TEACHER':
             # Enseignant : créneaux publiés des semestres où il enseigne
-            return TimeSlot.objects.filter(
-                teacher=user,
-                is_published=True
-            ).select_related('course_component', 'semester')
+            return get_teacher_timeslots(user)
 
         return TimeSlot.objects.none()
+
+    def perform_create(self, serializer):
+        # Utiliser le service pour créer le créneau
+        data = serializer.validated_data
+        create_timeslot(
+            semester=data['semester'],
+            course_component=data['course_component'],
+            teacher=data['teacher'],
+            day=data['day'],
+            start_time=data['start_time'],
+            end_time=data['end_time'],
+            room=data.get('room', '')
+        )
 
     @action(detail=True, methods=['post'], permission_classes=[IsSuperUser])
     def publish(self, request, pk=None):
         """POST /timetable/timeslots/{id}/publish/ — publier un créneau."""
         slot = self.get_object()
-        slot.is_published = True
-        slot.save()
+        publish_timeslot(slot)
         return Response({'status': 'publié'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], permission_classes=[IsSuperUser])
@@ -119,7 +136,13 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
                 {'error': 'Paramètre semester requis.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        updated = TimeSlot.objects.filter(
-            semester_id=semester_id, is_published=False
-        ).update(is_published=True)
+        from structures.models import Semester
+        try:
+            semester = Semester.objects.get(id=semester_id)
+        except Semester.DoesNotExist:
+            return Response(
+                {'error': 'Semestre non trouvé.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        updated = publish_all_timeslots_for_semester(semester)
         return Response({'publié': updated}, status=status.HTTP_200_OK)

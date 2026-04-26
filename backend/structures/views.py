@@ -1,66 +1,115 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count
+
+
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .filter import StudentFilter,TeacherFilter
+
 
 from .models import (
     Level, Formation, Semester, CourseUnit, CourseModule, 
-    SchoolYear, StudentSchoolYear, Enrollment, LevelSemester
+    SchoolYear, StudentSchoolYear, Enrollment,FormationLevel
 )
 from .serializers import (
-    LevelSerializer, FormationSerializer, SemesterSerializer,LevelSemesterSerializer,
+    LevelSerializer, FormationSerializer, SemesterSerializer,
     CourseUnitSerializer, CourseModuleSerializer, SchoolYearSerializer,
     StudentSchoolYearSerializer, EnrollmentSerializer,
     CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
     ChangeEnrollmentDecisionSerializer, ActivateNextSemesterSerializer,
-    EnrollmentDetailSerializer, CourseUnitDetailSerializer
+    StudentlatestSerializer, SchoolYearCreateSerializer
 )
 from .services import (
-    # School year services
-    create_student_school_year,
+    get_current_enrollment,
+    get_student_enrollment_summary,
+    change_enrollement_decision,
+    regenerate_levels_for_formation,
+    create_level,
     activate_school_year,
     end_school_year,
     toggle_school_year_lock,
-    
-    # Enrollment services
-    get_semesters_for_level,
-    get_current_enrollment,
-    get_next_semester_for_level,
-    create_year_enrollments,
-    get_current_semester_for_level,
-    activate_next_semester,
-    change_enrollement_decision,
-    get_student_enrollment_summary,
-    
-    # Student services
-    get_last_closed_student_school_year,
-    is_student_in_active_school_year,
     promote_or_repeat_for_new_school_years,
     force_create_student_school_year_for_new_year,
+    get_last_student_school_year,go_to_first_periode,go_to_second_periode,get_open_school_year
 )
 
 from users.permissions import IsSuperUser, IsStudent, IsTeacher
 from users.models import StudentUser, TeacherUser
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer,UserCreateSerializer
 
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
 # ─────────────────────────────────────────
 
-class LevelViewSet(viewsets.ModelViewSet):
+class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.CreateModelMixin,viewsets.mixins.UpdateModelMixin,viewsets.mixins.RetrieveModelMixin):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
     permission_classes = [IsSuperUser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        last_level = Level.objects.order_by("order").last()
+        last_order = last_level.order if last_level else 0
+
+        level = create_level(
+            code=serializer.validated_data["code"],
+            order=last_order + 1
+        )
+
+        return Response(
+            self.get_serializer(level).data,
+            status=201
+        )
+
+    @action(methods=["delete"],detail=False)
+    def pop(self,request):
+        level = Level.objects.order_by("order").last()
+        if not level:
+            return Response(...)
+        level.delete()
+        return Response({"detail":"poped"},status.HTTP_200_OK)
 
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
     permission_classes = [IsSuperUser]
 
-class SemesterViewSet(viewsets.ModelViewSet):
+    @action(methods=["get"],detail=True)
+    def levels(self,request,pk=None):
+        formation = self.get_object()
+        levels = Level.objects.filter(formation_levels__formation=formation).distinct()
+        serializer = LevelSerializer(levels,many = True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+    @action(methods=["post"],detail=True,url_path="assign-levels")
+    def assign_levels(self,request,pk=None):
+        formation = self.get_object()
+
+        try:
+            from_level = int(request.data["from"])
+            to_level = int(request.data["to"])
+
+            regenerate_levels_for_formation(from_level_order=from_level,to_level_order=to_level,formation=formation)
+            return Response({"detail": "levels assigned"})
+        except KeyError as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response({"error": "from et to devrait etre des entier"},status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    @action(methods=["post"],detail=True,url_path="remove-levels")
+    def removelevels(self,request,pk=None):
+        formation = self.get_object()
+        FormationLevel.objects.filter(formation=formation).delete()
+        return Response({"formation levels":"deleter"},status=status.HTTP_200_OK)
+
+class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.UpdateModelMixin):
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
     permission_classes = [IsSuperUser]
@@ -76,12 +125,6 @@ class SemesterViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class LevelSemesterViewSet(viewsets.ModelViewSet):
-    queryset = LevelSemester.objects.all()
-    serializer_class = LevelSemesterSerializer
-    permission_classes = [IsSuperUser]
-
-
 # ─────────────────────────────────────────
 # ANNÉE SCOLAIRE
 # ─────────────────────────────────────────
@@ -90,6 +133,11 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     queryset = SchoolYear.objects.all()
     serializer_class = SchoolYearSerializer
     permission_classes = [IsSuperUser]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return SchoolYearCreateSerializer
+        return SchoolYearSerializer
 
     @action(detail=True, methods=['POST'])
     def activate(self, request, pk=None):
@@ -124,6 +172,32 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['POST'],url_path="go-first")
+    def go_to_first_periode(self, request, pk=None):
+        """Bascule le verrouillage d'une année scolaire"""
+        school_year = self.get_object()
+        try:
+            go_to_first_periode(school_year=school_year)
+            return Response({"status":"first periode activated"})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['POST'],url_path="go-seconde")
+    def go_to_second_periode(self, request, pk=None):
+        """Bascule le verrouillage d'une année scolaire"""
+        school_year = self.get_object()
+        try:
+            go_to_second_periode(school_year=school_year)
+            return Response({"status":"seconde periode activated"})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False,methods=["get"])
+    def opened(self,request):
+        school_years = get_open_school_year()
+        serializer = SchoolYearSerializer(school_years,many=True)
+        return Response(serializer.data)
+
 
 # ─────────────────────────────────────────
 # INSCRIPTION ANNUELLE
@@ -137,32 +211,6 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
     queryset = StudentSchoolYear.objects.all()
     serializer_class = StudentSchoolYearSerializer
     permission_classes = [IsSuperUser]
-
-    @action(detail=False, methods=['POST'])
-    def create_enrollment(self, request):
-        """Crée une inscription annuelle pour un étudiant"""
-        serializer = CreateStudentSchoolYearSerializer(data=request.data)
-        
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            student = StudentUser.objects.get(pk=serializer.validated_data['student_id'])
-            school_year = SchoolYear.objects.get(pk=serializer.validated_data['school_year_id'])
-            formation = Formation.objects.get(pk=serializer.validated_data['formation_id'])
-            level = Level.objects.get(pk=serializer.validated_data['level_id'])
-
-            student_school_year = create_student_school_year(
-                student=student,
-                school_year=school_year,
-                formation=formation,
-                level=level
-            )
-            response_serializer = StudentSchoolYearSerializer(student_school_year)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-
-        except ValidationError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['POST'])
     def promote_repeat(self, request):
@@ -211,6 +259,21 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
 
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=["post"],detail=False,url_path="student-latest")
+    def student_latest(self,request):
+        serializer = StudentlatestSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            student = StudentUser.objects.get(pk=serializer.validated_data["student_id"])
+            last_ssy = get_last_student_school_year(student)
+            response_serializer = StudentSchoolYearSerializer(last_ssy)
+            return Response(response_serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ─────────────────────────────────────────
@@ -224,32 +287,6 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
     queryset = Enrollment.objects.all()
     serializer_class = EnrollmentSerializer
     permission_classes = [IsSuperUser]
-
-    @action(detail=True, methods=['POST'])
-    def activate_next(self, request, pk=None):
-        """Active le semestre suivant"""
-        enrollment = self.get_object()
-        student_school_year = enrollment.student_school_year
-        
-        serializer = ActivateNextSemesterSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            decision = serializer.validated_data['decision']
-            next_enrollment = activate_next_semester(
-                student_school_year, 
-                last_enrollment_decision=decision
-            )
-            if next_enrollment:
-                response_serializer = EnrollmentSerializer(next_enrollment)
-                return Response(response_serializer.data)
-            else:
-                return Response({
-                    'message': 'Plus de semestres disponibles - fin d\'année'
-                })
-        except ValidationError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['POST'])
     def change_decision(self, request, pk=None):
@@ -267,25 +304,6 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
             return Response(response_serializer.data)
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['GET'])
-    def summary(self, request):
-        """Résumé des enrollments pour un étudiant"""
-        student_school_year_id = request.query_params.get('student_school_year')
-        
-        if not student_school_year_id:
-            return Response({
-                'error': 'student_school_year est requis'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            student_school_year = StudentSchoolYear.objects.get(pk=student_school_year_id)
-            summary = get_student_enrollment_summary(student_school_year)
-            return Response(summary)
-        except StudentSchoolYear.DoesNotExist:
-            return Response({
-                'error': 'StudentSchoolYear non trouvé'
-            }, status=status.HTTP_404_NOT_FOUND)
 
 
 # ─────────────────────────────────────────
@@ -415,7 +433,6 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
 
             course_units = CourseUnit.objects.filter(
                 formation=current_school_year.formation,
-                level=current_school_year.level,
                 semester=current_enrollment.semester
             )
             serializer = CourseUnitSerializer(course_units, many=True)
@@ -489,7 +506,7 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         teacher = request.user
         modules = CourseModule.objects.filter(
             teacher=teacher
-        ).select_related('course_unit', 'course_unit__semester', 'course_unit__level')
+        ).select_related('course_unit', 'course_unit__semester')
         
         serializer = CourseModuleSerializer(modules, many=True)
         return Response(serializer.data)
@@ -531,51 +548,38 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         return Response(serializer.data)
 
 
-class AdminPortalViewset(viewsets.GenericViewSet):
+class AdminStudentViewset(viewsets.ModelViewSet):
     permission_classes = [IsSuperUser]
+    queryset = StudentUser.objects.all()
+    serializer_class = UserSerializer
+    filter_backends =  [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = StudentFilter
 
-    @action(methods=["get"],detail=False)
-    def students(self,request):
-        queryset = StudentUser.objects.all()
-        
-        # Recherche
-        search = request.query_params.get('search', None)
-        if search:
-            queryset = queryset.filter(
-                Q(username__icontains=search) |
-                Q(email__icontains=search) |
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search)
-            )
-        
-        # Filtrage par statut actif
-        # is_active = request.query_params.get('is_active', None)
-        # if is_active is not None:
-        #     queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        
-        serializer = UserSerializer(queryset, many=True, context={'request': request})
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+        return UserSerializer
+
+
+class AdminTeacherViewset(viewsets.ModelViewSet):
+    permission_classes = [IsSuperUser]
+    queryset = TeacherUser.objects.all()
+    serializer_class = UserSerializer
+    filter_backends =  [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = TeacherFilter
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+        return UserSerializer
     
-    @action(methods=["get"],detail=False)
-    def teachers(self,request):
-        queryset = TeacherUser.objects.all()
-        
-        # Recherche
-        search = request.query_params.get('search', None)
-        if search:
-            queryset = queryset.filter(
-                Q(username__icontains=search) |
-                Q(email__icontains=search) |
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search)
-            )
-        
-        # Filtrage par statut actif
-        # is_active = request.query_params.get('is_active', None)
-        # if is_active is not None:
-        #     queryset = queryset.filter(is_active=is_active.lower() == 'true')
-        
-        serializer = UserSerializer(queryset, many=True, context={'request': request})
+    @action(detail=False,methods=["get"])
+    def nomodules(self,request):
+        teachers = TeacherUser.objects.filter(
+            course_modules__isnull = True
+        ).distinct()
+
+        serializer = self.get_serializer(teachers,many = True)
+
         return Response(serializer.data)
-        
 

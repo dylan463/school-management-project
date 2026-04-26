@@ -2,56 +2,12 @@ from django.core.exceptions import ValidationError
 from django.db import transaction, IntegrityError
 from django.db.models import Q
 
-from ..models import SchoolYear, StudentSchoolYear
+from ..models import SchoolYear, StudentSchoolYear,Semester,Enrollment
 from users.models import CustomUser
-from .enrollment_services import create_year_enrollments
 
 # ─────────────────────────────────────────
 # ANNÉE SCOLAIRE
 # ─────────────────────────────────────────
-
-@transaction.atomic
-def create_student_school_year(
-    student: CustomUser,
-    school_year: SchoolYear,
-    formation,
-    level,
-    status=StudentSchoolYear.Status.ACTIVE
-):
-    """
-    Méthode centralisée pour créer une inscription annuelle d'étudiant.
-    Vérifie les doublons, le verrouillage et crée le StudentSchoolYear avec transaction.
-    """
-    # Vérification du verrouillage de l'année scolaire
-    if school_year.is_locked:
-        raise ValidationError(
-            "L'année scolaire est verrouillée. Aucune inscription n'est possible."
-        )
-    
-    # Vérification du statut de l'année scolaire
-    if school_year.status == SchoolYear.Status.CLOSED:
-        raise ValidationError(
-            "Impossible d'inscrire un étudiant dans une année scolaire clôturée."
-        )
-
-    try:
-        student_school_year = StudentSchoolYear.objects.create(
-            student=student,
-            school_year=school_year,
-            formation=formation,
-            level=level,
-            status=status,
-        )
-        
-        if status in [StudentSchoolYear.Status.ACTIVE,StudentSchoolYear.Status.DELIBERATING]:
-            create_year_enrollments(student_school_year)
-
-        return student_school_year
-    except IntegrityError:
-        raise ValidationError(
-            "L'étudiant est déjà inscrit dans cette année scolaire."
-        )
-
 
 @transaction.atomic
 def activate_school_year(school_year: SchoolYear):
@@ -114,6 +70,10 @@ def end_school_year(school_year: SchoolYear):
     return school_year
 
 
+def get_open_school_year():
+    return SchoolYear.objects.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING]).distinct()
+
+
 def toggle_school_year_lock(school_year: SchoolYear):
     """
     Basculer le verrouillage d'une année scolaire.
@@ -122,3 +82,55 @@ def toggle_school_year_lock(school_year: SchoolYear):
     school_year.save()
 
     return school_year
+
+def go_to_first_periode(school_year: SchoolYear):
+    if school_year.is_locked:
+        raise ValidationError("cette année scolaire est bloquée")
+    if school_year.status != SchoolYear.Status.ACTIVE:
+        raise ValidationError("veuillez réessayer avec une année scolaire active")
+
+    student_school_years = StudentSchoolYear.objects.filter(school_year=school_year)
+
+    for ssy in student_school_years:
+        level = ssy.level
+        semestres = Semester.objects.filter(level=level).order_by("order")
+
+        semester1 = semestres.first()
+        semester2 = semestres.last()
+       
+        enrollment1 = Enrollment.objects.filter(semester=semester1, student_school_year=ssy).first()
+        enrollment2 = Enrollment.objects.filter(semester=semester2, student_school_year=ssy).first()
+
+        enrollment1.is_current = True
+        enrollment2.is_current = False
+
+        enrollment1.save()
+        enrollment2.save()
+
+def go_to_second_periode(school_year: SchoolYear):
+    if school_year.is_locked:
+        raise ValidationError("cette année scolaire est blocqué")
+    if school_year.status != SchoolYear.Status.ACTIVE:
+        raise ValidationError("veillez réessayer avec une année scolaire active")
+
+    student_school_years = StudentSchoolYear.objects.filter(school_year=school_year)
+
+    for ssy in student_school_years:
+        level = ssy.level
+        semestres = Semester.objects.filter(level=level).order_by("order")
+
+        semester1 = semestres.first()
+        semestre2 = semestres.last()
+       
+        enrollement1 = Enrollment.objects.filter(semester=semester1,student_school_year=ssy).first()
+        enrollement2 = Enrollment.objects.filter(semester=semester2,student_school_year=ssy).first()
+
+        enrollement1.is_current = False
+        enrollement2.is_current = True
+
+        enrollement1.save()
+        enrollement2.save()
+        
+        
+
+        

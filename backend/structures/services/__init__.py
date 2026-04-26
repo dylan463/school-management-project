@@ -1,48 +1,52 @@
-from .school_year_services import (
+from .enrollment_and_semester_services import (
+    get_current_enrollment,
+    get_student_enrollment_summary,
+    change_enrollement_decision
+)
+
+from .formationlevel_and_levelsemester_service import (
+    regenerate_levels_for_formation,
+    create_level
+)
+
+from .student_school_year_service import (
     create_student_school_year,
+    create_year_enrollments,
+    get_last_student_school_year,
+    student_has_open_year_enrollement,
+    promote_or_repeat_for_new_school_years,
+    force_create_student_school_year_for_new_year
+)
+
+from .school_year_services import (
     activate_school_year,
     end_school_year,
     toggle_school_year_lock,
-)
-
-from .enrollment_services import (
-    get_semesters_for_level,
-    get_current_enrollment,
-    get_next_semester_for_level,
-    create_year_enrollments,
-    get_current_semester_for_level,
-    activate_next_semester,
-    change_enrollement_decision,
-    get_student_enrollment_summary,
-)
-
-from .student_services import (
-    get_last_closed_student_school_year,
-    is_student_in_active_school_year,
-    promote_or_repeat_for_new_school_years,
-    force_create_student_school_year_for_new_year,
+    get_open_school_year,
+    go_to_first_periode,
+    go_to_second_periode
 )
 
 __all__ = [
-    # School year services
-    'create_student_school_year',
-    'activate_school_year', 
-    'end_school_year',
-    'toggle_school_year_lock',
-    
-    # Enrollment services
-    'get_semesters_for_level',
+    # enrollement and semester services
     'get_current_enrollment',
-    'get_next_semester_for_level',
-    'create_year_enrollments',
-    'get_current_semester_for_level',
-    'activate_next_semester',
-    'change_enrollement_decision',
     'get_student_enrollment_summary',
-    
-    # Student services
-    'get_last_closed_student_school_year',
-    'is_student_in_active_school_year',
+    'change_enrollement_decision',
+
+    'regenerate_levels_for_formation',
+    'create_level',
+
+    'create_student_school_year',
+    'create_year_enrollments',
+    'get_last_student_school_year',
+    'student_has_open_year_enrollement',
     'promote_or_repeat_for_new_school_years',
     'force_create_student_school_year_for_new_year',
+
+    'activate_school_year',
+    'end_school_year',
+    'toggle_school_year_lock',
+    'get_open_school_year',
+    'go_to_first_periode',
+    'go_to_second_periode',
 ]

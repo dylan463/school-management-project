@@ -1,7 +1,7 @@
 # timetable/models.py
 from django.db import models
-from users.models import TeacherUser, CustomUser
-from structures.models import Semester
+from structures.models import Semester, CourseModule
+from users.models import TeacherUser
 
 class TeacherAvailability(models.Model):
     """Un enseignant soumet ses disponibilités."""
@@ -51,7 +51,7 @@ class TimeSlot(models.Model):
         related_name='timeslots'
     )
     course_component  = models.ForeignKey(
-        CourseComponent,
+        CourseModule,
         on_delete=models.CASCADE,
         related_name='timeslots'
     )
@@ -82,4 +82,4 @@ class TimeSlot(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.course_component.name} — {self.day} {self.start_time}"
+        return f"{self.course_component.label} — {self.day} {self.start_time}"

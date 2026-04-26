@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import (
-    Level, Formation, Semester, LevelSemester,
+    Level, Formation, Semester,
     SchoolYear, StudentSchoolYear, Enrollment,
     CourseUnit, CourseModule
 )
@@ -18,7 +18,7 @@ class LevelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Level
         fields = ["id", "code", "order"]
-        read_only_fields = ["id"]
+        read_only_fields = ["id","order"]
 
 
 class FormationSerializer(serializers.ModelSerializer):
@@ -32,23 +32,9 @@ class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
         fields = ["id", "code", "order"]
-        read_only_fields = ["id"]
+        read_only_fields = ["id","order"]
 
 
-class LevelSemesterSerializer(serializers.ModelSerializer):
-    level = LevelSerializer(read_only=True)
-    semester = SemesterSerializer(read_only=True)
-    
-    level_id = serializers.IntegerField(write_only=True)
-    semester_id = serializers.IntegerField(write_only=True)
-    
-    class Meta:
-        model = LevelSemester
-        fields = [
-            "id", "level", "semester", 
-            "level_id", "semester_id"
-        ]
-        read_only_fields = ["id"]
 
 
 # ─────────────────────────────────────────
@@ -63,6 +49,11 @@ class SchoolYearSerializer(serializers.ModelSerializer):
             "end_date", "is_locked"
         ]
         read_only_fields = ["id"]
+
+class SchoolYearCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SchoolYear
+        fields = ["label"]
 
 
 class StudentSchoolYearSerializer(serializers.ModelSerializer):
@@ -90,7 +81,15 @@ class StudentSchoolYearSerializer(serializers.ModelSerializer):
     def get_enrollments_count(self, obj):
         return obj.enrollments.count()
 
+class StudentlatestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField(write_only = True)
 
+    def validate_student_id(self, value):
+        from users.models import StudentUser
+        if not StudentUser.objects.filter(id=value).exists():
+            raise ValidationError("L'étudiant spécifié n'existe pas")
+        return value
+        
 # ─────────────────────────────────────────
 # INSCRIPTION PAR SEMESTRE
 # ─────────────────────────────────────────
@@ -98,50 +97,14 @@ class StudentSchoolYearSerializer(serializers.ModelSerializer):
 class EnrollmentSerializer(serializers.ModelSerializer):
     student_school_year = StudentSchoolYearSerializer(read_only=True)
     semester = SemesterSerializer(read_only=True)
-    
-    student_school_year_id = serializers.IntegerField(write_only=True)
-    semester_id = serializers.IntegerField(write_only=True)
-    
+        
     class Meta:
         model = Enrollment
         fields = [
             "id", "student_school_year", "semester", 
-            "decision", "is_current", "opened_at",
-            "student_school_year_id", "semester_id"
+            "decision", "is_current", "opened_at"
         ]
         read_only_fields = ["id", "opened_at"]
-    
-    def validate(self, attrs):
-        student_school_year_id = attrs.get("student_school_year_id")
-        semester_id = attrs.get("semester_id")
-        
-        if not student_school_year_id or not semester_id:
-            raise ValidationError("student_school_year et semester sont requis")
-        
-        # Vérifier l'unicité
-        if Enrollment.objects.filter(
-            student_school_year_id=student_school_year_id,
-            semester_id=semester_id
-        ).exists():
-            raise ValidationError("Cet enrollment existe déjà")
-        
-        return attrs
-
-
-class EnrollmentDetailSerializer(EnrollmentSerializer):
-    """Serializer détaillé avec les informations de l'étudiant"""
-    student_info = serializers.SerializerMethodField()
-    
-    class Meta(EnrollmentSerializer.Meta):
-        fields = EnrollmentSerializer.Meta.fields + ["student_info"]
-    
-    def get_student_info(self, obj):
-        return {
-            "id": obj.student_school_year.student.id,
-            "username": obj.student_school_year.student.username,
-            "first_name": obj.student_school_year.student.first_name,
-            "last_name": obj.student_school_year.student.last_name,
-        }
 
 
 # ─────────────────────────────────────────
@@ -169,11 +132,9 @@ class CourseUnitSerializer(serializers.ModelSerializer):
     modules = CourseModuleSerializer(many=True, read_only=True)
     modules_count = serializers.SerializerMethodField()
     formation = FormationSerializer(read_only=True)
-    level = LevelSerializer(read_only=True)
     semester = SemesterSerializer(read_only=True)
     
     formation_id = serializers.IntegerField(write_only=True)
-    level_id = serializers.IntegerField(write_only=True)
     semester_id = serializers.IntegerField(write_only=True)
     
     class Meta:
@@ -181,7 +142,7 @@ class CourseUnitSerializer(serializers.ModelSerializer):
         fields = [
             "id", "code", "label", "coefficient", "is_active",
             "modules", "modules_count", "formation", "level", "semester",
-            "formation_id", "level_id", "semester_id"
+            "formation_id", "semester_id"
         ]
         read_only_fields = ["id", "modules", "modules_count"]
     

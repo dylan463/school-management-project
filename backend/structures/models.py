@@ -45,29 +45,13 @@ class Semester(models.Model):
     """Semestre : S1, S2, S3..."""
     code = models.CharField(max_length=50)           # "S1"
     order = models.PositiveIntegerField(unique=True)  # pour savoir lequel suit lequel
+    level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='semesters')
 
     def __str__(self):
         return self.code
 
     class Meta:
         ordering = ['order']
-
-
-class LevelSemester(models.Model):
-    """
-    Définit quels semestres appartiennent à quel niveau.
-    Ex : L1 → S1, S2 / L2 → S3, S4
-    Sert à valider les inscriptions et à savoir quel semestre vient après.
-    """
-    level = models.ForeignKey(Level, on_delete=models.PROTECT, related_name='level_semesters')
-    semester = models.ForeignKey(Semester, on_delete=models.PROTECT, related_name='level_semesters')
-
-    class Meta:
-        unique_together = ('level', 'semester')
-        ordering = ['semester__order']
-
-    def __str__(self):
-        return f"{self.level.code} - {self.semester.code}"
 
 
 
@@ -113,7 +97,6 @@ class SchoolYear(models.Model):
     def has_pending_student_school_years(self):
         return self.student_school_years.filter(status__in=["ACTIVE","DELIBERATING",]).exists()
     
-
 
 # ─────────────────────────────────────────
 # INSCRIPTION ANNUELLE
@@ -199,7 +182,6 @@ class CourseUnit(models.Model):
     label = models.CharField(max_length=200)              # "Mathématiques Fondamentales"
 
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name='course_units')
-    level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='course_units')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='course_units')
 
     # coefficient de l'UE dans le calcul de la moyenne semestrielle
@@ -209,8 +191,12 @@ class CourseUnit(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('formation', 'level', 'semester', 'code')
+        unique_together = ('formation', 'semester', 'code')
         ordering = ['semester__order', 'code']
+
+    @property
+    def level(self):
+        return self.semester.level
 
     def __str__(self):
         return f"[{self.code}] {self.label} — {self.level.code}/{self.semester.code}"

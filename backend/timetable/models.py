@@ -1,85 +1,54 @@
-# timetable/models.py
 from django.db import models
 from structures.models import Semester, CourseModule
 from users.models import TeacherUser
 
-class TeacherAvailability(models.Model):
-    """Un enseignant soumet ses disponibilités."""
-    DAY_CHOICES = [
-        ('MON', 'Lundi'),
-        ('TUE', 'Mardi'),
-        ('WED', 'Mercredi'),
-        ('THU', 'Jeudi'),
-        ('FRI', 'Vendredi'),
-        ('SAT', 'Samedi'),
-    ]
-    teacher    = models.ForeignKey(
-        TeacherUser,
-        on_delete=models.CASCADE,
-        related_name='availabilities'
-    )
-    semester   = models.ForeignKey(
+# 🔹 emploi du temps global
+class Schedule(models.Model):
+    semester = models.OneToOneField(
         Semester,
         on_delete=models.CASCADE,
-        related_name='availabilities'
+        related_name="schedule"
     )
-    day        = models.CharField(max_length=3, choices=DAY_CHOICES)
-    start_time = models.TimeField()
-    end_time   = models.TimeField()
-
-    class Meta:
-        ordering = ['day', 'start_time']
-        # Un enseignant ne peut pas avoir deux dispo qui se chevauchent
-        unique_together = ('teacher', 'semester', 'day', 'start_time')
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.end_time <= self.start_time:
-            raise ValidationError("L'heure de fin doit être après l'heure de début.")
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.teacher.username} — {self.day} {self.start_time}-{self.end_time}"
+        return f"Schedule - {self.semester.name}"
 
 
-class TimeSlot(models.Model):
-    """Un créneau de l'emploi du temps, créé par l'admin."""
-    DAY_CHOICES = TeacherAvailability.DAY_CHOICES
+# 🔹 ligne d'emploi du temps
+class ScheduleEntry(models.Model):
 
-    semester          = models.ForeignKey(
-        Semester,
+    class Day(models.TextChoices):
+        MONDAY = "MONDAY", "Monday"
+        TUESDAY = "TUESDAY", "Tuesday"
+        WEDNESDAY = "WEDNESDAY", "Wednesday"
+        THURSDAY = "THURSDAY", "Thursday"
+        FRIDAY = "FRIDAY", "Friday"
+        SATURDAY = "SATURDAY", "Saturday"
+
+    schedule = models.ForeignKey(
+        Schedule,
         on_delete=models.CASCADE,
-        related_name='timeslots'
+        related_name="entries"
     )
-    course_component  = models.ForeignKey(
+    course_module  = models.ForeignKey(
         CourseModule,
         on_delete=models.CASCADE,
         related_name='timeslots'
     )
-    teacher           = models.ForeignKey(
+
+    teacher = models.ForeignKey(
         TeacherUser,
-        on_delete=models.CASCADE,
-        related_name='timeslots'
+        on_delete=models.SET_NULL,
+        null=True
     )
-    day               = models.CharField(max_length=3, choices=DAY_CHOICES)
-    start_time        = models.TimeField()
-    end_time          = models.TimeField()
-    room              = models.CharField(max_length=50, blank=True)
-    is_published      = models.BooleanField(default=False)
 
-    class Meta:
-        ordering = ['day', 'start_time']
+    day = models.CharField(max_length=10, choices=Day.choices)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.end_time <= self.start_time:
-            raise ValidationError("L'heure de fin doit être après l'heure de début.")
-        # Vérifier que l'enseignant est bien affecté à ce CourseComponent
-        if self.course_component.teacher_id != self.teacher.pk:
-            raise ValidationError("Ce professeur n'est pas affecté à cet EC.")
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+    classroom = models.CharField(max_length=50)
 
     def __str__(self):
-        return f"{self.course_component.label} — {self.day} {self.start_time}"
+        return f"{self.course_module.label} — {self.day} {self.start_time}"

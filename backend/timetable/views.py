@@ -8,7 +8,7 @@ from .models import Schedule, ScheduleEntry
 from .serializers import ScheduleSerializer, ScheduleEntrySerializer
 
 from users.permissions import IsStudent, IsTeacher, IsSuperUser
-from structures.models import Enrollement, Semester,SchoolYear
+from structures.models import Enrollment, Semester,SchoolYear
 
 
 # 🔹 ADMIN VIEWSET
@@ -104,18 +104,18 @@ class StudentScheduleViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def my_schedule(self, request):
 
-        enrollement = Enrollement.objects.filter(
+        enrollment = Enrollment.objects.filter(
             student=request.user,
             is_current=True,
             student_school_year__school_year__status = SchoolYear.Status.ACTIVE
         ).select_related("semester").first()
 
-        if not enrollement:
+        if not enrollment:
             return Response({"detail": "No active semester"}, status=404)
 
         try:
             schedule = Schedule.objects.get(
-                semester=enrollement.semester,
+                semester=enrollment.semester,
                 is_published=True
             )
         except Schedule.DoesNotExist:

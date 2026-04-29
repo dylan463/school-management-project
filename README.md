@@ -1,4 +1,4 @@
-# school management project
+# React + Vite
 
 ### installation
 - installer les dépendance du serveur backend

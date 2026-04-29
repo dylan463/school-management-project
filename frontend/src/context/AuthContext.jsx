@@ -1,99 +1,98 @@
-import { createContext, useContext, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import authService from '../services/authService'
-import { storage } from '../utils/storage'
-import { ROLES, ROUTES } from '../utils/constants'
+// AuthContext.jsx
+import React, { useState, useEffect, useContext, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { storage } from "../utils/storage";
+import authService from "../services/authService";
+import { ROLES, ROUTES } from "../utils/constants";
 
-const AuthContext = createContext(null)
+const AuthContext = React.createContext();
 
-// ─── Comptes de test (mode mock — sans backend) ───────────────────────────────
-const MOCK_USERS = {
-  'ETU-2024-001': {
-    password: '1234',
-    token:    'mock-token-etudiant',
-    role:     ROLES.ETUDIANT,
-    user:     { matricule: 'ETU-2024-001', nom: 'Rakoto', prenom: 'Ny Aina', email: 'rakoto@espa.mg' },
-  },
-  'ENS-0089': {
-    password: '1234',
-    token:    'mock-token-enseignant',
-    role:     ROLES.ENSEIGNANT,
-    user:     { matricule: 'ENS-0089', nom: 'Razafindrakoto', prenom: 'Jean', email: 'razafindrakoto@espa.mg' },
-  },
-}
+export const useAuth = () => useContext(AuthContext);
 
-const IS_MOCK = import.meta.env.VITE_MOCK_MODE === 'true'
-
-async function mockLogin(matricule, motDePasse) {
-  await new Promise(r => setTimeout(r, 800)) // simule un délai réseau
-  const account = MOCK_USERS[matricule]
-  if (!account || account.password !== motDePasse) {
-    throw new Error('Identifiants incorrects. Utilisez ETU-2024-001/1234 ou ENS-0089/1234')
-  }
-  return { token: account.token, role: account.role, user: account.user }
-}
-// ─────────────────────────────────────────────────────────────────────────────
+const mapRoleApi = (apiUser) => {
+  if (apiUser.is_superuser) return ROLES.SUPERUSER;
+  if (apiUser.is_staff) return ROLES.STAFF;
+  if (apiUser.role === ROLES.ENSEIGNANT) return ROLES.ENSEIGNANT;
+  if (apiUser.role === ROLES.ETUDIANT) return ROLES.ETUDIANT;
+  return null;
+};
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(storage.getUser())
-  const [role,    setRole]    = useState(storage.getRole())
-  const [token,   setToken]   = useState(storage.getToken())
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState(null)
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [initialized, setInitialized] = useState(false);
 
-  const navigate = useNavigate()
+  const logout = useCallback(() => {
+    storage.clear();
+    setUser(null);
+    setRole(null);
+    setInitialized(false); // Réinitialiser pour permettre une nouvelle auth
+    navigate(ROUTES.LOGIN, { replace: true });
+  }, [navigate]);
 
-  const isAuthenticated = !!token
+  useEffect(() => {
+    // Ne pas réinitialiser si déjà initialisé
+    if (initialized) return;
+
+    const initAuth = async () => {
+      setLoading(true);
+      try {
+        if (!storage.getAccess()) {
+          setInitialized(true);
+          setLoading(false);
+          return;
+        }
+        // Si le token est expiré, l'interceptor gère le refresh automatiquement
+        const currentUser = await authService.me();
+        const currentRole = mapRoleApi(currentUser);
+        setUser(currentUser);
+        setRole(currentRole);
+        setInitialized(true);
+        // Ne pas rediriger automatiquement ici - laisser l'utilisateur naviguer librement
+      } catch {
+        // Refresh aussi échoué -> session invalide
+        setError("Session expirée. Veuillez vous reconnecter.");
+        storage.clear();
+        setUser(null);
+        setRole(null);
+        setInitialized(true);
+        navigate(ROUTES.LOGIN, { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, [navigate, initialized]);
 
   const login = useCallback(async (matricule, motDePasse) => {
-    setLoading(true)
-    setError(null)
-    try {
-      // Utilise le mock si VITE_MOCK_MODE=true, sinon appelle le vrai backend
-      const data = IS_MOCK
-        ? await mockLogin(matricule, motDePasse)
-        : await authService.login(matricule, motDePasse)
-
-      storage.setToken(data.token)
-      storage.setRole(data.role)
-      storage.setUser(data.user)
-      setToken(data.token)
-      setRole(data.role)
-      setUser(data.user)
-
-      if (data.role === ROLES.ETUDIANT) {
-        navigate(ROUTES.DASHBOARD_ETU)
-      } else {
-        navigate(ROUTES.DASHBOARD_ENS)
-      }
-    } catch (err) {
-      setError(err.message || err.response?.data?.message || 'Identifiants incorrects.')
-    } finally {
-      setLoading(false)
-    }
-  }, [navigate])
-
-  const logout = useCallback(async () => {
-    if (!IS_MOCK) await authService.logout().catch(() => {})
-    storage.clear()
-    setToken(null)
-    setRole(null)
-    setUser(null)
-    navigate(ROUTES.LOGIN)
-  }, [navigate])
+    const { access, refresh } = await authService.login(matricule, motDePasse);
+    storage.setAccess(access);
+    storage.setRefresh(refresh);
+    const currentUser = await authService.me();
+    const currentRole = mapRoleApi(currentUser);
+    setUser(currentUser);
+    setRole(currentRole);
+    // Supprimer la redirection automatique après la connexion pour permettre la navigation libre
+    // navigateByRole(currentRole);
+  }, []);
 
   const value = {
-    user, role, token,
-    loading, error, setError,
-    isAuthenticated,
-    login, logout,
-  }
+    user,
+    loading,
+    error,
+    role,
+    login,
+    logout,
+    isAuthenticated: !!user,
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth doit être utilisé dans AuthProvider')
-  return ctx
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }

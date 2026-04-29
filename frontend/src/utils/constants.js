@@ -1,7 +1,15 @@
 export const ROLES = {
-  ETUDIANT:   'etudiant',
-  ENSEIGNANT: 'enseignant',
+  ETUDIANT:   'STUDENT',
+  ENSEIGNANT: 'TEACHER',
+  STAFF:      'STAFF',
+  SUPERUSER:  'SUPERUSER',
 }
+
+export const TOKEN_KEY = {
+  ACCESS: 'access_token',
+  REFRESH: 'refresh_token',
+}
+
 
 export const ROUTES = {
   HOME:               '/',

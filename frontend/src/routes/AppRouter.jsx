@@ -1,8 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ROLES, ROUTES } from '../utils/constants'
 
-import PrivateRoute   from './PrivateRoute'
-import RoleRoute      from './RoleRoute'
+import ProtectedRoute from './ProtectedRoute'
 
 // Public
 import LandingPage    from '../pages/auth/LandingPage'
@@ -32,31 +31,23 @@ export default function AppRouter() {
       <Route path={ROUTES.HOME}  element={<LandingPage />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
 
-      {/* ── Étudiant (protected) ── */}
-      <Route element={<PrivateRoute />}>
-        <Route element={<RoleRoute allowedRole={ROLES.ETUDIANT} />}>
-          <Route element={<AppLayout role={ROLES.ETUDIANT} />}>
-            <Route path={ROUTES.DASHBOARD_ETU}   element={<DashboardEtudiant />} />
-            <Route path={ROUTES.NOTES}            element={<NotesPage />} />
-            <Route path={ROUTES.EMPLOI_DU_TEMPS} element={<EmploiDuTempsPage />} />
-            <Route path={ROUTES.COURS}            element={<CoursPage />} />
-            <Route path={ROUTES.POINTAGE}         element={<PointagePage />} />
-          </Route>
+      {/* // Étudiant (protected) // */}
+        <Route element={<AppLayout/>}>
+          <Route path={ROUTES.DASHBOARD_ETU}   element={<DashboardEtudiant />} />
+          <Route path={ROUTES.NOTES}            element={<NotesPage />} />
+          <Route path={ROUTES.EMPLOI_DU_TEMPS} element={<EmploiDuTempsPage />} />
+          <Route path={ROUTES.COURS}            element={<CoursPage />} />
+          <Route path={ROUTES.POINTAGE}         element={<PointagePage />} />
         </Route>
-      </Route>
 
-      {/* ── Enseignant (protected) ── */}
-      <Route element={<PrivateRoute />}>
-        <Route element={<RoleRoute allowedRole={ROLES.ENSEIGNANT} />}>
-          <Route element={<AppLayout role={ROLES.ENSEIGNANT} />}>
-            <Route path={ROUTES.DASHBOARD_ENS}   element={<DashboardEnseignant />} />
-            <Route path={ROUTES.ETUDIANTS_LIST}  element={<EtudiantsPage />} />
-            <Route path={ROUTES.SAISIE_NOTES}    element={<SaisieNotesPage />} />
-            <Route path={ROUTES.PLANNING}        element={<PlanningPage />} />
-            <Route path={ROUTES.RESSOURCES}      element={<RessourcesPage />} />
-          </Route>
+      {/* // Enseignant (protected) // */}
+        <Route element={<AppLayout/>}>
+          <Route path={ROUTES.DASHBOARD_ENS}   element={<DashboardEnseignant />} />
+          <Route path={ROUTES.ETUDIANTS_LIST}  element={<EtudiantsPage />} />
+          <Route path={ROUTES.SAISIE_NOTES}    element={<SaisieNotesPage />} />
+          <Route path={ROUTES.PLANNING}        element={<PlanningPage />} />
+          <Route path={ROUTES.RESSOURCES}      element={<RessourcesPage />} />
         </Route>
-      </Route>
 
       {/* ── Catch-all ── */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

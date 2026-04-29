@@ -38,6 +38,15 @@ const ENS_NAV = [
   { label: 'Notifications',    to: '#',                   iconComponent: BellIcon,   section: 'Système', badge: 1 },
 ]
 
+const ADMIN_NAV = [
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ADMIN,  iconComponent: DashIcon,   section: 'Principal' },
+  { label: 'Gestion des utilisateurs',    to: ROUTES.USERS_LIST, iconComponent: UsersIcon,  section: 'Administration' },
+  { label: 'Gestion des classes', to: ROUTES.CLASSES_LIST,   iconComponent: NoteIcon,   section: null },
+  { label: 'Gestion des matières',     to: ROUTES.MATIERES_LIST,       iconComponent: CalIcon,    section: null },
+  { label: 'Gestion des salles',       to: ROUTES.Salles_LIST,     iconComponent: UploadIcon, section: null },
+  { label: 'Notifications',    to: '#',                   iconComponent: BellIcon,   section: 'Système', badge: 1 },
+]
+
 /* ── SidebarItem ── */
 // eslint-disable-next-line no-unused-vars
 function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
@@ -70,8 +79,8 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
 
 /* ── Main Sidebar ── */
 export default function Sidebar({ role }) {
-  const { logout, user } = useAuth()
-  const nav = role === ROLES.ETUDIANT ? ETU_NAV : ENS_NAV
+  const { logout, user , role: authRole } = useAuth()
+  const nav = authRole === ROLES.ETUDIANT ? ETU_NAV : ENS_NAV
 
   // Group items by section
   const sections = []

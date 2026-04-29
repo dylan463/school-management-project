@@ -22,14 +22,15 @@ from .serializers import (
     StudentSchoolYearSerializer, EnrollmentSerializer,
     CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
     ChangeEnrollmentDecisionSerializer, ActivateNextSemesterSerializer,
-    StudentlatestSerializer, SchoolYearCreateSerializer
+    StudentlatestSerializer, SchoolYearCreateSerializer, FormationCreateSerializer
 )
 from .services import (
     get_current_enrollment,
     get_student_enrollment_summary,
     change_enrollement_decision,
-    regenerate_levels_for_formation,
+    create_formation_and_its_levels,
     create_level,
+    update_formation_and_its_level,
     activate_school_year,
     end_school_year,
     toggle_school_year_lock,
@@ -41,7 +42,7 @@ from .services import (
     get_open_school_year
 )
 
-from users.permissions import IsSuperUser, IsStudent, IsTeacher
+from users.permissions import IsSuperUser, IsStudent, IsTeacher, IsSuperUserOrTeacher
 from users.models import StudentUser, TeacherUser
 from users.serializers import UserSerializer, UserCreateSerializer
 
@@ -83,7 +84,13 @@ class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewse
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
-    permission_classes = [IsSuperUser]
+    
+    def get_permissions(self):
+        if self.action in ["create","update","destroy"]:
+            permissions = [IsSuperUser]
+        else:
+            permissions = [IsSuperUserOrTeacher]
+        return [permission() for permission in permissions]
 
     @action(methods=["get"],detail=True)
     def levels(self,request,pk=None):
@@ -92,27 +99,49 @@ class FormationViewSet(viewsets.ModelViewSet):
         serializer = LevelSerializer(levels,many = True)
         return Response(serializer.data,status=status.HTTP_200_OK)
 
-    @action(methods=["post"],detail=True,url_path="assign-levels")
-    def assign_levels(self,request,pk=None):
-        formation = self.get_object()
+    def create(self, request, *args, **kwargs):
+        serializer = FormationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            from_level = int(request.data["from"])
-            to_level = int(request.data["to"])
+        formation = create_formation_and_its_levels(
+            serializer.validated_data.copy()
+        )
 
-            regenerate_levels_for_formation(from_level_order=from_level,to_level_order=to_level,formation=formation)
-            return Response({"detail": "levels assigned"})
-        except KeyError as e:
-            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response({"error": "from et to devrait etre des entier"},status=status.HTTP_400_BAD_REQUEST)
-    
-    
+        response_serializer = FormationSerializer(formation)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        serializer = FormationCreateSerializer(
+            instance,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        formation = update_formation_and_its_level(
+            instance,
+            serializer.validated_data.copy()
+        )
+
+        response_serializer = FormationSerializer(formation)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK
+        )
+
     @action(methods=["post"],detail=True,url_path="remove-levels")
     def removelevels(self,request,pk=None):
         formation = self.get_object()
         FormationLevel.objects.filter(formation=formation).delete()
-        return Response({"formation levels":"deleter"},status=status.HTTP_200_OK)
+        return Response({"formation levels":"deleted"},status=status.HTTP_200_OK)
+
+
 
 class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.UpdateModelMixin):
     queryset = Semester.objects.all()

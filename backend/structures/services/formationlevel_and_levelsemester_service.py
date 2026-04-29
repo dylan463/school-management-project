@@ -4,29 +4,50 @@ from django.db import transaction
 
 
 from django.db import transaction
-from ..models import FormationLevel, Formation
+from ..models import FormationLevel, Formation,Level
+
+from django.db import transaction
 
 
-@transaction.atomic()
-def regenerate_levels_for_formation(from_level_order: int, to_level_order: int, formation: Formation):
-    if from_level_order is None or to_level_order is None:
-        raise ValueError("from_level_order et to_level_order ne peuvent pas être None")
+def create_formation_levels(formation,from_level,to_level):
+    levels = Level.objects.filter(
+        order__gte=from_level,
+        order__lte=to_level
+    )
 
-    # 🔁 correction du swap
-    if from_level_order > to_level_order:
-        from_level_order, to_level_order = to_level_order, from_level_order
+    FormationLevel.objects.bulk_create([
+        FormationLevel(formation=formation, level=level)
+        for level in levels
+    ])
 
+
+@transaction.atomic
+def create_formation_and_its_levels(data: dict):
+    from_level = data.pop("from_level")
+    to_level = data.pop("to_level")
+
+    formation = Formation.objects.create(**data)
+    create_formation_levels(formation,from_level,to_level)
+    return formation
+
+@transaction.atomic
+def update_formation_and_its_level(formation : Formation,data:dict):
+    from_level = data.pop("from_level",None)
+    to_level = data.pop("to_level",None)
+
+    for attr,val in data.items():
+        setattr(formation,attr,val)
+
+    formation.save()
+
+    if from_level is None or to_level is None:
+        return formation
+    
     FormationLevel.objects.filter(formation=formation).delete()
+    create_formation_levels(formation,from_level,to_level)
 
-    formation_levels = [
-        FormationLevel(
-            formation=formation,
-            level_order=order
-        )
-        for order in range(from_level_order, to_level_order + 1)
-    ]
+    return formation
 
-    FormationLevel.objects.bulk_create(formation_levels)
 
 @transaction.atomic
 def create_level(code : str,order : int):

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'structures',
     'timetable',
     'notif',
+    'announcements',
 ]
 
 MIDDLEWARE = [

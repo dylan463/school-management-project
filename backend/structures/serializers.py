@@ -28,6 +28,49 @@ class FormationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class FormationCreateSerializer(serializers.ModelSerializer):
+    from_level = serializers.IntegerField()
+    to_level = serializers.IntegerField()
+
+    class Meta:
+        model = Formation
+        fields = ["label", "code", "description", "from_level", "to_level"]
+
+
+    def validate(self, attrs):
+        from_level = attrs.get("from_level")
+        to_level = attrs.get("to_level")
+
+        # On ne valide que si les deux sont fournis
+        if from_level is None or to_level is None:
+            return attrs
+
+        # Validation logique
+        if from_level <= 0 or to_level <= 0:
+            raise serializers.ValidationError(
+                "Les niveaux doivent être strictement positifs."
+            )
+
+        if from_level > to_level:
+            raise serializers.ValidationError(
+                "from_level ne peut pas être supérieur à to_level."
+            )
+
+        # Validation existence de from_level et to_level uniquement
+        if not Level.objects.filter(order=from_level).exists():
+            raise serializers.ValidationError(
+                {"from_level": "Ce niveau n'existe pas."}
+            )
+
+        if not Level.objects.filter(order=to_level).exists():
+            raise serializers.ValidationError(
+                {"to_level": "Ce niveau n'existe pas."}
+            )
+
+        return attrs
+
+
+
 class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester

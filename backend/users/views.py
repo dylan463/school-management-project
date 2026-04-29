@@ -35,7 +35,7 @@ from .permissions import (
 )
 from .utils import send_email
 from .token import token_generator
-
+from notif.utils import create_notification
 
 # ─────────────────────────────────────────
 # USER MANAGEMENT
@@ -88,6 +88,7 @@ class ChangePasswordView(APIView):
 
             # Garder session active
             update_session_auth_hash(request, user)
+            create_notification(request.user, "Changement de Mot de passe", "Votre mot de passe a été modifié avec succès.")
             return Response({"status": "password updated"})
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

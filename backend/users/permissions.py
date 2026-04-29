@@ -14,6 +14,10 @@ class IsSuperUser(BasePermission):
     def has_permission(self,request,view):
         return request.user.is_authenticated and request.user.role == CustomUser.Role.SUPERUSER
 
+class IsSuperUserOrTeacher(BasePermission):
+    def has_permission(self,request,view):
+        return request.user.is_authenticated and (request.user.role == CustomUser.Role.SUPERUSER or request.user.role == CustomUser.Role.TEACHER)
+
 class NoSuperUserAccess(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated

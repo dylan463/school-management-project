@@ -5,8 +5,9 @@ from .enrollment_and_semester_services import (
 )
 
 from .formationlevel_and_levelsemester_service import (
-    regenerate_levels_for_formation,
-    create_level
+    create_formation_and_its_levels,
+    create_level,
+    update_formation_and_its_level
 )
 
 from .student_school_year_service import (
@@ -33,8 +34,10 @@ __all__ = [
     'get_student_enrollment_summary',
     'change_enrollement_decision',
 
-    'regenerate_levels_for_formation',
-    'create_level',
+    "create_level",
+    "create_formation_and_its_levels",
+    "update_formation_and_its_level",
+
 
     'create_student_school_year',
     'create_year_enrollments',

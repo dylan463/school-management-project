@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'users',
     'structures',
     'timetable',
+    'announcements'
 ]
 
 MIDDLEWARE = [

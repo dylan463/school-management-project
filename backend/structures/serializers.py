@@ -155,53 +155,31 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 # ─────────────────────────────────────────
 
 class CourseModuleSerializer(serializers.ModelSerializer):
-    course_unit = serializers.StringRelatedField(read_only=True)
-    teacher = UserSerializer(read_only=True)
-    
-    course_unit_id = serializers.IntegerField(write_only=True)
-    teacher_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    
     class Meta:
         model = CourseModule
-        fields = [
-            "id", "code", "label", "credits", "course_unit",
-            "teacher", "volume_hours", "is_active",
-            "course_unit_id", "teacher_id"
-        ]
-        read_only_fields = ["id"]
+        fields = ["code","label","credits","course_unit","teacher","volume_hours","is_active","created_at"]
+        read_only_fields = ["id","created_at"]
 
+class CourseModuleForListUnitSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.SerializerMethodField()
+    class Meta:
+        model = CourseModule
+        fields = ["code","label","credits","teacher_name"]
+    def get_teacher_name(self,obj):
+        return obj.teacher.get_full_name()
 
-class CourseUnitSerializer(serializers.ModelSerializer):
-    modules = CourseModuleSerializer(many=True, read_only=True)
-    modules_count = serializers.SerializerMethodField()
-    formation = FormationSerializer(read_only=True)
-    semester = SemesterSerializer(read_only=True)
-    
-    formation_id = serializers.IntegerField(write_only=True)
-    semester_id = serializers.IntegerField(write_only=True)
-    
+class CourseUnitListSerializer(serializers.ModelSerializer):
+    modules = CourseModuleForListUnitSerializer(read_only=True,many=True)
     class Meta:
         model = CourseUnit
-        fields = [
-            "id", "code", "label", "coefficient", "is_active",
-            "modules", "modules_count", "formation", "level", "semester",
-            "formation_id", "semester_id"
-        ]
-        read_only_fields = ["id", "modules", "modules_count"]
+        fields = ["id","code","label","formation","semester","is_active","created_at","modules"]
+        read_only_fields = ["id","code","label","formation","semester","is_active","created_at","modules"]
     
-    def get_modules_count(self, obj):
-        return getattr(obj, 'modules_count', obj.modules.filter(is_active=True).count())
-
-
-class CourseUnitDetailSerializer(CourseUnitSerializer):
-    """Serializer détaillé avec tous les modules"""
-    total_credits = serializers.SerializerMethodField()
-    
-    class Meta(CourseUnitSerializer.Meta):
-        fields = CourseUnitSerializer.Meta.fields + ["total_credits"]
-    
-    def get_total_credits(self, obj):
-        return obj.get_total_credits()
+class CourseUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseUnit
+        fields = ["id","code","label","formation","semester","is_active","created_at"]
+        read_only_fields = ["id","created_at"]
 
 
 # ─────────────────────────────────────────

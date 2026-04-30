@@ -13,7 +13,6 @@ router.register(r"course_units", CourseUnitViewSet,basename="courseunit")
 router.register(r"course_modules", CourseModuleViewSet,basename="coursemodule")
 router.register(r"teacher", TeacherPortalViewSet, basename="teacherportal")
 router.register(r"student", StudentPortalViewSet, basename="studentportal")
-router.register(r"admin/students",AdminStudentViewset,basename="adminstudentportal")
-router.register(r"admin/teachers",AdminTeacherViewset,basename="adminteacherportal")
+
 
 urlpatterns = router.urls

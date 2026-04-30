@@ -181,11 +181,8 @@ class CourseUnit(models.Model):
     code = models.CharField(max_length=20, unique=True)  # "UE-MATH-L1S1"
     label = models.CharField(max_length=200)              # "Mathématiques Fondamentales"
 
-    formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name='course_units')
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='course_units')
-
-    # coefficient de l'UE dans le calcul de la moyenne semestrielle
-    coefficient = models.DecimalField(max_digits=4, decimal_places=2, default=1)
+    formation = models.ForeignKey(Formation, on_delete=models.PROTECT, related_name='course_units')
+    semester = models.ForeignKey(Semester, on_delete=models.PROTECT, related_name='course_units')
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -22,11 +22,10 @@ from .serializers import (
     StudentSchoolYearSerializer, EnrollmentSerializer,
     CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
     ChangeEnrollmentDecisionSerializer, ActivateNextSemesterSerializer,
-    StudentlatestSerializer, SchoolYearCreateSerializer, FormationCreateSerializer
+    StudentlatestSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseUnitListSerializer
 )
 from .services import (
     get_current_enrollment,
-    get_student_enrollment_summary,
     change_enrollement_decision,
     create_formation_and_its_levels,
     create_level,
@@ -43,18 +42,46 @@ from .services import (
 )
 
 from users.permissions import IsSuperUser, IsStudent, IsTeacher, IsSuperUserOrTeacher
-from users.models import StudentUser, TeacherUser
+from rest_framework.permissions import IsAuthenticated
+from users.models import StudentUser, TeacherUser,CustomUser
 from users.serializers import UserSerializer, UserCreateSerializer
+from .queryset import *
 
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
 # ─────────────────────────────────────────
+def is_user_student(user):
+    return user.role == CustomUser.Role.STUDENT
+
+def is_user_teacher(user):
+    return user.role == CustomUser.Role.TEACHER
+
+def is_user_superuser(user):
+    return user.role == CustomUser.Role.SUPERUSER
+
+
 
 class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.CreateModelMixin,viewsets.mixins.UpdateModelMixin,viewsets.mixins.RetrieveModelMixin):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
     permission_classes = [IsSuperUser]
+
+    def get_permissions(sef):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission for permission in permissions]
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_level_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_level_queryset(user)
+        else:
+            return Level.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -72,6 +99,19 @@ class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewse
             self.get_serializer(level).data,
             status=201
         )
+    @action(methods=["get"],detail=True)
+    def semesters(self,request,pk=None):
+        level = self.get_object()
+        user = request.user
+        if is_user_student(user):
+            semesters = get_student_semester_queryset(user).filter(level=level)
+        elif is_user_teacher(user):
+            semesters = get_teacher_semester_queryset(user).filter(level=level)
+        else:
+            semesters = Semester.objects.filter(level=level)
+
+        serializer = SemesterSerializer(semesters.distinct(),many=True)
+        return Response(serializer.data)
 
     @action(methods=["delete"],detail=False)
     def pop(self,request):
@@ -84,19 +124,33 @@ class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewse
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_formation_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_formation_queryset(user)
+        else:
+            return Formation.objects.all()
     
     def get_permissions(self):
-        if self.action in ["create","update","destroy"]:
-            permissions = [IsSuperUser]
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
         else:
-            permissions = [IsSuperUserOrTeacher]
+            permissions = [IsSuperUser]
         return [permission() for permission in permissions]
 
     @action(methods=["get"],detail=True)
     def levels(self,request,pk=None):
         formation = self.get_object()
-        levels = Level.objects.filter(formation_levels__formation=formation).distinct()
-        serializer = LevelSerializer(levels,many = True)
+        if is_user_student(user):
+            levels = get_student_level_queryset(user)
+        elif is_user_teacher(user):
+            levels = get_teacher_level_queryset(user)
+        else:
+            levels = Level.objects.filter(formation_levels_formation=formation)
+        serializer = LevelSerializer(levels.distinct(),many = True)
         return Response(serializer.data,status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
@@ -148,15 +202,21 @@ class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,vie
     serializer_class = SemesterSerializer
     permission_classes = [IsSuperUser]
 
-    @action(detail=True, methods=['GET'])
-    def students(self, request, pk=None):
-        """Récupère tous les étudiants inscrits à ce semestre"""
-        semester = self.get_object()
-        students = StudentUser.objects.filter(
-            school_years__enrollments__semester=semester
-        ).distinct()
-        serializer = UserSerializer(students, many=True)
-        return Response(serializer.data)
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_semester_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_semester_queryset(user)
+        else:
+            return Semester.objects.all()
 
 
 # ─────────────────────────────────────────
@@ -167,6 +227,22 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     queryset = SchoolYear.objects.all()
     serializer_class = SchoolYearSerializer
     permission_classes = [IsSuperUser]
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_school_year_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_school_year_queryset(user)
+        else:
+            return SchoolYear.objects.all()
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -250,6 +326,22 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
     serializer_class = StudentSchoolYearSerializer
     permission_classes = [IsSuperUser]
 
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_student_school_year_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_student_school_year_queryset(user)
+        else:
+            return StudentSchoolYear.objects.all()
+
     @action(detail=False, methods=['POST'])
     def promote_repeat(self, request):
         """Réinscription automatique (promotion/redoublement)"""
@@ -297,21 +389,6 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
 
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(methods=["post"],detail=False,url_path="student-latest")
-    def student_latest(self,request):
-        serializer = StudentlatestSerializer(data=request.data)
-
-        if not serializer.is_valid():
-            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            student = StudentUser.objects.get(pk=serializer.validated_data["student_id"])
-            last_ssy = get_last_student_school_year(student)
-            response_serializer = StudentSchoolYearSerializer(last_ssy)
-            return Response(response_serializer.data,status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ─────────────────────────────────────────
@@ -334,6 +411,22 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
     )
     serializer_class = EnrollmentSerializer
     permission_classes = [IsSuperUser]
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_enrollment_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_enrollment_queryset(user)
+        else:
+            return Enrollment.objects.all()
 
     @action(detail=True, methods=['POST'])
     def change_decision(self, request, pk=None):
@@ -361,35 +454,52 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
     serializer_class = CourseUnitSerializer
     permission_classes = [IsSuperUser]
 
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
     def get_queryset(self):
-        return (
-            CourseUnit.objects
-            .select_related('formation', 'semester', 'semester__level')
-            .prefetch_related(
-                Prefetch(
-                    'modules',
-                    queryset=CourseModule.objects.select_related('teacher')
-                )
-            )
-            .annotate(modules_count=Count('modules'))
-        )
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_course_unit_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_course_unit_queryset(user)
+        else:
+            return CourseUnit.objects.all()
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
-    queryset = CourseModule.objects.select_related(
-        'course_unit', 'course_unit__semester', 'teacher'
-    )
+    queryset = CourseModule.objects.all()
     serializer_class = CourseModuleSerializer
     permission_classes = [IsSuperUser]
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_course_module_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_course_module_queryset(user)
+        else:
+            return CourseModule.objects.all()
 
     @action(detail=True, methods=['POST'])
     def assign_teacher(self, request, pk=None):
         """Assigne un enseignant à un module"""
         course_module = self.get_object()
-        teacher_id = request.data.get('teacher_id')
+        teacher_id = request.data.get('teacher')
 
         if not teacher_id:
             return Response({
-                'error': 'teacher_id est requis'
+                'error': 'teacher id est requis'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -406,14 +516,44 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
                 'error': 'Teacher not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
-
+    @action(methods=["delete"],detail=True)
+    def remove_techer(self,request,pk):
+        """supprimer un teacher d'un module"""
+        course_module = self.get_object()
+        course_module.teacher = None
+        course_module.save()
+        serializer = self.get_serializer(course_module)
+        return Response({
+            'status': 'teacher removed',
+            'course_module': serializer.data
+        })
+    
 # ─────────────────────────────────────────
 # PORTAIL ÉTUDIANT
 # ─────────────────────────────────────────
 
 class StudentPortalViewSet(viewsets.GenericViewSet):
     permission_classes = [IsStudent]
+    serializer_class = UserSerializer
 
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        if self.action in ["current_year","current_semester","current_course_units"]:
+            premissions = [IsStudent]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_student_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_student_queryset(user)
+        else:
+            return StudentUser.objects.all()
+    
     @action(detail=False, methods=['GET'])
     def current_year(self, request):
         """Informations sur l'année scolaire actuelle de l'étudiant"""
@@ -476,94 +616,22 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['GET'])
-    def my_course_units(self, request):
+    def current_course_units(self, request):
         """Unités d'enseignement du semestre actuel"""
         student = request.user
         
-        try:
-            current_school_year = StudentSchoolYear.objects.get(
-                student=student,
-                school_year__status=SchoolYear.Status.ACTIVE
+        course_units = get_student_course_unit_queryset(student).filter(
+            semester__enrollments__student_school_year__school_year__status=SchoolYear.Status.ACTIVE,
+            semester__enrollments__is_current=True
+        ).distinct().prefetch_related(
+            Prefetch(
+                "modules",
+                queryset=CourseModule.objects.select_related("teacher")
             )
-            current_enrollment = get_current_enrollment(current_school_year)
-            
-            if not current_enrollment:
-                return Response({
-                    'error': 'Aucun semestre actif trouvé'
-                }, status=status.HTTP_404_NOT_FOUND)
+        )
 
-            course_units = (
-                CourseUnit.objects
-                .filter(
-                    formation=current_school_year.formation,
-                    semester=current_enrollment.semester
-                )
-                .select_related('formation', 'semester', 'semester__level')
-                .prefetch_related(
-                    Prefetch(
-                        'modules',
-                        queryset=CourseModule.objects.select_related('teacher')
-                    )
-                )
-            )
-            serializer = CourseUnitSerializer(course_units, many=True)
-            return Response(serializer.data)
-            
-        except StudentSchoolYear.DoesNotExist:
-            return Response({
-                'error': 'Aucune inscription active trouvée'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-    @action(detail=False, methods=['GET'])
-    def classmates(self, request):
-        """Camardes de classe du semestre actuel"""
-        student = request.user
-        
-        try:
-            current_school_year = StudentSchoolYear.objects.get(
-                student=student,
-                school_year__status=SchoolYear.Status.ACTIVE
-            )
-            current_enrollment = get_current_enrollment(current_school_year)
-            
-            if not current_enrollment:
-                return Response({
-                    'error': 'Aucun semestre actif trouvé'
-                }, status=status.HTTP_404_NOT_FOUND)
-
-            classmates = StudentUser.objects.filter(
-                school_years__enrollments__semester=current_enrollment.semester,
-                school_years__formation=current_school_year.formation,
-                school_years__level=current_school_year.level
-            ).exclude(id=student.id).distinct()
-            
-            serializer = UserSerializer(classmates, many=True)
-            return Response(serializer.data)
-            
-        except StudentSchoolYear.DoesNotExist:
-            return Response({
-                'error': 'Aucune inscription active trouvée'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-    @action(detail=False, methods=['GET'])
-    def progress_summary(self, request):
-        """Résumé de la progression de l'étudiant"""
-        student = request.user
-        
-        try:
-            current_school_year = StudentSchoolYear.objects.select_related(
-                'formation', 'level', 'school_year'
-            ).get(
-                student=student,
-                school_year__status=SchoolYear.Status.ACTIVE
-            )
-            summary = get_student_enrollment_summary(current_school_year)
-            return Response(summary)
-            
-        except StudentSchoolYear.DoesNotExist:
-            return Response({
-                'error': 'Aucune inscription active trouvée'
-            }, status=status.HTTP_404_NOT_FOUND)
+        response_serializer = CourseUnitListSerializer(course_units,many=True)
+        return Response(response_serializer.data)
 
 
 # ─────────────────────────────────────────
@@ -572,32 +640,46 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
 
 class TeacherPortalViewSet(viewsets.GenericViewSet):
     permission_classes = [IsTeacher]
+    serializer_class = UserSerializer
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        elif self.action in ["current_modules","current_semesters","current_units"]:
+            permissions = [IsTeacher]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_teacher_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_teacher_queryset(user)
+        else:
+            return TeacherUser.objects.all()
 
     @action(detail=False, methods=['GET'])
-    def my_modules(self, request):
+    def current_modules(self, request):
         """Modules enseignés par l'enseignant"""
         teacher = request.user
+        semester = request.query_params.get("semester")
+
         modules = CourseModule.objects.filter(
-            teacher=teacher
-        ).select_related('course_unit', 'course_unit__semester')
+            teacher=teacher,
+            is_active=True,
+            course_unit__semester__enrollments__is_current=True,
+            course_unit__semester__enrollments__student_school_year__school_year__status="ACTIVE"
+        ).select_related("teacher")
         
+        if semester:
+            modules.filter(course_unit__semester__id=semester)
         serializer = CourseModuleSerializer(modules, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['GET'])
-    def my_students(self, request):
-        """Étudiants des cours de l'enseignant"""
-        teacher = request.user
-        
-        students = StudentUser.objects.filter(
-            school_years__enrollments__semester__course_units__modules__teacher=teacher
-        ).distinct()
-        
-        serializer = UserSerializer(students, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['GET'])
-    def my_semesters(self, request):
+    def current_semesters(self, request):
         """Semestres des cours de l'enseignant"""
         teacher = request.user
         
@@ -609,59 +691,25 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['GET'])
-    def my_course_units(self, request):
+    def current_units(self, request):
         """Unités d'enseignement de l'enseignant"""
         teacher = request.user
+        semester = request.query_params.get("semester")
         
-        course_units = (
-            CourseUnit.objects
-            .filter(modules__teacher=teacher)
-            .select_related('formation', 'semester', 'semester__level')
-            .prefetch_related(
-                Prefetch(
-                    'modules',
-                    queryset=CourseModule.objects.select_related('teacher')
-                )
+        course_unit = CourseUnit.objects.filter(
+            modules__teacher=teacher,
+            semester__enrollments__is_current=True,
+            semester__enrollments__student_school_year__school_year__status="ACTIVE"
+        ).prefetch_related(
+            Prefetch(
+                "modules",
+                queryset=CourseModule.objects.select_related("teacher")
             )
-            .distinct()
         )
-        
-        serializer = CourseUnitSerializer(course_units, many=True)
-        return Response(serializer.data)
 
+        if semester:
+            course_unit.filter(semester__id=semester)
 
-class AdminStudentViewset(viewsets.ModelViewSet):
-    permission_classes = [IsSuperUser]
-    queryset = StudentUser.objects.all()
-    serializer_class = UserSerializer
-    filter_backends =  [DjangoFilterBackend, filters.SearchFilter]
-    filterset_class = StudentFilter
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return UserCreateSerializer
-        return UserSerializer
-
-
-class AdminTeacherViewset(viewsets.ModelViewSet):
-    permission_classes = [IsSuperUser]
-    queryset = TeacherUser.objects.all()
-    serializer_class = UserSerializer
-    filter_backends =  [DjangoFilterBackend, filters.SearchFilter]
-    filterset_class = TeacherFilter
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return UserCreateSerializer
-        return UserSerializer
-    
-    @action(detail=False,methods=["get"])
-    def nomodules(self,request):
-        teachers = TeacherUser.objects.filter(
-            course_modules__isnull = True
-        ).distinct()
-
-        serializer = self.get_serializer(teachers,many = True)
-
+        serializer = CourseUnitListSerializer(course_units, many=True)
         return Response(serializer.data)
 

@@ -7,11 +7,6 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-# Third-party
-from django_filters.rest_framework import DjangoFilterBackend
-
-# Local apps
-from .filter import StudentFilter, TeacherFilter
 from .models import (
     Level, Formation, Semester, CourseUnit, CourseModule,
     SchoolYear, StudentSchoolYear, Enrollment, FormationLevel
@@ -52,76 +47,22 @@ from users.utils import (
     is_user_superuser,
     is_user_teacher
 )
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
 # ─────────────────────────────────────────
 
-
-
-class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.CreateModelMixin,viewsets.mixins.UpdateModelMixin,viewsets.mixins.RetrieveModelMixin):
-    queryset = Level.objects.all()
-    serializer_class = LevelSerializer
-    permission_classes = [IsSuperUser]
-
-    def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsAuthenticated]
-        else:
-            permissions = [IsSuperUser]
-        return [permission for permission in permissions]
-
-    def get_queryset(self):
-        user = self.request.user
-        if is_user_student(user):
-            return get_student_level_queryset(user)
-        elif is_user_teacher(user):
-            return get_teacher_level_queryset(user)
-        else:
-            return Level.objects.all()
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        last_level = Level.objects.order_by("order").last()
-        last_order = last_level.order if last_level else 0
-
-        level = create_level(
-            code=serializer.validated_data["code"],
-            order=last_order + 1
-        )
-
-        return Response(
-            self.get_serializer(level).data,
-            status=201
-        )
-    @action(methods=["get"],detail=True)
-    def semesters(self,request,pk=None):
-        level = self.get_object()
-        user = request.user
-        if is_user_student(user):
-            semesters = get_student_semester_queryset(user).filter(level=level)
-        elif is_user_teacher(user):
-            semesters = get_teacher_semester_queryset(user).filter(level=level)
-        else:
-            semesters = Semester.objects.filter(level=level)
-
-        serializer = SemesterSerializer(semesters.distinct(),many=True)
-        return Response(serializer.data)
-
-    @action(methods=["delete"],detail=False)
-    def pop(self,request):
-        level = Level.objects.order_by("order").last()
-        if not level:
-            return Response(...)
-        level.delete()
-        return Response({"detail":"poped"},status.HTTP_200_OK)
+from .filter import (
+    LevelFilter,EnrollmentFilter,CourseModuleFilter
+)
 
 class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_field = ["label", "code"]
 
     def get_queryset(self):
         user = self.request.user
@@ -138,18 +79,6 @@ class FormationViewSet(viewsets.ModelViewSet):
         else:
             permissions = [IsSuperUser]
         return [permission() for permission in permissions]
-
-    @action(methods=["get"],detail=True)
-    def levels(self,request,pk=None):
-        formation = self.get_object()
-        if is_user_student(user):
-            levels = get_student_level_queryset(user)
-        elif is_user_teacher(user):
-            levels = get_teacher_level_queryset(user)
-        else:
-            levels = Level.objects.filter(formation_levels_formation=formation)
-        serializer = LevelSerializer(levels.distinct(),many = True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = FormationCreateSerializer(data=request.data)
@@ -195,10 +124,62 @@ class FormationViewSet(viewsets.ModelViewSet):
 
 
 
+class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.CreateModelMixin,viewsets.mixins.UpdateModelMixin,viewsets.mixins.RetrieveModelMixin):
+    queryset = Level.objects.all()
+    serializer_class = LevelSerializer
+    permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["code","order"]
+    filterset_class = LevelFilter
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission for permission in permissions]
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_level_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_level_queryset(user)
+        else:
+            return Level.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        last_level = Level.objects.order_by("order").last()
+        last_order = last_level.order if last_level else 0
+
+        level = create_level(
+            code=serializer.validated_data["code"],
+            order=last_order + 1
+        )
+
+        return Response(
+            self.get_serializer(level).data,
+            status=201
+        )
+
+    @action(methods=["delete"],detail=False)
+    def pop(self,request):
+        level = Level.objects.order_by("order").last()
+        if not level:
+            return Response(...)
+        level.delete()
+        return Response({"detail":"poped"},status.HTTP_200_OK)
+
 class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.UpdateModelMixin):
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["code","order"]
+    filterset_fields = ["level"]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -225,6 +206,9 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     queryset = SchoolYear.objects.all()
     serializer_class = SchoolYearSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["label"]
+    filterset_fields = ["status","is_locked"]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -323,6 +307,9 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
     )
     serializer_class = StudentSchoolYearSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["student","school_year","formation","level","status"]
+    search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -409,6 +396,9 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
     )
     serializer_class = EnrollmentSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["student_school_year__student__firs_name","student_school_year__student__last_name","student_school_year__student__email","student_school_year__student__username"]
+    filterset_class = EnrollmentFilter
 
     def get_permissions(self):
         if self.action == 'list':
@@ -451,6 +441,9 @@ class EnrollmentViewSet(viewsets.GenericViewSet,
 class CourseUnitViewSet(viewsets.ModelViewSet):
     serializer_class = CourseUnitSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["code","label"]
+    filterset_fields = ["semester","formation"]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -472,6 +465,10 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     queryset = CourseModule.objects.all()
     serializer_class = CourseModuleSerializer
     permission_classes = [IsSuperUser]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["code","label","teacher__first_name","teacher__last_name","teacher__username"]
+    filterset_class = CourseModuleFilter
+
 
     def get_permissions(self):
         if self.action == 'list':

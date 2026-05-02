@@ -7,7 +7,7 @@ from django.db.models import Prefetch
 from django.db import transaction
 from collections import defaultdict
 
-@transaction.Atomic
+@transaction.atomic
 def create_assessment(data : dict):
     session = data.get("session")
     course_module = data.get("course_module")

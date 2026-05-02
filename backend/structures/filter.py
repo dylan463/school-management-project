@@ -1,21 +1,29 @@
 import django_filters
 from users.models import StudentUser,TeacherUser
+from structures.models import (
+    Level,Formation,FormationLevel,SchoolYear,StudentSchoolYear,Enrollment,CourseModule,CourseUnit
+)
 
-class StudentFilter(django_filters.FilterSet):
-    in_level_id = django_filters.NumberFilter(field_name="school_years__level__id")
-    in_formation_id = django_filters.NumberFilter(field_name="school_years__formation__id")
-    in_schoolyear_id = django_filters.NumberFilter(field_name="school_years__school_year__id")
-
+class LevelFilter(django_filters.FilterSet):
+    formation = django_filters.NumberFilter(
+        field_name="formation_levels__formation__id"
+    )
     class Meta:
-        model = StudentUser
+        model = Level
         fields = []
 
+class EnrollmentFilter(django_filters.FilterSet):
+    level = "semester__level__id"
+    formation = "student_school_year__formation__id"
+    school_year = "student_school_year__school_year__id"
+    class Meta:
+        model = Enrollment
+        fields = ["semester"]
 
-class TeacherFilter(django_filters.FilterSet):
-    in_semester_id = django_filters.NumberFilter(field_name="course_modules__course_unit__semester__id")
-    in_formation_id = django_filters.NumberFilter(field_name="course_modules__course_unit__formation__id")
-    in_level_id = django_filters.NumberFilter(field_name="course_modules__course_unit__semester__level__id")
+class CourseModuleFilter(django_filters.FilterSet):
+    formation = "course_unit__formation__id"
+    semester = "course_unit__semester__id"
 
     class Meta:
-        model = TeacherUser
-        fields = []
+        model = CourseModule
+        fields = ["is_active","course_unit","teacher"]

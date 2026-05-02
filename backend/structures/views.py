@@ -47,18 +47,16 @@ from users.models import StudentUser, TeacherUser,CustomUser
 from users.serializers import UserSerializer, UserCreateSerializer
 from .queryset import *
 
+from users.utils import (
+    is_user_student,
+    is_user_superuser,
+    is_user_teacher
+)
+
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
 # ─────────────────────────────────────────
-def is_user_student(user):
-    return user.role == CustomUser.Role.STUDENT
-
-def is_user_teacher(user):
-    return user.role == CustomUser.Role.TEACHER
-
-def is_user_superuser(user):
-    return user.role == CustomUser.Role.SUPERUSER
 
 
 
@@ -67,7 +65,7 @@ class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewse
     serializer_class = LevelSerializer
     permission_classes = [IsSuperUser]
 
-    def get_permissions(sef):
+    def get_permissions(self):
         if self.action == 'list':
             permissions = [IsAuthenticated]
         else:
@@ -710,6 +708,6 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         if semester:
             course_unit.filter(semester__id=semester)
 
-        serializer = CourseUnitListSerializer(course_units, many=True)
+        serializer = CourseUnitListSerializer(course_unit, many=True)
         return Response(serializer.data)
 

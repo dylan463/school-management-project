@@ -34,7 +34,7 @@ def get_teacher_level_queryset(teacher):
     return Level.objects.filter(student_school_years__enrollments__semester__course_unit__course_modules__teacher=teacher)
 def get_teacher_semester_queryset(teacher):
     return Semester.objects.filter(course_unit__course_modules__teacher=teacher)
-def get_teacher_student_school_year(teacher):
+def get_teacher_student_school_year_queryset(teacher):
     return StudentSchoolYear.objects.filter(enrollments__semester__course_unit__course_modules__teacher=teacher)
 def get_teacher_enrollment_queryset(teacher):
     return Enrollment.objects.filter(semester__course_unit__course_modules__teacher=teacher)

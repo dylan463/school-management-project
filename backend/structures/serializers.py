@@ -157,7 +157,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 class CourseModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseModule
-        fields = ["code","label","credits","course_unit","teacher","volume_hours","is_active","created_at"]
+        fields = ["code","label","credits","min_val_score","course_unit","teacher","volume_hours","is_active","created_at"]
         read_only_fields = ["id","created_at"]
 
 class CourseModuleForListUnitSerializer(serializers.ModelSerializer):

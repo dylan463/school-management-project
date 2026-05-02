@@ -39,3 +39,13 @@ Veuillez vous connecter et changer votre mot de passe.
             recipient_list=[email],
             fail_silently=False
         )
+
+
+def is_user_student(user):
+    return user.role == CustomUser.Role.STUDENT
+
+def is_user_teacher(user):
+    return user.role == CustomUser.Role.TEACHER
+
+def is_user_superuser(user):
+    return user.role == CustomUser.Role.SUPERUSER

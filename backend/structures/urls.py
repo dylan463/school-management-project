@@ -9,6 +9,7 @@ router.register(r"semesters",SemesterViewSet)
 router.register(r"teaching_units",TeachingUnitViewSet,basename="teachingunits")
 router.register(r"cours_components",CourseComponentViewSet)
 router.register(r"enrollements",EnrollementViewSet)
+router.register(r"resources", ResourceViewSet)
 router.register(r"teacher", TeacherPortalViewSet, basename="teacherportal")
 router.register(r"student", StudentPortalViewSet, basename="studentportal")
 

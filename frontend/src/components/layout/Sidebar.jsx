@@ -21,21 +21,28 @@ const LogoutIcon  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 16 1
 
 /* ── Nav items per role ── */
 const ETU_NAV = [
-  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,   iconComponent: DashIcon,  section: 'Principal' },
-  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS, iconComponent: CalIcon,   section: 'Académique' },
-  { label: 'Mes notes',        to: ROUTES.NOTES,           iconComponent: NoteIcon,  section: null },
-  { label: 'Cours en ligne',   to: ROUTES.COURS,           iconComponent: FileIcon,  section: null },
-  { label: 'Pointage',         to: ROUTES.POINTAGE,        iconComponent: ClockIcon, section: null },
-  { label: 'Notifications',    to: '#',                    iconComponent: BellIcon,  section: 'Système', badge: 3 },
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,         iconComponent: DashIcon,  section: 'Principal' },
+  { label: 'Mes inscriptions', to: ROUTES.INSCRIPTIONS_ETU,      iconComponent: FileIcon,  section: 'Académique' },
+  { label: 'Mes cours',        to: ROUTES.MES_COURS_ETU,         iconComponent: FileIcon,  section: null },
+  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS_ETU,   iconComponent: CalIcon,   section: null },
+  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,  section: 'Système', badge: 3 },
 ]
 
 const ENS_NAV = [
-  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,  iconComponent: DashIcon,   section: 'Principal' },
-  { label: 'Mes étudiants',    to: ROUTES.ETUDIANTS_LIST, iconComponent: UsersIcon,  section: 'Pédagogie' },
-  { label: 'Saisie des notes', to: ROUTES.SAISIE_NOTES,   iconComponent: NoteIcon,   section: null },
-  { label: 'Mon planning',     to: ROUTES.PLANNING,       iconComponent: CalIcon,    section: null },
-  { label: 'Ressources',       to: ROUTES.RESSOURCES,     iconComponent: UploadIcon, section: null },
-  { label: 'Notifications',    to: '#',                   iconComponent: BellIcon,   section: 'Système', badge: 1 },
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,        iconComponent: DashIcon,   section: 'Principal' },
+  { label: 'Mes étudiants',    to: ROUTES.MES_ETUDIANTS,        iconComponent: UsersIcon,  section: 'Pédagogie' },
+  { label: 'Mes annotations',  to: ROUTES.MES_ANNOTATIONS,      iconComponent: NoteIcon,   section: null },
+  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,   section: 'Système', badge: 1 },
+]
+
+const ADMIN_NAV = [
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ADMIN,      iconComponent: DashIcon,   section: 'Principal' },
+  { label: 'Étudiants',        to: ROUTES.ETUDIANTS_ADMIN,      iconComponent: UsersIcon,  section: 'Gestion' },
+  { label: 'Enseignants',      to: ROUTES.ENSEIGNANTS_ADMIN,    iconComponent: UsersIcon,  section: null },
+  { label: 'Structures',       to: ROUTES.STRUCTURES_ADMIN,     iconComponent: FileIcon,   section: null },
+  { label: 'Enseignement',     to: ROUTES.ENSEIGNEMENT_ADMIN,   iconComponent: NoteIcon,   section: null },
+  { label: 'Inscriptions',     to: ROUTES.INSCRIPTIONS_ADMIN,   iconComponent: FileIcon,   section: null },
+  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,   section: 'Système', badge: 0 },
 ]
 
 /* ── SidebarItem ── */
@@ -71,7 +78,16 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
 /* ── Main Sidebar ── */
 export default function Sidebar({ role }) {
   const { logout, user } = useAuth()
-  const nav = role === ROLES.ETUDIANT ? ETU_NAV : ENS_NAV
+  
+  let nav = ETU_NAV
+  let title = 'Espace étudiant'
+  if (role === ROLES.ENSEIGNANT) {
+    nav = ENS_NAV
+    title = 'Espace enseignant'
+  } else if (role === ROLES.TEACHER_ADMIN) {
+    nav = ADMIN_NAV
+    title = 'Gestion système'
+  }
 
   // Group items by section
   const sections = []
@@ -89,18 +105,13 @@ export default function Sidebar({ role }) {
     <aside className="w-52 bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col flex-shrink-0 min-h-screen shadow-lg">
       {/* Header */}
       <div className="px-4 py-6 border-b border-white/[0.1]">
-        <h1 className="text-lg font-bold text-white">
-          {role === ROLES.ETUDIANT ? 'Espace étudiant' : 'Espace enseignant'}
-        </h1>
+        <h1 className="text-lg font-bold text-white">{title}</h1>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {sections.map(sec => (
           <div key={sec.label}>
-            <p className="px-4 pt-4 pb-1.5 text-[10px] font-semibold text-blue-200 uppercase tracking-widest">
-              {sec.label}
-            </p>
             {sec.items.map(item => (
               <SidebarItem key={item.to} {...item} />
             ))}

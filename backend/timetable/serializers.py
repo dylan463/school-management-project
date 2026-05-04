@@ -25,17 +25,27 @@ class TeacherAvailabilitySerializer(serializers.ModelSerializer):
 
 class TimeSlotSerializer(serializers.ModelSerializer):
     """Lecture seule enrichie — pour étudiant et enseignant."""
-    course_name  = serializers.CharField(
+    course_name        = serializers.CharField(
         source='course_component.name', read_only=True
     )
-    teacher_name = serializers.CharField(
+    course_credits     = serializers.IntegerField(
+        source='course_component.course_credits', read_only=True
+    )
+    teaching_unit_name = serializers.CharField(
+        source='course_component.teaching_unit.name', read_only=True
+    )
+    semester_name      = serializers.CharField(
+        source='semester.name', read_only=True
+    )
+    teacher_name       = serializers.CharField(
         source='teacher.get_full_name', read_only=True
     )
 
     class Meta:
         model  = TimeSlot
         fields = [
-            'id', 'semester', 'course_component', 'course_name',
+            'id', 'semester', 'semester_name', 'course_component',
+            'course_name', 'course_credits', 'teaching_unit_name',
             'teacher', 'teacher_name', 'day',
             'start_time', 'end_time', 'room', 'is_published'
         ]

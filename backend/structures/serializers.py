@@ -1,7 +1,7 @@
 from .models import (
-    Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement
+    Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement, Resource
 )
-from rest_framework.serializers import ModelSerializer,IntegerField
+from rest_framework.serializers import ModelSerializer, IntegerField, CharField
 from rest_framework.exceptions import ValidationError
 
 
@@ -27,9 +27,13 @@ class SemesterSerializer(ModelSerializer):
 
 
 class CourseComponentSerializer(ModelSerializer):
+    teaching_unit_name = CharField(source='teaching_unit.name', read_only=True)
+    semester_name = CharField(source='teaching_unit.semester.name', read_only=True)
+    level_code = CharField(source='teaching_unit.semester.level.code', read_only=True)
+
     class Meta:
         model = CourseComponent
-        fields = ["id", "name", "teaching_unit", "course_credits", "teacher"]
+        fields = ["id", "name", "teaching_unit", "teaching_unit_name", "course_credits", "teacher", "semester_name", "level_code"]
         read_only_fields = ["id","teacher"]
 
 
@@ -60,3 +64,13 @@ class EnrollementSerializer(ModelSerializer):
             raise ValidationError("Le semestre n'est pas actif")
 
         return attrs
+
+
+class ResourceSerializer(ModelSerializer):
+    teaching_unit_name = CharField(source='teaching_unit.name', read_only=True)
+    teacher_name = CharField(source='teacher.get_full_name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Resource
+        fields = ["id", "name", "description", "teaching_unit", "teaching_unit_name", "teacher", "teacher_name", "file_url", "file_type", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]

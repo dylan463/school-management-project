@@ -1,29 +1,32 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ROLES, ROUTES } from '../utils/constants'
 
-import PrivateRoute   from './PrivateRoute'
-import RoleRoute      from './RoleRoute'
-
 // Public
 import LandingPage    from '../pages/auth/LandingPage'
 import LoginPage      from '../pages/auth/LoginPage'
+import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage'
 
 // Layouts
 import AppLayout      from '../components/layout/AppLayout'
 
-// Étudiant pages
+// === ÉTUDIANT ===
 import DashboardEtudiant   from '../pages/etudiant/DashboardEtudiant'
-import NotesPage           from '../pages/etudiant/NotesPage'
-import EmploiDuTempsPage   from '../pages/etudiant/EmploiDuTempsPage'
-import CoursPage           from '../pages/etudiant/CoursPage'
-import PointagePage        from '../pages/etudiant/PointagePage'
+import MesInscriptions     from '../pages/etudiant/MesInscriptions'
+import MesCours            from '../pages/etudiant/MesCours'
+import EmploiDuTemps       from '../pages/etudiant/EmploiDuTemps'
 
-// Enseignant pages
+// === ENSEIGNANT ===
 import DashboardEnseignant from '../pages/enseignant/DashboardEnseignant'
-import EtudiantsPage       from '../pages/enseignant/EtudiantsPage'
-import SaisieNotesPage     from '../pages/enseignant/SaisieNotesPage'
-import PlanningPage        from '../pages/enseignant/PlanningPage'
-import RessourcesPage      from '../pages/enseignant/RessourcesPage'
+import MesEtudiants        from '../pages/enseignant/MesEtudiants'
+import MesAnnotations      from '../pages/enseignant/MesAnnotations'
+
+// === TEACHER ADMIN ===
+import DashboardTeacherAdmin from '../pages/teacher-admin/DashboardTeacherAdmin'
+import Etudiants            from '../pages/teacher-admin/Etudiants'
+import Enseignants          from '../pages/teacher-admin/Enseignants'
+import StructuresAcademiques from '../pages/teacher-admin/StructuresAcademiques'
+import Enseignement          from '../pages/teacher-admin/Enseignement'
+import Inscriptions          from '../pages/teacher-admin/Inscriptions'
 
 export default function AppRouter() {
   return (
@@ -31,31 +34,31 @@ export default function AppRouter() {
       {/* ── Public ── */}
       <Route path={ROUTES.HOME}  element={<LandingPage />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
 
-      {/* ── Étudiant (protected) ── */}
-      <Route element={<PrivateRoute />}>
-        <Route element={<RoleRoute allowedRole={ROLES.ETUDIANT} />}>
-          <Route element={<AppLayout role={ROLES.ETUDIANT} />}>
-            <Route path={ROUTES.DASHBOARD_ETU}   element={<DashboardEtudiant />} />
-            <Route path={ROUTES.NOTES}            element={<NotesPage />} />
-            <Route path={ROUTES.EMPLOI_DU_TEMPS} element={<EmploiDuTempsPage />} />
-            <Route path={ROUTES.COURS}            element={<CoursPage />} />
-            <Route path={ROUTES.POINTAGE}         element={<PointagePage />} />
-          </Route>
-        </Route>
+      {/* ── ÉTUDIANT ── */}
+      <Route element={<AppLayout role={ROLES.ETUDIANT} />}>
+        <Route path={ROUTES.DASHBOARD_ETU}         element={<DashboardEtudiant />} />
+        <Route path={ROUTES.INSCRIPTIONS_ETU}      element={<MesInscriptions />} />
+        <Route path={ROUTES.MES_COURS_ETU}         element={<MesCours />} />
+        <Route path={ROUTES.EMPLOI_DU_TEMPS_ETU}   element={<EmploiDuTemps />} />
       </Route>
 
-      {/* ── Enseignant (protected) ── */}
-      <Route element={<PrivateRoute />}>
-        <Route element={<RoleRoute allowedRole={ROLES.ENSEIGNANT} />}>
-          <Route element={<AppLayout role={ROLES.ENSEIGNANT} />}>
-            <Route path={ROUTES.DASHBOARD_ENS}   element={<DashboardEnseignant />} />
-            <Route path={ROUTES.ETUDIANTS_LIST}  element={<EtudiantsPage />} />
-            <Route path={ROUTES.SAISIE_NOTES}    element={<SaisieNotesPage />} />
-            <Route path={ROUTES.PLANNING}        element={<PlanningPage />} />
-            <Route path={ROUTES.RESSOURCES}      element={<RessourcesPage />} />
-          </Route>
-        </Route>
+      {/* ── ENSEIGNANT ── */}
+      <Route element={<AppLayout role={ROLES.ENSEIGNANT} />}>
+        <Route path={ROUTES.DASHBOARD_ENS}        element={<DashboardEnseignant />} />
+        <Route path={ROUTES.MES_ETUDIANTS}        element={<MesEtudiants />} />
+        <Route path={ROUTES.MES_ANNOTATIONS}      element={<MesAnnotations />} />
+      </Route>
+
+      {/* ── TEACHER ADMIN ── */}
+      <Route element={<AppLayout role={ROLES.TEACHER_ADMIN} />}>
+        <Route path={ROUTES.DASHBOARD_ADMIN}      element={<DashboardTeacherAdmin />} />
+        <Route path={ROUTES.ETUDIANTS_ADMIN}      element={<Etudiants />} />
+        <Route path={ROUTES.ENSEIGNANTS_ADMIN}    element={<Enseignants />} />
+        <Route path={ROUTES.STRUCTURES_ADMIN}     element={<StructuresAcademiques />} />
+        <Route path={ROUTES.ENSEIGNEMENT_ADMIN}   element={<Enseignement />} />
+        <Route path={ROUTES.INSCRIPTIONS_ADMIN}   element={<Inscriptions />} />
       </Route>
 
       {/* ── Catch-all ── */}

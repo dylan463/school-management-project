@@ -10,8 +10,11 @@ const enseignantService = {
   getEtudiants:  (id)          => api.get(`/enseignants/${id}/etudiants`).then(r => r.data),
   getPlanning:   (id, semaine) => api.get(`/enseignants/${id}/planning`, { params: { semaine } }).then(r => r.data),
   getRessources: (id)          => api.get(`/enseignants/${id}/ressources`).then(r => r.data),
+  getMyCourses:  ()            => api.get('/structures/teacher/my_courses/').then(r => r.data),
+  getStudentsByLevel: ()       => api.get('/structures/teacher/my_students_by_level/').then(r => r.data),
+  createResource:(data)        => api.post('/structures/resources/', data).then(r => r.data),
   getEvaluations:(id)          => api.get(`/enseignants/${id}/evaluations`).then(r => r.data),
-  saisirNote:    (evalId, data)=> api.post(`/evaluations/${evalId}/notes`, data).then(r => r.data),
+  saisirNote:   (evalId, data)=> api.post(`/evaluations/${evalId}/notes`, data).then(r => r.data),
   deposerRessource:(data)      => api.post('/ressources', data).then(r => r.data),
 }
 

@@ -19,6 +19,20 @@ const authService = {
     const { data } = await api.get('/auth/me')
     return data
   },
+
+  updateProfile: async (data) => {
+    const { data: updated } = await api.patch('/users/me', data)
+    return updated
+  },
+
+  validateToken: async () => {
+    try {
+      const { data } = await api.get('/auth/me')
+      return data
+    } catch (error) {
+      return null
+    }
+  },
 }
 
 export default authService

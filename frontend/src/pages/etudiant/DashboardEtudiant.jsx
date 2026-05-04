@@ -1,266 +1,492 @@
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect } from 'react'
 import StatCard from '../../components/ui/StatCard'
-import Card from '../../components/ui/Card'
-import ResourceItem from '../../components/ui/ResourceItem'
+import EditProfileModal from '../../components/ui/EditProfileModal'
 import etudiantService from '../../services/etudiantService'
 
-/* ── Stats ── */
-const DEFAULT_STATS = [
-  { label: 'Moyenne générale', value: '13.4', sub: 'Semestre 6' },
-  { label: 'Crédits validés',  value: '24',   sub: 'sur 30' },
-  { label: 'Absences',         value: '2',    sub: 'ce semestre', valueColor: 'text-red-600' },
-]
+// --- Helpers
 
-const normalizeNotes = (notes) => {
-  if (!notes) return []
-  if (Array.isArray(notes)) return notes
-  return notes.data || notes.items || []
+function normalizeTimetableData(data) {
+  if (!data) return []
+  return Array.isArray(data) ? data : []
 }
 
-const getAverage = (notes) => {
-  const normalized = normalizeNotes(notes)
-  if (Array.isArray(normalized) && normalized.length > 0) {
-    const values = normalized
-      .map(n => n.note ?? n.value ?? n.moyenne ?? 0)
-      .filter(v => typeof v === 'number')
-    if (values.length > 0) {
-      return (values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(1)
-    }
-  }
-  if (typeof notes?.average === 'number') return notes.average.toFixed(1)
-  if (typeof notes?.moyenne === 'number') return notes.moyenne.toFixed(1)
-  return 'N/A'
+function normalizeResources(data) {
+  if (!data) return []
+  if (!Array.isArray(data)) return []
+  return data.map(r => ({
+    title: r.name || 'Resource',
+    meta: `${r.teaching_unit_name || 'UE'} • ${r.teacher_name || 'Professeur'}`,
+    type: (r.file_type || r.type || 'document').toLowerCase(),
+    date: r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '',
+    description: r.description || '',
+    url: r.url || r.file_url || null,
+  }))
 }
 
-const getCreditsValides = (notes) => {
-  const normalized = normalizeNotes(notes)
-  if (Array.isArray(normalized) && normalized.length > 0) {
-    const credits = normalized
-      .map(n => n.credit ?? n.credits ?? 0)
-      .filter(v => typeof v === 'number')
-    if (credits.length > 0) {
-      return credits.reduce((sum, v) => sum + v, 0)
-    }
-  }
-  if (typeof notes?.creditsValides === 'number') return notes.creditsValides
-  if (typeof notes?.credits === 'number') return notes.credits
-  return '0'
-}
+function buildStats(notesData, pointagesData) {
+  const notes = Array.isArray(notesData) ? notesData : []
+  const pointages = Array.isArray(pointagesData) ? pointagesData : []
 
-const getAbsences = (pointages) => {
-  if (!pointages) return '0'
-  if (Array.isArray(pointages)) {
-    return pointages.filter(p => p.status === 'absent' || p.statut === 'absent' || p.absent).length
-  }
-  if (typeof pointages?.absences === 'number') return pointages.absences
-  if (typeof pointages?.count === 'number') return pointages.count
-  return '0'
-}
+  const moyenne =
+    notes.length > 0
+      ? (notes.reduce((sum, n) => sum + (n.valeur ?? n.note ?? 0), 0) / notes.length).toFixed(2)
+      : '-'
 
-const buildStats = (notes, pointages, semestre) => {
-  const moyenne = getAverage(notes)
-  const credits = getCreditsValides(notes)
-  const absences = getAbsences(pointages)
+  const absences = pointages.filter(p => p.statut === 'absent' || p.absent).length
 
   return [
-    { label: 'Moyenne générale', value: moyenne, sub: semestre ? `Semestre ${semestre}` : 'Semestre actuel' },
-    { label: 'Crédits validés', value: credits, sub: 'sur 30' },
-    { label: 'Absences', value: absences, sub: 'ce semestre', valueColor: Number(absences) > 0 ? 'text-red-600' : 'text-emerald-600' },
+    { label: 'Moyenne generale', value: moyenne, unit: '/20', color: 'blue' },
+    { label: 'Absences', value: absences, unit: 'seance(s)', color: 'amber' },
+    { label: 'UEs validees', value: notes.filter(n => (n.valeur ?? n.note ?? 0) >= 10).length, unit: `/ ${notes.length}`, color: 'green' },
   ]
 }
 
-/* ── Ressources ── */
-const DEFAULT_RESOURCES = [
-  { title: 'Cours — Communication optique', meta: 'Télécom · Prof. Randriana Erica · PDF · 3.2 Mo', type: 'PDF' },
-  { title: 'TP — Routage réseaux', meta: 'Informatique · Prof. Rasolomanana Jean · ZIP · 4.5 Mo', type: 'ZIP' },
-  { title: 'Exercices — Traitement d’images', meta: 'Télécom · Mme Ramafiarisona Malalatiana · PDF · 2.1 Mo', type: 'PDF' },
-]
+// Catégoriser les ressources par type
+function categorizeResources(resources) {
+  const categories = {
+    document: { label: 'Documents', icon: '📄', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', items: [] },
+    video:    { label: 'Vidéos',    icon: '🎬', color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', items: [] },
+    image:    { label: 'Images',    icon: '🖼️', color: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8', items: [] },
+    lien:     { label: 'Liens',     icon: '🔗', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0', items: [] },
+    autre:    { label: 'Autres',    icon: '📎', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', items: [] },
+  }
 
-const normalizeResources = (data) => {
-  if (!data) return []
-  if (Array.isArray(data)) return data
-  return data.items || data.data || []
+  resources.forEach(r => {
+    const t = r.type || ''
+    if (['mp4', 'avi', 'mov', 'mkv', 'video', 'webm'].includes(t)) {
+      categories.video.items.push(r)
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'image'].includes(t)) {
+      categories.image.items.push(r)
+    } else if (['http', 'https', 'lien', 'link', 'url'].includes(t) || (r.url && !r.title?.match(/\.(pdf|doc|docx|ppt|pptx|xls|xlsx)$/i))) {
+      categories.lien.items.push(r)
+    } else if (['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'document'].includes(t)) {
+      categories.document.items.push(r)
+    } else {
+      categories.autre.items.push(r)
+    }
+  })
+
+  return categories
 }
 
-const DEFAULT_TIMETABLE = {
-  Lundi: [
-    { time: '07h30 - 09h30', subject: 'Énergie et sécurité des sites', teacher: 'ET & ED : M. Rabearivelo Gericha', room: 'Salle A101', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Énergie et sécurité des sites', teacher: 'ET & ED : M. Rabearivelo Gericha', room: 'Salle A101', credits: 1 },
-    { time: '12h30 - 14h30', subject: 'Anglais dans le domaine de la Télécommunication', teacher: 'ET & ED : Mme Raharimbola Lucienne', room: 'Salle B202', credits: 1 },
-    { time: '14h30 - 16h30', subject: 'Technique de rédaction française', teacher: 'ET & ED :', room: 'Salle C303', credits: 1 },
-  ],
-  Mardi: [
-    { time: '07h30 - 09h30', subject: 'Évolution de la Radiocommunication mobile', teacher: 'ET & ED : M. Randriana Erica', room: 'Amphi A', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Évolution de la Radiocommunication mobile', teacher: 'ET & ED : M. Randriana Erica', room: 'Amphi A', credits: 1 },
-    { time: '12h30 - 14h30', subject: 'Web avancé', teacher: 'ET & ED : M. Andrianarison Mirado', room: 'Salle D404', credits: 1 },
-    { time: '14h30 - 16h30', subject: 'Web avancé', teacher: 'ET & ED : M. Andrianarison Mirado', room: 'Salle D404', credits: 1 },
-  ],
-  Mercredi: [
-    { time: '07h30 - 09h30', subject: 'Routage dans les réseaux informatiques', teacher: 'ET & ED : M. Rasolomanana Jean', room: 'Salle E505', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Routage dans les réseaux informatiques', teacher: 'ET & ED : M. Rasolomanana Jean', room: 'Salle E505', credits: 1 },
-    { time: '12h30 - 14h30', subject: 'Commutation Electronique', teacher: 'ET & ED : M. Randriamanampy Samuel', room: 'Lab F606', credits: 1 },
-    { time: '14h30 - 16h30', subject: 'Processus aléatoire', teacher: 'ET & ED : M. Ratsimbazafy Bakoly', room: 'Salle G707', credits: 1 },
-  ],
-  Jeudi: [
-    { time: '07h30 - 09h30', subject: 'Traitement d’images', teacher: 'ET & ED : Mme Ramafiarisona Malalatiana', room: 'Lab H808', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Traitement d’images', teacher: 'ET & ED : Mme Ramafiarisona Malalatiana', room: 'Lab H808', credits: 1 },
-    { time: '12h30 - 14h30', subject: 'Développement d’application d’entreprise', teacher: 'ET & ED : M. Randriariaona Elino', room: 'Salle I909', credits: 1 },
-    { time: '14h30 - 16h30', subject: 'Développement d’application d’entreprise', teacher: 'ET & ED : M. Randriariaona Elino', room: 'Salle I909', credits: 1 },
-  ],
-  Vendredi: [
-    { time: '07h30 - 09h30', subject: 'Communication optique', teacher: 'ET & ED : M. Randriana Erica', room: 'Amphi B', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Communication optique', teacher: 'ET & ED : M. Randriana Erica', room: 'Amphi B', credits: 1 },
-    { time: '12h30 - 14h30', subject: 'Réseaux sans fil', teacher: 'ET & ED : M. Ratsimbazafy Andriamanga', room: 'Salle J1010', credits: 1 },
-    { time: '14h30 - 16h30', subject: 'Réseaux sans fil', teacher: 'ET & ED : M. Ratsimbazafy Andriamanga', room: 'Salle J1010', credits: 1 },
-  ],
-  Samedi: [
-    { time: '07h30 - 09h30', subject: 'Angular', teacher: 'ET & ED : M. Rabearimanana Noël', room: 'Salle K1111', credits: 1 },
-    { time: '09h30 - 11h30', subject: 'Angular', teacher: 'ET & ED : M. Rabearimanana Noël', room: 'Salle K1111', credits: 1 },
-  ],
+// --- InfoRow
+function InfoRow({ label, value, mono = false, icon, last = false }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '2px',
+      padding: '10px 0',
+      borderBottom: last ? 'none' : '1px solid #f1f5f9',
+    }}>
+      <span style={{
+        fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: '#94a3b8',
+        display: 'flex', alignItems: 'center', gap: '5px',
+      }}>
+        {icon && <span style={{ fontSize: '11px' }}>{icon}</span>}
+        {label}
+      </span>
+      <span style={{
+        fontSize: '13px', fontWeight: 500, color: '#1e293b',
+        fontFamily: mono ? 'monospace' : 'inherit',
+        letterSpacing: mono ? '0.04em' : 'normal',
+      }}>
+        {value}
+      </span>
+    </div>
+  )
 }
 
-const normalizeTimetableData = (data) => {
-  if (!data) return {}
-  if (Array.isArray(data)) {
-    return data.reduce((acc, session) => {
-      const day = session.day || session.jour || session.dayName || 'Autre'
-      if (!acc[day]) acc[day] = []
-      acc[day].push(session)
-      return acc
-    }, {})
-  }
-  return data
-}
+// --- Informations Personnelles Card
+function PersonalInfoCard({ user, onEdit }) {
+  const initials = [user?.prenom?.[0], user?.nom?.[0]]
+    .filter(Boolean).join('').toUpperCase() || 'E'
 
-function Timetable({ timetable, loading, error }) {
-  const [selectedSession, setSelectedSession] = useState(null)
-
-  const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
-  const slots = ['07h30 - 09h30', '09h30 - 11h30', '12h30 - 14h30', '14h30 - 16h30']
-
-  const getSession = (day, time) => {
-    const sessions = timetable?.[day] || []
-    return sessions.find(s => s.time === time)
+  const PARCOURS_LABELS = {
+    RS:  'Réseaux et Systèmes',
+    RC:  'Radiocommunication',
+    STI: 'Systèmes et Traitement de l\'Information',
+    TRI: 'Technologies des Réseaux Informatiques',
   }
 
-  if (loading) {
-    return <div className="p-6 text-sm text-slate-500">Chargement de l'emploi du temps...</div>
-  }
-
-  if (error) {
-    return <div className="p-6 text-sm text-red-500">Impossible de charger l'emploi du temps.</div>
-  }
+  const fields = [
+    { label: 'Nom et prenoms', value: `${user?.prenom || ''} ${user?.nom || ''}`.trim() || 'Non renseigne' },
+    { label: 'Date de naissance', value: user?.date_naissance || user?.dateNaissance || 'Non renseignee' },
+    { label: 'Numero de telephone', value: user?.telephone || user?.phone || 'Non renseigne', mono: true },
+    { label: "Numero de carte d'identite", value: user?.cin || user?.numero_cin || 'Non renseigne', mono: true },
+    { label: 'Parcours', value: PARCOURS_LABELS[user?.parcours] || user?.parcours || 'Non renseigne' },
+    { label: 'Adresse', value: user?.adresse || user?.address || 'Non renseignee', last: true },
+  ]
 
   return (
-    <>
-      <div className="overflow-x-auto">
-        <div className="min-w-full bg-white rounded-lg border border-slate-200 shadow-sm">
-          <div className="grid grid-cols-7 gap-0">
-            {/* Header */}
-            <div className="bg-slate-100 border-b border-r border-slate-200 p-3 font-semibold text-slate-700 text-center">
-              Horaire
+    <div style={{
+      background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0',
+      overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)',
+      cursor: 'pointer', position: 'relative',
+    }} onClick={onEdit} title="Modifier mes informations">
+      <div style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+        padding: '16px 20px', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', right: '-24px', top: '-24px', width: '110px', height: '110px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+        <div style={{ position: 'absolute', right: '36px', bottom: '-36px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+          <div style={{
+            width: '46px', height: '46px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '18px', fontWeight: 700, color: 'white', flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(255,255,255,0.2)', letterSpacing: '0.02em',
+          }}>
+            {initials}
+          </div>
+          <div>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '15px', margin: 0, lineHeight: 1.3 }}>
+              {user?.prenom} {user?.nom}
+            </p>
+            <p style={{ color: '#93c5fd', fontSize: '11px', margin: '3px 0 0', letterSpacing: '0.05em' }}>
+              INFORMATIONS PERSONNELLES
+            </p>
+          </div>
+        </div>
+        <span style={{ position: 'absolute', top: 10, right: 18, color: '#fff', fontSize: 18, opacity: 0.7 }}>✎</span>
+      </div>
+
+      <div style={{ padding: '12px 20px 16px' }}>
+        <div style={{
+          marginBottom: '6px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+          background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
+          padding: '4px 12px', fontSize: '12px', fontWeight: 600, color: '#475569',
+          fontFamily: 'monospace', boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
+        }}>
+          <span style={{ color: '#94a3b8' }}>#</span>
+          {user?.matricule || 'ETU-2024-001'}
+        </div>
+        {fields.map((f) => (
+          <InfoRow key={f.label} label={f.label} value={f.value} mono={f.mono || false} last={f.last || false} />
+        ))}
+      </div>
+      <span style={{ position: 'absolute', bottom: 10, right: 18, color: '#64748b', fontSize: 12, opacity: 0.7 }}>
+        Cliquez pour modifier
+      </span>
+    </div>
+  )
+}
+
+// --- Semestre Card
+function SemestreCard({ user }) {
+  const semestre = user?.semestre || 1
+  const progress = Math.min(100, Math.round((semestre / 10) * 100))
+
+  return (
+    <div style={{
+      background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0',
+      overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 60%, #8b5cf6 100%)' }} />
+      <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+              Semestre actuel
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '4px' }}>
+              <span style={{ fontSize: '52px', fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>S{semestre}</span>
+              <span style={{ fontSize: '15px', color: '#cbd5e1', fontWeight: 600 }}>/10</span>
             </div>
-            {days.map(day => (
-              <div key={day} className="bg-slate-100 border-b border-r border-slate-200 p-3 font-semibold text-slate-700 text-center">
-                {day}
+          </div>
+          <span style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '20px',
+            padding: '4px 12px', fontSize: '12px', fontWeight: 600, color: '#16a34a',
+            display: 'flex', alignItems: 'center', gap: '5px',
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+            Actif
+          </span>
+        </div>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Progression du cursus</span>
+            <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: 700 }}>{progress}%</span>
+          </div>
+          <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #3b82f6, #6366f1)', borderRadius: '99px' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+            {[1,2,3,4,5,6,7,8,9,10].map(s => (
+              <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                <div style={{
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: s < semestre ? '#3b82f6' : s === semestre ? '#6366f1' : '#e2e8f0',
+                  boxShadow: s === semestre ? '0 0 0 3px #e0e7ff' : 'none',
+                }} />
+                <span style={{ fontSize: '10px', fontWeight: s === semestre ? 700 : 400, color: s <= semestre ? '#3b82f6' : '#cbd5e1' }}>
+                  S{s}
+                </span>
               </div>
             ))}
+          </div>
+        </div>
+        <div style={{
+          background: '#f8fafc', borderRadius: '10px', padding: '10px 14px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto',
+        }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>Annee academique</span>
+          <span style={{ fontSize: '13px', color: '#1e293b', fontWeight: 700 }}>2025 - 2026</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-            {/* Rows */}
-            {slots.map(slot => (
-              <>
-                <div className="border-b border-r border-slate-200 p-3 text-sm text-slate-600 bg-slate-50 text-center font-medium">
-                  {slot}
-                </div>
-                {days.map(day => {
-                  const session = getSession(day, slot)
-                  return (
-                    <div
-                      key={`${day}-${slot}`}
-                      className={`border-b border-r border-slate-200 p-3 min-h-[80px] bg-white hover:bg-slate-50 transition-colors ${
-                        session ? 'cursor-pointer' : ''
-                      }`}
-                      onClick={() => session && setSelectedSession(session)}
-                    >
-                      {session ? (
-                        <div className="h-full flex flex-col justify-center">
-                          <div className="text-sm font-medium text-slate-800 mb-1">{session.subject}</div>
-                          <div className="text-xs text-slate-500">{session.teacher || '-'}</div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-slate-400 italic">Libre</div>
-                      )}
-                    </div>
-                  )
-                })}
-              </>
-            ))}
+// --- UE Card
+function UnitiesCard() {
+  const [openId, setOpenId] = useState(null)
+  const [ues, setUes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchUes = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await etudiantService.getUniteEnseignement()
+        const transformed = Array.isArray(data) ? data.map(u => ({
+          id: u.id,
+          nom: u.name,
+          code: u.code,
+          credits: u.courses ? u.courses.reduce((sum, c) => sum + (c.course_credits || 0), 0) : 0,
+          statut: 'Valide',
+          ecs: (u.courses || []).map(c => ({ nom: c.name, credits: c.course_credits || 0 }))
+        })) : []
+        setUes(transformed)
+      } catch (err) {
+        setError(err.message || "Impossible de charger les unités d'enseignement")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUes()
+  }, [])
+
+  const totalCredits = ues.reduce((s, u) => s + u.credits, 0)
+  const validated = ues.filter(u => u.statut === 'Valide').length
+
+  return (
+    <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Unites d'Enseignement Inscrites</h3>
+          <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#94a3b8' }}>Semestre en cours</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '6px 12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>{totalCredits}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#60a5fa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Credits</p>
+          </div>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '6px 12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>{validated}/{ues.length}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#4ade80', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Validees</p>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
-      {selectedSession && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedSession(null)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Détails du cours</h3>
-            <div className="space-y-3">
-              <div>
-                <span className="font-medium text-slate-700">Matière:</span>
-                <p className="text-slate-600">{selectedSession.subject}</p>
+      {loading ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Chargement...</div>
+      ) : error ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#ef4444', fontSize: '14px' }}>{error}</div>
+      ) : ues.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Aucune unité disponible</div>
+      ) : (
+        <div>
+          {ues.map((ue, idx) => {
+            const isValide = ue.statut === 'Valide'
+            const isOpen = openId === ue.id
+            const totalEC = ue.ecs.reduce((s, e) => s + e.credits, 0)
+            const isLast = idx === ues.length - 1
+            return (
+              <div key={ue.id} style={{ borderBottom: isLast && !isOpen ? 'none' : '1px solid #f1f5f9' }}>
+                <div
+                  onClick={() => setOpenId(isOpen ? null : ue.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 20px', cursor: 'pointer', userSelect: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0, background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 800, color: '#7c3aed' }}>
+                    {ue.credits}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ue.nom}</p>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: '6px', padding: '1px 6px', whiteSpace: 'nowrap', flexShrink: 0 }}>{totalEC} cr. EC</span>
+                    </div>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#475569', background: '#f1f5f9', padding: '1px 7px', borderRadius: '4px', fontWeight: 600 }}>{ue.code}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: isValide ? '#f0fdf4' : '#fffbeb', color: isValide ? '#16a34a' : '#d97706', border: `1px solid ${isValide ? '#bbf7d0' : '#fde68a'}` }}>
+                      {ue.statut}
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: '#94a3b8', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
+                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+                {isOpen && (
+                  <div style={{ background: '#f8fafc', borderTop: '1px solid #f1f5f9', padding: '12px 20px 14px 72px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Elements Constitutifs</span>
+                      <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }} />
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: '6px', padding: '1px 7px' }}>Total : {totalEC} cr.</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {ue.ecs.map((ec, ecIdx) => (
+                        <div key={ecIdx} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '9px 14px' }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '7px', flexShrink: 0, background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, color: '#4338ca' }}>{ec.credits}</div>
+                          <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#1e293b', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ec.nom}</p>
+                          <span style={{ flexShrink: 0, fontSize: '11px', fontWeight: 600, color: '#6366f1', background: '#eef2ff', borderRadius: '6px', padding: '2px 8px' }}>{ec.credits} cr.</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div>
-                <span className="font-medium text-slate-700">Enseignant:</span>
-                <p className="text-slate-600">{selectedSession.teacher || 'Non spécifié'}</p>
-              </div>
-              <div>
-                <span className="font-medium text-slate-700">Salle:</span>
-                <p className="text-slate-600">{selectedSession.room}</p>
-              </div>
-              <div>
-                <span className="font-medium text-slate-700">Crédits:</span>
-                <p className="text-slate-600">{selectedSession.credits}</p>
-              </div>
-            </div>
-            <button
-              className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-              onClick={() => setSelectedSession(null)}
-            >
-              Fermer
-            </button>
-          </div>
+            )
+          })}
         </div>
       )}
-    </>
+    </div>
   )
 }
 
+// --- Mes Cours Card (comptage par type de ressource)
+function MesCoursCard({ resources, loading, error }) {
+  const categories = categorizeResources(resources)
+
+  const counts = [
+    { key: 'document', ...categories.document },
+    { key: 'video',    ...categories.video },
+    { key: 'image',    ...categories.image },
+    { key: 'lien',     ...categories.lien },
+    { key: 'autre',    ...categories.autre },
+  ].filter(c => c.items.length > 0) // n'afficher que les types qui ont des ressources
+
+  const total = resources.length
+
+  return (
+    <div style={{
+      background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0',
+      overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05)',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Mes Cours</h3>
+          <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#94a3b8' }}>Ressources disponibles ce semestre</p>
+        </div>
+        {/* Badge total */}
+        <div style={{
+          background: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: '10px', padding: '6px 14px', textAlign: 'center',
+        }}>
+          <p style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>
+            {loading ? '…' : total}
+          </p>
+          <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#60a5fa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Total
+          </p>
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          Chargement des ressources...
+        </div>
+      ) : error ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: '#ef4444', fontSize: '14px' }}>{error}</div>
+      ) : total === 0 ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          Aucune ressource disponible pour ce semestre.
+        </div>
+      ) : (
+        <div style={{ padding: '16px 20px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+          {counts.map(cat => (
+            <div key={cat.key} style={{
+              flex: '1 1 120px',
+              background: cat.bg,
+              border: `1px solid ${cat.border}`,
+              borderRadius: '12px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              {/* Icône */}
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '10px',
+                background: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '20px', flexShrink: 0,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              }}>
+                {cat.icon}
+              </div>
+              {/* Texte */}
+              <div>
+                <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: cat.color, lineHeight: 1 }}>
+                  {cat.items.length}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', fontWeight: 600, color: cat.color, opacity: 0.8 }}>
+                  {cat.label}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Page principale
 export default function DashboardEtudiant() {
-  const { user } = useAuth()
-  const [stats, setStats] = useState(DEFAULT_STATS)
-  const [timetable, setTimetable] = useState(DEFAULT_TIMETABLE)
-  const [resources, setResources] = useState(DEFAULT_RESOURCES)
+  const { user, setUser } = useAuth()
+
+  const [editOpen, setEditOpen] = useState(false)
+
+  const [timetable, setTimetable] = useState([])
   const [loadingEmploi, setLoadingEmploi] = useState(false)
   const [emploiError, setEmploiError] = useState(null)
+
+  const [stats, setStats] = useState([])
   const [loadingStats, setLoadingStats] = useState(false)
   const [statsError, setStatsError] = useState(null)
+
+  const [resources, setResources] = useState([])
   const [loadingResources, setLoadingResources] = useState(false)
   const [resourcesError, setResourcesError] = useState(null)
 
   useEffect(() => {
     if (!user) return
 
+    const studentId = user.id || user.matricule
+    const semestre = user.semestre || user.niveau || undefined
+
     const fetchEmploiDuTemps = async () => {
       setLoadingEmploi(true)
       setEmploiError(null)
       try {
-        const studentId = user.id || user.matricule
-        const semestre = user.semestre || user.niveau || undefined
         const data = await etudiantService.getEmploiDuTemps(studentId, semestre)
         setTimetable(normalizeTimetableData(data))
       } catch (err) {
-        setEmploiError(err.message || 'Impossible de charger l’emploi du temps')
+        setEmploiError(err.message || "Impossible de charger l'emploi du temps")
       } finally {
         setLoadingEmploi(false)
       }
@@ -270,13 +496,11 @@ export default function DashboardEtudiant() {
       setLoadingStats(true)
       setStatsError(null)
       try {
-        const studentId = user.id || user.matricule
-        const semestre = user.semestre || user.niveau || undefined
-        const [notesData, pointagesData] = await Promise.all([
-          etudiantService.getNotes(studentId),
-          etudiantService.getPointages(studentId),
+        const [notes, pointages] = await Promise.all([
+          etudiantService.getNotes(studentId, semestre),
+          etudiantService.getPointages(studentId, semestre),
         ])
-        setStats(buildStats(notesData, pointagesData, semestre))
+        setStats(buildStats(notes, pointages))
       } catch (err) {
         setStatsError(err.message || 'Impossible de charger les statistiques')
       } finally {
@@ -288,8 +512,7 @@ export default function DashboardEtudiant() {
       setLoadingResources(true)
       setResourcesError(null)
       try {
-        const studentId = user.id || user.matricule
-        const data = await etudiantService.getRessources(studentId)
+        const data = await etudiantService.getResources(studentId, semestre)
         setResources(normalizeResources(data))
       } catch (err) {
         setResourcesError(err.message || 'Impossible de charger les ressources')
@@ -303,15 +526,45 @@ export default function DashboardEtudiant() {
     fetchResources()
   }, [user])
 
+  const semestreOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  const handleSaveProfile = async (form) => {
+    try {
+      const updated = await etudiantService.updateProfile(form)
+      setUser(updated)
+      setEditOpen(false)
+    } catch (e) {
+      alert('Erreur lors de la sauvegarde')
+    }
+  }
+
   return (
     <div className="fade-in space-y-6">
+
       {/* Bienvenue */}
       <div>
         <h2 className="text-lg font-bold text-slate-800">
-          Bonjour, {user?.prenom || 'étudiant'}
+          Bonjour, {user?.prenom || 'etudiant'}
         </h2>
-        <p className="text-sm text-slate-500">Résumé de votre parcours ce semestre</p>
+        <p className="text-sm text-slate-500">Resume de votre parcours ce semestre</p>
       </div>
+
+      {/* Cartes du haut */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <PersonalInfoCard user={user} onEdit={() => setEditOpen(true)} />
+        <SemestreCard user={user} />
+      </div>
+
+      <EditProfileModal
+        user={user}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSave={handleSaveProfile}
+        semestreOptions={semestreOptions}
+      />
+
+      {/* UEs */}
+      <UnitiesCard />
 
       {/* Statistiques */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -324,20 +577,13 @@ export default function DashboardEtudiant() {
         )}
       </div>
 
-      <Card title={`Emploi du temps${user?.semestre || user?.niveau ? ` — ${user?.semestre || user?.niveau}` : ''}`}>
-        <Timetable timetable={timetable} loading={loadingEmploi} error={emploiError} />
-      </Card>
+      {/* Mes Cours — comptage par type */}
+      <MesCoursCard
+        resources={resources}
+        loading={loadingResources}
+        error={resourcesError}
+      />
 
-      {/* Ressources */}
-      <Card title="Ressources récentes">
-        {loadingResources ? (
-          <div className="p-4 text-sm text-slate-500">Chargement des ressources...</div>
-        ) : resourcesError ? (
-          <div className="p-4 text-sm text-red-500">Impossible de charger les ressources.</div>
-        ) : (
-          resources.map((r, i) => <ResourceItem key={i} {...r} />)
-        )}
-      </Card>
     </div>
   )
 }

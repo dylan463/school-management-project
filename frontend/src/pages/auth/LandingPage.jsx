@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { ROUTES, ROLES } from '../../utils/constants'
 import { useEffect } from 'react'
+import bgImage from '../../assets/Departement.jpeg'
 
 
 export default function LandingPage() {
@@ -15,8 +16,8 @@ export default function LandingPage() {
   }, [isAuthenticated, role, navigate])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-white to-blue-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-3xl bg-white rounded-2xl p-10 text-center shadow-xl">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+      <div className="w-full max-w-3xl bg-white bg-opacity-50 rounded-2xl p-10 text-center shadow-xl backdrop-blur-sm">
         
         {/* Logo et titre centré */}
         <div className="flex flex-col items-center mb-10">

@@ -1,8 +1,8 @@
 from rest_framework import viewsets
-from .models import Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement
+from .models import Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement, Resource
 from .serializers import (
     LevelSerializer, FormationSerializer, SemesterSerializer,
-    TeachingUnitSerializer, CourseComponentSerializer, EnrollementSerializer
+    TeachingUnitSerializer, CourseComponentSerializer, EnrollementSerializer, ResourceSerializer
 )
 from rest_framework.exceptions import ValidationError
 from users.permissions import *
@@ -38,6 +38,44 @@ class SemesterViewSet(viewsets.ModelViewSet):
 class TeachingUnitViewSet(viewsets.ModelViewSet):
     serializer_class = TeachingUnitSerializer
     permission_classes = [IsStaffOrSuperUser]
+
+class ResourceViewSet(viewsets.ModelViewSet):
+    serializer_class = ResourceSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsTeacher()]
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = Resource.objects.select_related('teaching_unit', 'teacher')
+        if user.is_staff or user.is_superuser:
+            return qs
+        if user.is_teacher:
+            return qs.filter(teacher=user)
+
+        # student access
+        level_id = self.request.query_params.get('level_id')
+        semester_id = self.request.query_params.get('semester_id')
+        if level_id:
+            return qs.filter(teaching_unit__semester__level_id=level_id)
+        if semester_id:
+            return qs.filter(teaching_unit__semester_id=semester_id)
+
+        try:
+            enrollement = Enrollement.objects.get(
+                student=user,
+                semester__is_active=True
+            )
+            semester = enrollement.semester
+        except Enrollement.DoesNotExist:
+            return Resource.objects.none()
+
+        return qs.filter(teaching_unit__semester=semester)
+
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
 
     def get_queryset(self):
         return TeachingUnit.objects.prefetch_related('courses').annotate(
@@ -156,6 +194,26 @@ class StudentPortalViewSet(viewsets.GenericViewSet):
 
         return Response(UserSerializer(classmates, many=True).data)
 
+    @action(detail=False, methods=["get"])
+    def my_resources(self, request):
+        student = request.user
+
+        try:
+            enrollement = Enrollement.objects.get(
+                student=student,
+                semester__is_active=True
+            )
+            semester = enrollement.semester
+        except Enrollement.DoesNotExist:
+            return Response([], status=200)
+
+        # Obtenir les ressources des unités d'enseignement du semestre
+        resources = Resource.objects.filter(
+            teaching_unit__semester=semester
+        ).select_related('teaching_unit', 'teacher').order_by('-created_at')[:10]
+
+        return Response(ResourceSerializer(resources, many=True).data)
+
 
 # endpoint pour les professeurs pour voir les cours qu'ils enseignent, les étudiants inscrits dans leurs cours et les semestres associés à leurs cours
 class TeacherPortalViewSet(viewsets.GenericViewSet):
@@ -190,6 +248,32 @@ class TeacherPortalViewSet(viewsets.GenericViewSet):
         ).distinct()
 
         return Response(SemesterSerializer(semesters, many=True).data)
+
+    @action(detail=False, methods=["get"])
+    def my_students_by_level(self, request):
+        teacher = request.user
+
+        # Semesters where the teacher actually teaches
+        semester_ids = CourseComponent.objects.filter(
+            teacher=teacher
+        ).values_list('teaching_unit__semester_id', flat=True).distinct()
+
+        levels = Level.objects.filter(
+            semesters__id__in=semester_ids
+        ).distinct()
+
+        result = []
+        for level in levels:
+            students = StudentUser.objects.filter(
+                enrollements__semester__id__in=semester_ids,
+                enrollements__semester__level=level
+            ).distinct()
+            result.append({
+                "level": LevelSerializer(level).data,
+                "students": UserSerializer(students, many=True).data
+            })
+
+        return Response(result)
     
 
 

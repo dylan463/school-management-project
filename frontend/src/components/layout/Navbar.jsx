@@ -27,27 +27,6 @@ export default function Navbar() {
   return (
     <header className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-6 flex-shrink-0">
       <h1 className="text-[15px] font-semibold text-slate-800">{title}</h1>
-
-      {path !== '/dashboard-etudiant' && (
-        <div className="flex items-center gap-3">
-          {/* Notification dot */}
-          <div className="relative">
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 20 20">
-              <path d="M10 2a6 6 0 00-6 6v2.5L3 13h14l-1-2.5V8a6 6 0 00-6-6zM8 15a2 2 0 004 0" stroke="currentColor" strokeWidth="1.4"/>
-            </svg>
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
-          </div>
-
-          {/* User info */}
-          <div className="flex items-center gap-2">
-            <Avatar name={fullName} colorIndex={role === ROLES.ETUDIANT ? 0 : 1} />
-            <div className="hidden sm:block">
-              <p className="text-[13px] font-medium text-slate-800 leading-tight">{fullName}</p>
-              <p className="text-[10px] text-slate-400 leading-tight">{subtitle}</p>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   )
 }

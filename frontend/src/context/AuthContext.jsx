@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import authService from '../services/authService'
 import { storage } from '../utils/storage'
@@ -12,7 +12,7 @@ const MOCK_USERS = {
     password: '1234',
     token:    'mock-token-etudiant',
     role:     ROLES.ETUDIANT,
-    user:     { matricule: 'ETU-2024-001', nom: 'Rakoto', prenom: 'Ny Aina', email: 'rakoto@espa.mg' },
+    user:     { id: 'etu-1', matricule: 'ETU-2024-001', nom: 'Rakoto', prenom: 'Ny Aina', email: 'rakoto@espa.mg', semestre: 3 },
   },
   'ENS-0089': {
     password: '1234',
@@ -35,13 +35,42 @@ async function mockLogin(matricule, motDePasse) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(storage.getUser())
-  const [role,    setRole]    = useState(storage.getRole())
-  const [token,   setToken]   = useState(storage.getToken())
-  const [loading, setLoading] = useState(false)
+  const [user,    setUser]    = useState(null)
+  const [role,    setRole]    = useState(null)
+  const [token,   setToken]   = useState(null)
+  const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
   const navigate = useNavigate()
+
+  // Valide le token au démarrage
+  useEffect(() => {
+    const validateToken = async () => {
+      const storedToken = storage.getToken()
+      
+      if (storedToken) {
+        try {
+          // Teste le token avec l'endpoint /auth/me
+          const response = await authService.validateToken()
+          if (response) {
+            // Token valide, restaure la session
+            setToken(storedToken)
+            setRole(storage.getRole())
+            setUser(storage.getUser())
+          } else {
+            // Token invalide, le nettoye
+            storage.clear()
+          }
+        } catch (err) {
+          // Token expiré ou invalide
+          storage.clear()
+        }
+      }
+      setLoading(false)
+    }
+    
+    validateToken()
+  }, [])
 
   const isAuthenticated = !!token
 
@@ -63,8 +92,10 @@ export function AuthProvider({ children }) {
 
       if (data.role === ROLES.ETUDIANT) {
         navigate(ROUTES.DASHBOARD_ETU)
-      } else {
+      } else if (data.role === ROLES.ENSEIGNANT) {
         navigate(ROUTES.DASHBOARD_ENS)
+      } else if (data.role === ROLES.TEACHER_ADMIN) {
+        navigate(ROUTES.DASHBOARD_ADMIN)
       }
     } catch (err) {
       setError(err.message || err.response?.data?.message || 'Identifiants incorrects.')
@@ -83,7 +114,7 @@ export function AuthProvider({ children }) {
   }, [navigate])
 
   const value = {
-    user, role, token,
+    user, setUser, role, token,
     loading, error, setError,
     isAuthenticated,
     login, logout,

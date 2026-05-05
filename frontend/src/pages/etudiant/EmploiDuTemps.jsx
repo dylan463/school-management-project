@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import Card from '../../components/ui/Card'
+import etudiantService from '../../services/etudiantService'
 
-const DAYS  = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
-const SLOTS = ['07h30', '10h00', '13h30', '16h00']
+const DAYS  = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+const SLOTS = ['07h30', '9h30', '11h30', '12h30', '14h30', '16h30']
 
 const COLORS = {
   blue:   'bg-blue-50 text-blue-800 border-blue-200',
@@ -10,28 +13,60 @@ const COLORS = {
   purple: 'bg-purple-50 text-purple-800 border-purple-200',
 }
 
-const EDT = {
-  'Lundi-07h30':    { label: 'Électronique', type: 'Cours', room: 'Salle B12', prof: 'Prof. Razafindrakoto', color: 'blue'   },
-  'Mercredi-07h30': { label: 'Réseaux',      type: 'TP',    room: 'Labo 2',    prof: 'Prof. Andriamanjato', color: 'green'  },
-  'Vendredi-07h30': { label: 'Signal',        type: 'Cours', room: 'Salle A4',  prof: 'Prof. Randriamanantena', color: 'purple' },
-  'Mardi-10h00':    { label: 'Maths App.',    type: 'TD',    room: 'Amphi C',   prof: 'Prof. Ramaroson',     color: 'amber'  },
-  'Jeudi-10h00':    { label: 'Électronique',  type: 'TP',    room: 'Labo 1',    prof: 'Prof. Razafindrakoto', color: 'blue'   },
-  'Lundi-13h30':    { label: 'Réseaux',       type: 'Cours', room: 'Salle B12', prof: 'Prof. Andriamanjato', color: 'green'  },
-  'Jeudi-13h30':    { label: 'Signal',         type: 'TD',   room: 'Amphi A',   prof: 'Prof. Randriamanantena', color: 'purple' },
-  'Vendredi-13h30': { label: 'Maths App.',    type: 'Cours', room: 'Salle A4',  prof: 'Prof. Ramaroson',     color: 'amber'  },
-}
+export default function EmploiDuTemps() {
+  const { user } = useAuth()
+  const [edtData, setEdtData] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-export default function EmploiDuTempsPage() {
+  const studentId = user?.id || user?.matricule
+  const semestre = user?.semestre || user?.niveau
+
+  useEffect(() => {
+    const fetchEdt = async () => {
+      try {
+        const data = await etudiantService.getEmploiDuTemps(studentId, semestre)
+        const edtMap = {}
+        data.forEach(item => {
+          const key = `${item.day}-${item.time}`
+          edtMap[key] = item
+        })
+        setEdtData(edtMap)
+      } catch (err) {
+        setError('Erreur lors du chargement de l\'emploi du temps')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (!studentId || !semestre) {
+      setLoading(false)
+      return
+    }
+
+    fetchEdt()
+  }, [studentId, semestre])
+
+  if (loading) return <div className="fade-in">Chargement...</div>
+  if (error) return <div className="fade-in text-red-500">{error}</div>
+  if (!studentId || !semestre) {
+    return (
+      <div className="fade-in text-slate-600">
+        Semestre non défini pour cet utilisateur. Veuillez vérifier vos informations de profil.
+      </div>
+    )
+  }
+
   return (
     <div className="fade-in space-y-4">
       <div className="mb-1">
-        <h2 className="text-base font-semibold text-slate-800">Emploi du temps — Semestre 3</h2>
+        <h2 className="text-base font-semibold text-slate-800">Emploi du temps — Semestre {semestre}</h2>
         <p className="text-xs text-slate-400 mt-0.5">Semaine du 7 au 11 avril 2026</p>
       </div>
 
       <Card>
         <div className="overflow-x-auto">
-          <div className="grid gap-1.5 min-w-[600px]" style={{ gridTemplateColumns: '64px repeat(5, 1fr)' }}>
+          <div className="grid gap-1.5 min-w-[600px]" style={{ gridTemplateColumns: '64px repeat(6, 1fr)' }}>
             {/* Header */}
             <div />
             {DAYS.map(d => (
@@ -44,7 +79,7 @@ export default function EmploiDuTempsPage() {
                 <div key={`t-${slot}`} className="text-xs text-slate-400 pt-2 flex-shrink-0">{slot}</div>
                 {DAYS.map(day => {
                   const key  = `${day}-${slot}`
-                  const cell = EDT[key]
+                  const cell = edtData[key]
                   return cell ? (
                     <div key={key} className={`rounded-xl p-2.5 border text-xs min-h-[56px] ${COLORS[cell.color]}`}>
                       <p className="font-semibold leading-tight">{cell.label}</p>

@@ -1,172 +1,247 @@
+import { useState, useEffect } from 'react'
 import { useAuth }    from '../../context/AuthContext'
-import StatCard       from '../../components/ui/StatCard'
+import authService    from '../../services/authService'
+import enseignantService from '../../services/enseignantService'
+import { storage }   from '../../utils/storage'
 import Card           from '../../components/ui/Card'
-import Pill           from '../../components/ui/Pill'
-import NotifItem      from '../../components/ui/NotifItem'
-
-const STATS = [
-  { label: 'Étudiants encadrés', value: '87',  sub: 'ce semestre' },
-  { label: 'UE actives',          value: '3',   sub: 'cours dispensés' },
-  { label: 'Notes à saisir',      value: '24',  sub: 'en attente', valueColor: 'text-amber-600' },
-  { label: 'Ressources déposées', value: '11',  sub: 'ce semestre' },
-]
-
-const ETUDIANTS = [
-  { matricule: 'ETU-001', nom: 'Rakoto Ny Aina', tp: 14, exam: 15, statut: 'Validé'     },
-  { matricule: 'ETU-002', nom: 'Rabe Miora',      tp: 12, exam: null, statut: 'En attente' },
-  { matricule: 'ETU-003', nom: 'Andry Hasina',    tp: 9,  exam: 8,  statut: 'Insuffisant' },
-  { matricule: 'ETU-004', nom: 'Voahangy Solo',   tp: 16, exam: 17, statut: 'Validé'     },
-  { matricule: 'ETU-005', nom: 'Fenitra Alain',   tp: 13, exam: null, statut: 'En attente' },
-]
-
-const PLANNING = [
-  { time: 'Lun 07h30', cours: 'Électronique — Cours magistral', room: 'Salle B12 · 2h' },
-  { time: 'Mar 10h00', cours: 'Électronique — TP Labo',         room: 'Labo 1 · 3h'    },
-  { time: 'Jeu 13h30', cours: 'Antennes — Cours',               room: 'Amphi A · 2h'   },
-  { time: 'Ven 07h30', cours: 'Antennes — TD',                  room: 'Salle A4 · 2h'  },
-]
-
-const RESSOURCES = [
-  { titre: 'Cours 4 — Modulation AM/FM', consultations: 47, bg: 'bg-blue-50' },
-  { titre: 'TD 3 — Filtres actifs',       consultations: 38, bg: 'bg-amber-50' },
-]
-
-const EVALUATIONS = [
-  { ec: 'Électronique — EC1', type: 'Examen', date: '14/04/2026', saisi: 0,  total: 87 },
-  { ec: 'Électronique — EC2', type: 'TP',     date: 'passé',      saisi: 87, total: 87 },
-  { ec: 'Antennes — EC1',     type: 'Examen', date: '20/04/2026', saisi: 0,  total: 52 },
-]
-
-const NOTIFS = [
-  { message: 'Rappel : 24 notes à saisir avant le 14/04', time: "Aujourd'hui", color: 'amber' },
-]
+import TeacherProfileModal from '../../components/ui/TeacherProfileModal'
 
 export default function DashboardEnseignant() {
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
+  const [editOpen, setEditOpen] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [schedule, setSchedule] = useState([])
+  const [scheduleLoading, setScheduleLoading] = useState(true)
+  const [scheduleError, setScheduleError] = useState(null)
+  const [courses, setCourses] = useState([])
+  const [resourceTitle, setResourceTitle] = useState('')
+  const [resourceCourseId, setResourceCourseId] = useState('')
+  const [resourceFile, setResourceFile] = useState(null)
+  const [uploadError, setUploadError] = useState(null)
+  const [uploadSuccess, setUploadSuccess] = useState(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleSaveProfile = async (form) => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const updated = await authService.updateProfile(form)
+      setUser && setUser(updated)
+      storage.setUser(updated)
+      setEditOpen(false)
+    } catch (err) {
+      setSaveError(err.response?.data?.detail || err.message || 'Impossible de sauvegarder le profil')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const formatDay = (day) => {
+    const dayMap = {
+      MON: 'Lundi',
+      TUE: 'Mardi',
+      WED: 'Mercredi',
+      THU: 'Jeudi',
+      FRI: 'Vendredi',
+      SAT: 'Samedi',
+    }
+    return dayMap[day] || day || '—'
+  }
+
+  const formatTime = (start, end) => {
+    if (!start || !end) return '—'
+    return `${start.slice(0, 5)} - ${end.slice(0, 5)}`
+  }
+
+  useEffect(() => {
+    const loadSchedule = async () => {
+      setScheduleLoading(true)
+      setScheduleError(null)
+      try {
+        const data = await enseignantService.getMySchedule()
+        setSchedule(data)
+      } catch (err) {
+        setScheduleError(err.response?.data?.detail || err.message || 'Impossible de charger les cours')
+      } finally {
+        setScheduleLoading(false)
+      }
+    }
+
+    const loadCourses = async () => {
+      try {
+        const data = await enseignantService.getMyCourses()
+        setCourses(data)
+        if (data.length > 0) {
+          setResourceCourseId(data[0]?.id || '')
+        }
+      } catch (err) {
+        console.error('Impossible de charger les matières', err)
+      }
+    }
+
+    loadSchedule()
+    loadCourses()
+  }, [])
+
+  const handleResourceUpload = async (event) => {
+    event.preventDefault()
+    setUploading(true)
+    setUploadError(null)
+    setUploadSuccess(null)
+
+    if (!resourceTitle.trim() || !resourceCourseId || !resourceFile) {
+      setUploadError('Veuillez compléter le titre, la matière et le fichier.')
+      setUploading(false)
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('title', resourceTitle.trim())
+    formData.append('course_component', resourceCourseId)
+    formData.append('file', resourceFile)
+
+    try {
+      await enseignantService.createResource(formData)
+      setUploadSuccess('Ressource téléversée avec succès.')
+      setResourceTitle('')
+      setResourceFile(null)
+      setUploadError(null)
+      setResourceCourseId(courses[0]?.id || '')
+      document.getElementById('resource-file-input')?.value && (document.getElementById('resource-file-input').value = '')
+    } catch (err) {
+      setUploadError(err.response?.data?.detail || err.response?.data?.file || err.message || 'Impossible de téléverser la ressource')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <div className="fade-in space-y-5">
       {/* Welcome */}
-      <div className="mb-1">
-        <h2 className="text-base font-semibold text-slate-800">
-          Bonjour, {user?.prenom || 'Professeur'} 👋
-        </h2>
-        <p className="text-xs text-slate-400 mt-0.5">Voici un aperçu de vos activités pédagogiques.</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {STATS.map(s => <StatCard key={s.label} {...s} />)}
-      </div>
-
-      {/* Students + Right column */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-        {/* Students table — 3 cols */}
-        <div className="xl:col-span-3">
-          <Card title="Étudiants — Électronique analogique">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-slate-50 text-slate-400">
-                    <th className="text-left pb-2 font-medium">Matricule</th>
-                    <th className="text-left pb-2 font-medium">Nom</th>
-                    <th className="text-center pb-2 font-medium">TP</th>
-                    <th className="text-center pb-2 font-medium">Examen</th>
-                    <th className="text-center pb-2 font-medium">Statut</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ETUDIANTS.map(e => (
-                    <tr key={e.matricule} className="border-b border-slate-50 last:border-0">
-                      <td className="py-2.5 text-slate-400">{e.matricule}</td>
-                      <td className="py-2.5 text-slate-800 font-medium">{e.nom}</td>
-                      <td className="py-2.5 text-center text-slate-700">{e.tp}</td>
-                      <td className="py-2.5 text-center text-slate-700">{e.exam ?? '—'}</td>
-                      <td className="py-2.5 text-center"><Pill label={e.statut} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+      <div className="mb-1 flex flex-col gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-800">
+            Bonjour, {user?.prenom || 'Professeur'}
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">Voici un aperçu de vos activités pédagogiques.</p>
         </div>
-
-        {/* Right column — 2 cols */}
-        <div className="xl:col-span-2 flex flex-col gap-4">
-          <Card title="Planning de la semaine">
-            {PLANNING.map((p, i) => (
-              <div key={i} className="flex gap-2.5 py-2 border-b border-slate-50 last:border-0">
-                <span className="text-[10px] text-slate-400 min-w-[60px] pt-0.5">{p.time}</span>
-                <div>
-                  <p className="text-xs font-medium text-slate-800">{p.cours}</p>
-                  <p className="text-[10px] text-slate-400">{p.room}</p>
-                </div>
-              </div>
-            ))}
-          </Card>
-
-          <Card title="Ressources déposées">
-            {RESSOURCES.map((r, i) => (
-              <div key={i} className="flex items-center gap-2.5 py-2 border-b border-slate-50 last:border-0">
-                <div className={`w-8 h-8 ${r.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                  <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 16 16">
-                    <path d="M3.5 2h5l4 4v7.5a1 1 0 01-1 1h-8a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-800 truncate">{r.titre}</p>
-                  <p className="text-[10px] text-slate-400">{r.consultations} consultations</p>
-                </div>
-              </div>
-            ))}
-            <button className="mt-2 w-full text-xs text-blue-600 font-medium py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-dashed border-blue-200">
-              + Déposer une ressource
-            </button>
-          </Card>
-
-          <Card title="Notifications">
-            {NOTIFS.map((n, i) => <NotifItem key={i} {...n} />)}
-          </Card>
-        </div>
+        <button
+          type="button"
+          onClick={() => setEditOpen(true)}
+          className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-700"
+        >
+          Modifier mon profil enseignant
+        </button>
       </div>
 
-      {/* Evaluations */}
-      <Card
-        title="Évaluations — saisie des notes"
-        action={
-          <button className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-            Saisir des notes
-          </button>
-        }
-      >
+      {saveError && (
+        <div className="text-red-500 text-sm">{saveError}</div>
+      )}
+
+      <Card title="Cours enseignés">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-50 text-slate-400">
-                <th className="text-left pb-2 font-medium">Élément constitutif</th>
-                <th className="text-center pb-2 font-medium">Type</th>
-                <th className="text-center pb-2 font-medium">Date</th>
-                <th className="text-center pb-2 font-medium">Notes saisies</th>
+              <tr className="border-b border-slate-200 text-slate-500">
+                <th className="text-left pb-3 font-medium">Jour</th>
+                <th className="text-left pb-3 font-medium">Heure</th>
+                <th className="text-left pb-3 font-medium">Classe</th>
+                <th className="text-left pb-3 font-medium">EC</th>
+                <th className="text-center pb-3 font-medium">Crédits</th>
               </tr>
             </thead>
             <tbody>
-              {EVALUATIONS.map((ev, i) => (
-                <tr key={i} className="border-b border-slate-50 last:border-0">
-                  <td className="py-2.5 text-slate-800 font-medium">{ev.ec}</td>
-                  <td className="py-2.5 text-center"><Pill label={ev.type} /></td>
-                  <td className="py-2.5 text-center text-slate-500">{ev.date}</td>
-                  <td className="py-2.5 text-center">
-                    <Pill
-                      label={`${ev.saisi} / ${ev.total}`}
-                      color={ev.saisi === ev.total ? 'green' : ev.saisi === 0 ? 'amber' : 'blue'}
-                    />
-                  </td>
+              {scheduleLoading ? (
+                <tr>
+                  <td colSpan="5" className="py-4 text-center text-slate-500">Chargement des cours...</td>
+                </tr>
+              ) : scheduleError ? (
+                <tr>
+                  <td colSpan="5" className="py-4 text-center text-red-500">{scheduleError}</td>
+                </tr>
+              ) : schedule.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-4 text-center text-slate-500">Aucun cours renseigné pour vous.</td>
+                </tr>
+              ) : schedule.map((slot, index) => (
+                <tr key={slot.id ?? index} className="border-b border-slate-100 last:border-0">
+                  <td className="py-3 text-slate-700">{formatDay(slot.day)}</td>
+                  <td className="py-3 text-slate-700">{formatTime(slot.start_time, slot.end_time)}</td>
+                  <td className="py-3 text-slate-700">{slot.semester_name || '—'}</td>
+                  <td className="py-3 text-slate-700">{slot.course_name || '—'}</td>
+                  <td className="py-3 text-center text-slate-700">{slot.course_credits ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <Card title="Téléverser une ressource pédagogique">
+        <form onSubmit={handleResourceUpload} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600">Titre de la ressource</label>
+            <input
+              type="text"
+              value={resourceTitle}
+              onChange={(e) => setResourceTitle(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
+              placeholder="Ex: Fiche de révision - Algèbre"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-600">Matière</label>
+            <select
+              value={resourceCourseId}
+              onChange={(e) => setResourceCourseId(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
+            >
+              {courses.length === 0 ? (
+                <option value="">Aucune matière disponible</option>
+              ) : (
+                courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name || course.title || course.libelle || course.ec_name || 'Matière'}
+                    {course.level_code && course.semester_name ? ` (${course.level_code}-${course.semester_name})` : ''}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-600">Fichier</label>
+            <input
+              id="resource-file-input"
+              type="file"
+              accept="application/pdf,image/*,.doc,.docx,.ppt,.pptx"
+              onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
+              className="mt-2 w-full text-sm text-slate-700"
+            />
+          </div>
+
+          {uploadError && <div className="text-sm text-red-500">{uploadError}</div>}
+          {uploadSuccess && <div className="text-sm text-green-600">{uploadSuccess}</div>}
+
+          <button
+            type="submit"
+            disabled={uploading || courses.length === 0}
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {uploading ? 'Téléversement...' : 'Téléverser la ressource'}
+          </button>
+        </form>
+      </Card>
+
+      <TeacherProfileModal
+        user={user}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSave={handleSaveProfile}
+        saving={saving}
+      />
     </div>
   )
 }

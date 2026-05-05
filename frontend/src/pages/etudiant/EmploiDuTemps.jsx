@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import Card from '../../components/ui/Card'
-import etudiantService from '../../services/etudiantService'
+import etudiantService from '../../services/studentService'
 
 const DAYS  = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 const SLOTS = ['07h30', '9h30', '11h30', '12h30', '14h30', '16h30']

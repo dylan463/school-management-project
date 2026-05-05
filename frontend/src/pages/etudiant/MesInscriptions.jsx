@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Card from '../../components/ui/Card'
 import { useAuth } from '../../context/AuthContext'
-import etudiantService from '../../services/etudiantService'
+import etudiantService from '../../services/studentService'
 
 function InfoCard({ label, value }) {
   return (

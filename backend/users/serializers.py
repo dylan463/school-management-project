@@ -7,20 +7,10 @@ from .utils import generate_matricule,generate_password
 #  serializer pour afficher les infos d'un utilisateur
 class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""
-    matricule = serializers.CharField(source='username', read_only=True)
-    
     class Meta:
         model = CustomUser
-<<<<<<< HEAD
         fields = ['id', 'username', 'email', 'first_name', 'last_name','role','is_superuser']
         read_only_fields = ['id','role', 'is_superuser']
-=======
-        fields = [
-            'id', 'username', 'matricule', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser',
-            'phone', 'grade', 'subjects', 'date_of_birth', 'place_of_birth', 'cin', 'current_semester', 'status'
-        ]
-        read_only_fields = ['id', 'role', 'is_staff', 'is_superuser', 'username', 'matricule']
->>>>>>> frontend
     
     def to_representation(self, instance):
         data = super().to_representation(instance)

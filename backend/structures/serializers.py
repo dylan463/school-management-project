@@ -1,13 +1,5 @@
-<<<<<<< HEAD
 from rest_framework import serializers
-=======
-from .models import (
-    Level, Formation, Semester, TeachingUnit, CourseComponent, Enrollement, Resource
-)
-from rest_framework.serializers import ModelSerializer, IntegerField, CharField
->>>>>>> frontend
 from rest_framework.exceptions import ValidationError
-from django.utils import timezone
 
 from .models import (
     Level, Formation, Semester,
@@ -15,7 +7,7 @@ from .models import (
     CourseUnit, CourseModule
 )
 from users.serializers import UserSerializer
-
+from users.models import CustomUser
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
@@ -35,33 +27,9 @@ class FormationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-<<<<<<< HEAD
 class FormationCreateSerializer(serializers.ModelSerializer):
     from_level = serializers.IntegerField()
     to_level = serializers.IntegerField()
-=======
-class SemesterSerializer(ModelSerializer):
-    class Meta:
-        model = Semester
-        fields = ["id", "name", "level", "formation", "number", "is_active"]
-        read_only_fields = ["id"]
-
-
-class CourseComponentSerializer(ModelSerializer):
-    teaching_unit_name = CharField(source='teaching_unit.name', read_only=True)
-    semester_name = CharField(source='teaching_unit.semester.name', read_only=True)
-    level_code = CharField(source='teaching_unit.semester.level.code', read_only=True)
-
-    class Meta:
-        model = CourseComponent
-        fields = ["id", "name", "teaching_unit", "teaching_unit_name", "course_credits", "teacher", "semester_name", "level_code"]
-        read_only_fields = ["id","teacher"]
-
-
-class TeachingUnitSerializer(ModelSerializer):
-    courses = CourseComponentSerializer(many=True, read_only=True)
-    courses_count = IntegerField(source='courses.count', read_only=True)
->>>>>>> frontend
 
     class Meta:
         model = Formation
@@ -82,7 +50,6 @@ class TeachingUnitSerializer(ModelSerializer):
                 "Les niveaux doivent être strictement positifs."
             )
 
-<<<<<<< HEAD
         if from_level > to_level:
             raise serializers.ValidationError(
                 "from_level ne peut pas être supérieur à to_level."
@@ -156,14 +123,6 @@ class StudentSchoolYearSerializer(serializers.ModelSerializer):
     def get_enrollments_count(self, obj):
         return getattr(obj, 'enrollments_count', obj.enrollments.count())
 
-class StudentlatestSerializer(serializers.Serializer):
-    student_id = serializers.IntegerField(write_only = True)
-
-    def validate_student_id(self, value):
-        from users.models import StudentUser
-        if not StudentUser.objects.filter(id=value).exists():
-            raise ValidationError("L'étudiant spécifié n'existe pas")
-        return value
         
 # ─────────────────────────────────────────
 # INSCRIPTION PAR SEMESTRE
@@ -275,16 +234,28 @@ class ActivateNextSemesterSerializer(serializers.Serializer):
         choices=Enrollment.Decision.choices,
         default=Enrollment.Decision.PASSED
     )
-=======
-        return attrs
 
 
-class ResourceSerializer(ModelSerializer):
-    teaching_unit_name = CharField(source='teaching_unit.name', read_only=True)
-    teacher_name = CharField(source='teacher.get_full_name', read_only=True, allow_null=True)
+class StudentCreateSerializer(serializers.ModelSerializer):
+    school_year = serializers.IntegerField()
+    level = serializers.IntegerField()
+    formation = serializers.IntegerField()
 
     class Meta:
-        model = Resource
-        fields = ["id", "name", "description", "teaching_unit", "teaching_unit_name", "teacher", "teacher_name", "file_url", "file_type", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
->>>>>>> frontend
+        model = CustomUser
+        fields = ["email","role","school_year","level","formation"]
+
+    def validate_school_year(self,value):
+        if not SchoolYear.objects.filter(id=value).exists():
+            raise ValidationError("L'année scolaire spécifiée n'existe pas")
+        return value
+
+    def validate_level(self,value):
+        if not Level.objects.filter(id=value).exists():
+            raise ValidationError("Le niveau spécifié n'existe pas")
+        return value
+    
+    def validate_formation(self,value):
+        if not Formation.objects.filter(id=value).exists():
+            raise ValidationError("La formation spécifiée n'existe pas")
+        return value

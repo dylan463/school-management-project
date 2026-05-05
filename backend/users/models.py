@@ -40,21 +40,21 @@ class CustomUser(AbstractUser):
         default=Role.STUDENT,
     )
     
-    # Informations personnelles
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    grade = models.CharField(max_length=100, blank=True, null=True)
-    subjects = models.TextField(blank=True, null=True, verbose_name="Matières enseignées")
-    date_of_birth = models.DateField(blank=True, null=True)
-    place_of_birth = models.CharField(max_length=200, blank=True, null=True)
-    cin = models.CharField(max_length=50, blank=True, null=True, verbose_name="Numéro d'identité")
-    current_semester = models.PositiveIntegerField(blank=True, null=True, verbose_name="Semestre actuel")
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        blank=True,
-        null=True,
-        verbose_name="Statut académique"
-    )
+    # # Informations personnelles
+    # phone = models.CharField(max_length=20, blank=True, null=True)
+    # grade = models.CharField(max_length=100, blank=True, null=True)
+    # subjects = models.TextField(blank=True, null=True, verbose_name="Matières enseignées")
+    # date_of_birth = models.DateField(blank=True, null=True)
+    # place_of_birth = models.CharField(max_length=200, blank=True, null=True)
+    # cin = models.CharField(max_length=50, blank=True, null=True, verbose_name="Numéro d'identité")
+    # current_semester = models.PositiveIntegerField(blank=True, null=True, verbose_name="Semestre actuel")
+    # status = models.CharField(
+    #     max_length=20,
+    #     choices=Status.choices,
+    #     blank=True,
+    #     null=True,
+    #     verbose_name="Statut académique"
+    # )
     
     objects = CustomUserManager()
 

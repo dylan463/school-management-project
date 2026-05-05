@@ -20,8 +20,10 @@ export default function LoginPage() {
     if (isAuthenticated && role) {
       if (role === ROLES.ETUDIANT) {
         navigate(ROUTES.DASHBOARD_ETU, { replace: true })
-      } else if ([ROLES.ENSEIGNANT, ROLES.STAFF, ROLES.SUPERUSER].includes(role)) {
+      } else if (role == ROLES.ENSEIGNANT) {
         navigate(ROUTES.DASHBOARD_ENS, { replace: true })
+      } else if (role == ROLES.SUPERUSER){
+        navigate(ROUTES.DASHBOARD_ADMIN,{replace:true})
       }
     }
   }, [isAuthenticated, role, navigate])

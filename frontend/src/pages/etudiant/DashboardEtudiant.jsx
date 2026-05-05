@@ -2,7 +2,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect } from 'react'
 import StatCard from '../../components/ui/StatCard'
 import EditProfileModal from '../../components/ui/EditProfileModal'
-import etudiantService from '../../services/etudiantService'
+import etudiantService from '../../services/studentService'
 
 // --- Helpers
 

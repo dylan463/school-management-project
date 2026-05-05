@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Card   from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import enseignantService from '../../services/enseignantService'
+import enseignantService from '../../services/teacherService'
 
 export default function MesAnnotations() {
   const [levels, setLevels] = useState([])

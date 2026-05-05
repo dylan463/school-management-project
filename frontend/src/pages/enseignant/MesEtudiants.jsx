@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Card  from '../../components/ui/Card'
 import Avatar from '../../components/ui/Avatar'
-import enseignantService from '../../services/enseignantService'
+import enseignantService from '../../services/teacherService'
 
 export default function MesEtudiants() {
   const [studentsByLevel, setStudentsByLevel] = useState([])

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth }    from '../../context/AuthContext'
 import authService    from '../../services/authService'
-import enseignantService from '../../services/enseignantService'
+import enseignantService from '../../services/teacherService'
 import { storage }   from '../../utils/storage'
 import Card           from '../../components/ui/Card'
 import TeacherProfileModal from '../../components/ui/TeacherProfileModal'

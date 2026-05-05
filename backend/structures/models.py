@@ -90,7 +90,6 @@ class SchoolYear(models.Model):
             ),
         ]
 
-<<<<<<< HEAD
     def __str__(self):
         return self.label
 
@@ -249,26 +248,3 @@ class CourseModule(models.Model):
 
     def __str__(self):
         return f"[{self.code}] {self.label} ({self.course_unit.code})"
-=======
-    def clean(self):
-        # règle métier : semestre doit être actif
-        if not self.semester.is_active:
-            raise ValidationError("Le semestre n'est pas actif")
-
-# ressource/document partagé par un professeur pour une unité d'enseignement
-class Resource(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    teaching_unit = models.ForeignKey(TeachingUnit, on_delete=models.CASCADE, related_name="resources")
-    teacher = models.ForeignKey(TeacherUser, on_delete=models.SET_NULL, null=True, blank=True)
-    file_url = models.URLField(blank=True, help_text="URL du fichier ou du document")
-    file_type = models.CharField(max_length=50, blank=True, default="pdf", help_text="Type de fichier: pdf, doc, video, etc.")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return self.name
->>>>>>> frontend

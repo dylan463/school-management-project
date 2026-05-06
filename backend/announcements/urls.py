@@ -6,5 +6,5 @@ from .views import (
 
 
 router =  DefaultRouter()
-router.register("annoncements/",AnnouncementViewset,basename="annoncements")
+router.register("",AnnouncementViewset,basename="annoncements")
 urlpatterns  = []

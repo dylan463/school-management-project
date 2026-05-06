@@ -3,7 +3,7 @@ import api from './api'
 const etudiantService = {
   getStudents: async function (filters = {}) {
     const params = new URLSearchParams(filters);
-    const response = await api.get(`/structures/students?${params.toString()}`);
+    const response = await api.get(`/structures/students/?${params.toString()}`);
     return response.data;
   },
   createStudent: async function (params){
@@ -20,6 +20,10 @@ const etudiantService = {
   },
   deleteStudent: async function (id) {
     const response = await api.delete(`/structures/students/${id}`);
+    return response.data;
+  },
+  mySchedules: async function () {
+    const response = await api.get('/timetable/student/my_schedules/');
     return response.data;
   }
 };

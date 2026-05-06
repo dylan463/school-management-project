@@ -64,6 +64,9 @@ class SchoolYear(models.Model):
         UPCOMING = "UPCOMING", "Upcoming"       # pas encore commencée
         ACTIVE = "ACTIVE", "Active"             # en cours
         CLOSED = "CLOSED", "Closed"             # terminée proprement
+    class Period(models.TextChoices):
+        FIRST = "FIRST", "First"
+        SECONDE = "SECONDE", "Second"
 
     label = models.CharField(max_length=20, unique=True)
     status = models.CharField(
@@ -71,7 +74,9 @@ class SchoolYear(models.Model):
         choices=Status.choices,
         default=Status.UPCOMING
     )
-
+    period = models.CharField(
+        max_length=10,choices=Period.choices, default=Period.FIRST
+    )
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_locked = models.BooleanField(default=False)

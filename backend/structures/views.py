@@ -54,7 +54,7 @@ from rest_framework.filters import SearchFilter
 # ─────────────────────────────────────────
 
 from .filter import (
-    LevelFilter,EnrollmentFilter,CourseModuleFilter
+    LevelFilter,EnrollmentFilter,CourseModuleFilter,SchoolYearFilter
 )
 
 class FormationViewSet(viewsets.ModelViewSet):
@@ -62,6 +62,65 @@ class FormationViewSet(viewsets.ModelViewSet):
     serializer_class = FormationSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
     search_field = ["label", "code"]
+
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_formation_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_formation_queryset(user)
+        else:
+            return Formation.objects.all()
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsAuthenticated]
+        else:
+            permissions = [IsSuperUser]
+        return [permission() for permission in permissions]
+
+    def create(self, request, *args, **kwargs):
+        serializer = FormationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        formation = create_formation_and_its_levels(
+            serializer.validated_data.copy()
+        )
+
+        response_serializer = FormationSerializer(formation)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        serializer = FormationCreateSerializer(
+            instance,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        formation = update_formation_and_its_level(
+            instance,
+            serializer.validated_data.copy()
+        )
+
+        response_serializer = FormationSerializer(formation)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=["post"],detail=True,url_path="remove_levels")
+    def removelevels(self,request,pk=None):
+        formation = self.get_object()
+        FormationLevel.objects.filter(formation=formation).delete()
+        return Response({"formation levels":"deleted"},status=status.HTTP_200_OK)
 
 # class ResourceViewSet(viewsets.ModelViewSet):
 #     serializer_class = ResourceSerializer
@@ -245,7 +304,7 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     permission_classes = [IsSuperUser]
     filter_backends = [DjangoFilterBackend,SearchFilter]
     search_fields = ["label"]
-    filterset_fields = ["status","is_locked"]
+    filterset_class = SchoolYearFilter
 
     def get_permissions(self):
         if self.action == 'list':
@@ -321,13 +380,6 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False,methods=["get"])
-    def opened(self,request):
-        school_years = get_open_school_year()
-        serializer = SchoolYearSerializer(school_years,many=True)
-        return Response(serializer.data)
-
-
 # ─────────────────────────────────────────
 # INSCRIPTION ANNUELLE
 # ─────────────────────────────────────────
@@ -345,7 +397,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
     serializer_class = StudentSchoolYearSerializer
     permission_classes = [IsSuperUser]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["student","school_year","formation","level","status"]
+    filterset_fields = ["school_year","formation","level","status"]
     search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
 
     def get_permissions(self):
@@ -480,7 +532,7 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
     permission_classes = [IsSuperUser]
     filter_backends = [DjangoFilterBackend,SearchFilter]
     search_fields = ["code","label"]
-    filterset_fields = ["semester","formation"]
+    filterset_fields = ["semester","formation","is_active"]
 
     def get_permissions(self):
         if self.action == 'list':
@@ -497,6 +549,16 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
             return get_teacher_course_unit_queryset(user)
         else:
             return CourseUnit.objects.all()
+    
+    @action(methods=["post"],detail=True)
+    def toggle_active(self, request, pk=None):
+        """Bascule l'activation d'une unité d'enseignement"""
+        course_unit = self.get_object()
+        course_unit.is_active = not course_unit.is_active
+        course_unit.save()
+
+        serializer = self.get_serializer(course_unit)
+        return Response(serializer.data)
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
     queryset = CourseModule.objects.all()
@@ -549,7 +611,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
 
     @action(methods=["delete"],detail=True)
-    def remove_techer(self,request,pk):
+    def remove_teacher(self,request,pk):
         """supprimer un teacher d'un module"""
         course_module = self.get_object()
         course_module.teacher = None
@@ -564,6 +626,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
 # PORTAIL ÉTUDIANT
 # ─────────────────────────────────────────
 
+from .utils import create_student,create_user
 class StudentPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStudent]
     serializer_class = UserSerializer
@@ -574,19 +637,11 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = StudentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         data = serializer.validated_data.copy()
-        
-
-        response_serializer = UserSerializer(student)
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_201_CREATED
-        )
-        
-
+        response = create_student(data)
+        return Response(response,status=status.HTTP_201_CREATED)
 
     def get_permissions(self):
         if self.action == 'list':
@@ -692,6 +747,13 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
 class TeacherPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsTeacher]
     serializer_class = UserSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = UserCreateSerializer(request.data)
+        serializer.is_valid(raise_exception=True)
+        teacher = create_user(serializer.validated_data.copy())
+        response_serializer = UserSerializer(teacher)
+        return Response(response_serializer.data,status=status.HTTP_201_CREATED)
 
     def get_permissions(self):
         if self.action == 'list':

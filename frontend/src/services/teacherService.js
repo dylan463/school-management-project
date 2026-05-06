@@ -1,29 +1,28 @@
 import api from './api'
 
 const enseignantService = {
-  // Modules enseignés par l'enseignant
-  getMyModules: () => api.get('/structures/teacher/current_modules/').then(r => r.data),
-
-  // Étudiants des cours de l'enseignant
-  getMyStudents: () => api.get('/structures/teacher/my_students/').then(r => r.data),
-
-  // Semestres des cours de l'enseignant
-  getMySemesters: () => api.get('/structures/teacher/current_semesters/').then(r => r.data),
-
-  // Unités d'enseignement de l'enseignant
-  getMyCourseUnits: () => api.get('/structures/teacher/current_units/').then(r => r.data),
-
-  // Disponibilités de l'enseignant
-  getAvailabilities: (semester) => api.get('/timetable/availabilities/', { params: { semester } }).then(r => r.data),
-  createAvailability: (data) => api.post('/timetable/availabilities/', data).then(r => r.data),
-  updateAvailability: (id, data) => api.patch(`/timetable/availabilities/${id}/`, data).then(r => r.data),
-  deleteAvailability: (id) => api.delete(`/timetable/availabilities/${id}/`).then(r => r.data),
-
-  // Emploi du temps
-  getTimeSlots: () => api.get('/timetable/timeslots/').then(r => r.data),
-
-  // Emploi du temps de l'enseignant
-  getMySchedules: () => api.get('/timetable/teacher/schedules/my_schedules/').then(r => r.data),
+  getTeachers: async function (filters = {}) {
+    const params = new URLSearchParams(filters);
+    const response = await api.get(`/structures/teachers/?${params.toString()}`);
+    return response.data;
+  },
+  createTeacher: async function (role,email){
+    const data = {role,email}
+    const response = await api.post('/structures/teachers/',data)
+    return response.data;
+  },
+  updateTeacher: async function (id, data) {
+    const response = await api.patch(`/structures/teachers/${id}/`, data)
+    return response.data;
+  },
+  deleteTeacher: async function (id) {
+    const response = await api.delete(`/structures/teachers/${id}/`)
+    return response.data;
+  },
+  mySchedules: async function () {
+    const response = await api.get('/timetable/teacher/my_schedules/');
+    return response.data;
+  }
 }
 
 export default enseignantService

@@ -33,7 +33,6 @@ from .permissions import (
     IsSuperUser,
     CannotDeleteAdmin
 )
-from .utils import send_email
 from .token import token_generator
 from notif.utils import create_notification
 

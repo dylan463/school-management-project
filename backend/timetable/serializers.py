@@ -8,7 +8,7 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScheduleEntry
-        fields = "__all__"
+        fields = ["schedule", "course_module", "teacher", "day", "start_time", "end_time", "classroom"]
 
     def validate(self, data):
         """
@@ -83,7 +83,8 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Schedule
-        fields = ["id", "semester", "is_published", "grouped_entries"]
+        fields = ["id", "semester","formation","grouped_entries"]
+        read_only_fields = ["id", "grouped_entries"]
 
     def get_grouped_entries(self, obj):
         """

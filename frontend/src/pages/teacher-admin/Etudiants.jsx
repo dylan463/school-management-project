@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Pill from '../../components/ui/Pill'
 import Avatar from '../../components/ui/Avatar'
+import etudiantService from '../../services/studentService'
 
 const ETUDIANTS_INITIAL = [
   { id: 1, matricule: 'ETU-001', nom: 'Rakoto', prenom: 'Ny Aina', email: 'rakoto@espa.mg', statut: 'Actif', niveau: 'L1' },
@@ -56,6 +57,7 @@ function renderTable(rows) {
 }
 
 function ModalAjoutEtudiant({ isOpen, onClose, onAdd, niveaux }) {
+
   const [formData, setFormData] = useState({
     prenom: '',
     nom: '',
@@ -78,7 +80,7 @@ function ModalAjoutEtudiant({ isOpen, onClose, onAdd, niveaux }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    // <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
         <div className="p-6 border-b border-slate-100">
           <h2 className="text-xl font-bold text-slate-800">Ajouter un étudiant</h2>
@@ -162,45 +164,36 @@ function ModalAjoutEtudiant({ isOpen, onClose, onAdd, niveaux }) {
           </div>
         </form>
       </div>
-    </div>
+    // </div>
   )
 }
 
 export default function Etudiants() {
   const [search, setSearch] = useState('')
-  const [etudiants, setEtudiants] = useState(ETUDIANTS_INITIAL)
+  const [etudiants, setEtudiants] = useState([])
   const [showModal, setShowModal] = useState(false)
 
-  const filtered = etudiants.filter((etudiant) => {
-    const text = `${etudiant.prenom} ${etudiant.nom} ${etudiant.matricule}`.toLowerCase()
-    return text.includes(search.toLowerCase())
-  })
-
-  // Grouper par niveau
-  const groupedByNiveau = NIVEAUX.reduce((acc, niveau) => {
-    const students = filtered.filter(e => e.niveau === niveau)
-    if (students.length > 0) {
-      acc.push({ niveau, students })
+  useEffect(() => {
+    const fetchEtudiants = async () => {
+      const data = await etudiantService.getStudents()
+      setEtudiants(data)
     }
-    return acc
+    fetchEtudiants()
   }, [])
 
+
   const handleAddEtudiant = (formData) => {
-    const newId = Math.max(...etudiants.map(e => e.id), 0) + 1
-    const matricule = `ETU-${String(newId).padStart(3, '0')}`
-    
-    const newEtudiant = {
-      id: newId,
-      matricule,
-      prenom: formData.prenom,
-      nom: formData.nom,
-      email: formData.email,
-      statut: formData.statut,
-      niveau: formData.niveau,
+    const createEtudiant = async () => {
+      try {
+        await etudiantService.createStudent(formData)
+        const updatedEtudiants = await etudiantService.getStudents()
+        setEtudiants(updatedEtudiants)
+        setShowModal(false)
+      } catch (error) {
+        console.error('Erreur lors de la création de l\'étudiant:', error)
+      }
     }
-    
-    setEtudiants([...etudiants, newEtudiant])
-    setShowModal(false)
+    createEtudiant()
   }
 
   return (
@@ -222,21 +215,13 @@ export default function Etudiants() {
           <Button onClick={() => setShowModal(true)}>+ Ajouter</Button>
         </div>
 
-        {groupedByNiveau.length > 0 ? (
-          <div className="space-y-8">
-            {groupedByNiveau.map(({ niveau, students }) => (
-              <section key={niveau}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-800">Niveau {niveau}</h3>
-                  <span className="text-xs text-slate-500">{students.length} résultat{students.length > 1 ? 's' : ''}</span>
-                </div>
-                {renderTable(students)}
-              </section>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-slate-400 text-sm py-8">Aucun étudiant trouvé.</p>
-        )}
+        {etudiants.length > 0 ? (<div className="space-y-8">
+                                    {renderTable(etudiants)}
+                                 </div>) : (
+                                  <div className="text-center py-10">
+                                    <p className="text-sm text-slate-500">Aucun étudiant trouvé. Cliquez sur "Ajouter" pour en créer un nouveau.</p>
+                                  </div>
+                                )}
       </Card>
 
       <ModalAjoutEtudiant

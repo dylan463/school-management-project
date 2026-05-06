@@ -4,10 +4,10 @@ const adminService = {
   // Dashboard stats
   getDashboardStats: async () => {
     const [studentsResponse, teachersResponse, formationsResponse, enrollmentsResponse] = await Promise.all([
-      api.get('/auth/structures/students'),
-      api.get('/auth/structures/teachers'),
-      api.get('/structures/formations'),
-      api.get('/structures/enrollments'),
+      api.get('/structures/students/'),
+      api.get('/structures/teachers/'),
+      api.get('/structures/formations/'),
+      api.get('/structures/enrollments/'),
     ])
 
     return {

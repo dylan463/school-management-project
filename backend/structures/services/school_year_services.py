@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction, IntegrityError
 from django.db.models import Q
 
-from ..models import SchoolYear, StudentSchoolYear,Semester,Enrollment
+from ..models import SchoolYear,Level, StudentSchoolYear,Semester,Enrollment
 from users.models import CustomUser
 
 # ─────────────────────────────────────────
@@ -85,114 +85,51 @@ def toggle_school_year_lock(school_year: SchoolYear):
 
 def go_to_first_periode(school_year: SchoolYear):
     if school_year.is_locked:
-        raise ValidationError("cette année scolaire est bloquée")
+        raise ValidationError("cette année scolaire est bloqué")
     if school_year.status != SchoolYear.Status.ACTIVE:
-        raise ValidationError("veuillez réessayer avec une année scolaire active")
+        raise ValidationError("veillez réessayer avec une année scolaire active")
+    school_year.period = SchoolYear.Period.FIRST
+    school_year.save()
 
-    student_school_years = list(
-        StudentSchoolYear.objects
-        .filter(school_year=school_year)
-        .select_related('level')
-    )
-
-    if not student_school_years:
+    if not StudentSchoolYear.objects.filter(school_year=school_year).exists():
         return
+    
+    last_level_order = Semester.objects.order_by("-order").first().order
+    firts_period_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 1]
+    second_periode_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 0]
 
-    level_ids = {ssy.level_id for ssy in student_school_years}
-    semesters = Semester.objects.filter(level_id__in=level_ids).order_by('level_id', 'order')
-
-    semesters_by_level = {}
-    for semester in semesters:
-        semesters_by_level.setdefault(semester.level_id, []).append(semester)
-
-    enrollment_map = {
-        (enrollment.student_school_year_id, enrollment.semester_id): enrollment
-        for enrollment in Enrollment.objects.filter(
-            student_school_year_id__in=[ssy.id for ssy in student_school_years],
-            semester_id__in=[semester.id for semester in semesters]
-        )
-    }
-
-    updates = []
-    for ssy in student_school_years:
-        sems = semesters_by_level.get(ssy.level_id)
-        if not sems:
-            continue
-
-        first_semester = sems[0]
-        last_semester = sems[-1]
-
-        enrollment_first = enrollment_map.get((ssy.id, first_semester.id))
-        enrollment_last = enrollment_map.get((ssy.id, last_semester.id))
-
-        if enrollment_first:
-            enrollment_first.is_current = True
-            updates.append(enrollment_first)
-
-        if last_semester != first_semester and enrollment_last:
-            enrollment_last.is_current = False
-            updates.append(enrollment_last)
-
-    if updates:
-        Enrollment.objects.bulk_update(updates, ['is_current'])
-
+    Enrollment.objects.filter(
+        student_school_years__school_year=school_year,
+        semester__order__not_in=second_periode_semesters_order
+    ).update(is_current=False)
+    Enrollment.objects.filter(
+        student_school_years__school_year=school_year,
+        semester__order__in=firts_period_semesters_order
+    ).update(is_current=True)
 
 def go_to_second_periode(school_year: SchoolYear):
     if school_year.is_locked:
         raise ValidationError("cette année scolaire est bloqué")
     if school_year.status != SchoolYear.Status.ACTIVE:
         raise ValidationError("veillez réessayer avec une année scolaire active")
+    school_year.period = SchoolYear.Period.SECONDE
+    school_year.save()
 
-    student_school_years = list(
-        StudentSchoolYear.objects
-        .filter(school_year=school_year)
-        .select_related('level')
-    )
-
-    if not student_school_years:
+    if not StudentSchoolYear.objects.filter(school_year=school_year).exists():
         return
+    
+    last_level_order = Semester.objects.order_by("-order").first().order
+    firts_period_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 1]
+    second_periode_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 0]
 
-    level_ids = {ssy.level_id for ssy in student_school_years}
-    semesters = Semester.objects.filter(level_id__in=level_ids).order_by('level_id', 'order')
-
-    semesters_by_level = {}
-    for semester in semesters:
-        semesters_by_level.setdefault(semester.level_id, []).append(semester)
-
-    enrollment_map = {
-        (enrollment.student_school_year_id, enrollment.semester_id): enrollment
-        for enrollment in Enrollment.objects.filter(
-            student_school_year_id__in=[ssy.id for ssy in student_school_years],
-            semester_id__in=[semester.id for semester in semesters]
-        )
-    }
-
-    updates = []
-    for ssy in student_school_years:
-        sems = semesters_by_level.get(ssy.level_id)
-        if not sems:
-            continue
-
-        first_semester = sems[0]
-        last_semester = sems[-1]
-
-        enrollment_first = enrollment_map.get((ssy.id, first_semester.id))
-        enrollment_last = enrollment_map.get((ssy.id, last_semester.id))
-
-        if first_semester == last_semester:
-            if enrollment_first:
-                enrollment_first.is_current = True
-                updates.append(enrollment_first)
-        else:
-            if enrollment_first:
-                enrollment_first.is_current = False
-                updates.append(enrollment_first)
-            if enrollment_last:
-                enrollment_last.is_current = True
-                updates.append(enrollment_last)
-
-    if updates:
-        Enrollment.objects.bulk_update(updates, ['is_current'])
+    Enrollment.objects.filter(
+        student_school_years__school_year=school_year,
+        semester__order__in=firts_period_semesters_order
+    ).update(is_current=False)
+    Enrollment.objects.filter(
+        student_school_years__school_year=school_year,
+        semester__order__not_in=second_periode_semesters_order
+    ).update(is_current=True)
         
         
 

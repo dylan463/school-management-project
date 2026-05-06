@@ -1,31 +1,58 @@
 import api from './api'
 
 const timetableService = {
-  // Admin Schedules
-  getSchedules: (params = {}) => api.get('/timetable/admin/schedules/', { params }).then(r => r.data),
-  getSchedule: (id) => api.get(`/timetable/admin/schedules/${id}/`).then(r => r.data),
-  createSchedule: (data) => api.post('/timetable/admin/schedules/', data).then(r => r.data),
-  updateSchedule: (id, data) => api.patch(`/timetable/admin/schedules/${id}/`, data).then(r => r.data),
-  deleteSchedule: (id) => api.delete(`/timetable/admin/schedules/${id}/`).then(r => r.data),
-  addScheduleEntry: (scheduleId, data) => api.post(`/timetable/admin/schedules/${scheduleId}/add_entry/`, data).then(r => r.data),
-  updateScheduleEntry: (scheduleId, entryId, data) => api.patch(`/timetable/admin/schedules/${scheduleId}/update_entry/${entryId}/`, data).then(r => r.data),
-
-  // Student Schedules
-  getStudentSchedules: (params = {}) => api.get('/timetable/student/schedules/', { params }).then(r => r.data),
-  getMyStudentSchedule: () => api.get('/timetable/student/schedules/my_schedule/').then(r => r.data),
-
-  // Teacher Schedules
-  getTeacherSchedules: (params = {}) => api.get('/timetable/teacher/schedules/', { params }).then(r => r.data),
-  getMyTeacherSchedules: () => api.get('/timetable/teacher/schedules/my_schedules/').then(r => r.data),
-
-  // Time Slots (if available)
-  getTimeSlots: (params = {}) => api.get('/timetable/timeslots/', { params }).then(r => r.data),
-
-  // Availabilities (if available)
-  getAvailabilities: (params = {}) => api.get('/timetable/availabilities/', { params }).then(r => r.data),
-  createAvailability: (data) => api.post('/timetable/availabilities/', data).then(r => r.data),
-  updateAvailability: (id, data) => api.patch(`/timetable/availabilities/${id}/`, data).then(r => r.data),
-  deleteAvailability: (id) => api.delete(`/timetable/availabilities/${id}/`).then(r => r.data),
+  scheduleService:{
+    getSchedules: async (filters={}) => {
+      const params = new URLSearchParams()
+      if (filters.semester) params.append('semester', filters.semester)
+      if (filters.formation) params.append('formation', filters.formation)
+      const response = await api.get(`/timetable/schedules/?${params.toString()}`)
+      return response.data
+    },
+    createSchedule: async (formation,semester) => {
+      const data = { formation, semester }
+      const response = await api.post('/timetable/schedules/', data)
+      return response.data
+    },
+    updateSchedule: async (id, data) => {
+      const response = await api.patch(`/timetable/schedules/${id}/`, data)
+      return response.data
+    },
+    deleteSchedule: async (id) => {
+      const response = await api.delete(`/timetable/schedules/${id}/`)
+      return response.data
+    },
+    publishSchedule: async (id) => {
+      const response = await api.post(`/timetable/schedules/${id}/publish/`)
+      return response.data
+    },
+    unpublishSchedule: async (id) => {
+      const response = await api.post(`/timetable/schedules/${id}/unpublish/`)
+      return response.data
+    }
+  },
+  scheduleEntryService:{
+    getScheduleEntries: async (filters={}) => {
+      const params = new URLSearchParams()
+      if (filters.schedule) params.append('schedule', filters.schedule)
+      if (filters.course_module) params.append('course_module', filters.course_module)
+      const response = await api.get(`/timetable/schedule_entries/?${params.toString()}`)
+      return response.data
+    },
+    createScheduleEntry: async (schedule, course_module, teacher, day, start_time, end_time, classroom) => {
+      const data = { schedule, course_module, teacher, day, start_time, end_time, classroom }
+      const response = await api.post('/timetable/schedule_entries/', data)
+      return response.data
+    },
+    updateScheduleEntry: async (id, data) => {
+      const response = await api.patch(`/timetable/schedule_entries/${id}/`, data)
+      return response.data
+    },
+    deleteScheduleEntry: async (id) => {
+      const response = await api.delete(`/timetable/schedule_entries/${id}/`)
+      return response.data
+    }
+  }
 }
 
 export default timetableService

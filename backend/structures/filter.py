@@ -26,4 +26,21 @@ class CourseModuleFilter(django_filters.FilterSet):
 
     class Meta:
         model = CourseModule
-        fields = ["is_active","course_unit","teacher"]
+        fields = ["is_active","course_unit"]
+
+class SchoolYearFilter(django_filters.FilterSet):
+    status = django_filters.CharFilter(method="filter_status")
+    class Meta:
+        model = SchoolYear
+        fields = ["is_locked"]
+    def filter_status(self, queryset, name, value):
+        if value == "active":
+            return queryset.filter(status=SchoolYear.Status.ACTIVE)
+        elif value == "closed":
+            return queryset.filter(status=SchoolYear.Status.CLOSED)
+        elif value == "upcoming":
+            return queryset.filter(status=SchoolYear.Status.UPCOMING)
+        elif value == "open":
+            return queryset.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING])
+        return queryset
+    

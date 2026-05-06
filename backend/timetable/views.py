@@ -17,70 +17,6 @@ class AdminScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleSerializer
     permission_classes = [IsSuperUser]
 
-    # 🔸 Ajouter une ligne
-    @action(detail=True, methods=["post"])
-    def add_entry(self, request, pk=None):
-
-        schedule = self.get_object()
-
-        # 🔒 BLOQUER si publié
-        if schedule.is_published:
-            raise ValidationError(
-                "Impossible de modifier un emploi du temps publié"
-            )
-
-        data = request.data.copy()
-        data["schedule"] = schedule.id
-
-        serializer = ScheduleEntrySerializer(data=data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-
-        return Response(serializer.errors, status=400)
-
-    # 🔸 Modifier une ligne
-    @action(detail=True, methods=["patch"], url_path="update_entry/(?P<entry_id>[^/.]+)")
-    def update_entry(self, request, pk=None, entry_id=None):
-
-        schedule = self.get_object()
-
-        if schedule.is_published:
-            raise ValidationError("Modification interdite après publication")
-
-        entry = get_object_or_404(
-            ScheduleEntry, id=entry_id, schedule=schedule
-        )
-
-        serializer = ScheduleEntrySerializer(
-            entry,
-            data=request.data,
-            partial=True
-        )
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=400)
-
-    # 🔸 Supprimer une ligne
-    @action(detail=True, methods=["delete"], url_path="delete_entry/(?P<entry_id>[^/.]+)")
-    def delete_entry(self, request, pk=None, entry_id=None):
-
-        schedule = self.get_object()
-
-        if schedule.is_published:
-            raise ValidationError("Suppression interdite après publication")
-
-        entry = get_object_or_404(
-            ScheduleEntry, id=entry_id, schedule=schedule
-        )
-
-        entry.delete()
-        return Response({"status": "deleted"}, status=204)
-
     # 🔸 Publier
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
@@ -96,6 +32,38 @@ class AdminScheduleViewSet(viewsets.ModelViewSet):
         schedule.is_published = False
         schedule.save()
         return Response({"status": "unpublished"})
+
+
+# 🔹 ADMIN SCHEDULE ENTRY VIEWSET
+class AdminScheduleEntryViewSet(viewsets.ModelViewSet):
+    queryset = ScheduleEntry.objects.all()
+    serializer_class = ScheduleEntrySerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        schedule_id = self.request.query_params.get("schedule")
+        if schedule_id:
+            queryset = queryset.filter(schedule_id=schedule_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        schedule = serializer.validated_data["schedule"]
+        if schedule.is_published:
+            raise ValidationError("Impossible de modifier un emploi du temps publié")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        schedule = serializer.validated_data.get("schedule") or serializer.instance.schedule
+        if schedule.is_published:
+            raise ValidationError("Impossible de modifier un emploi du temps publié")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.schedule.is_published:
+            raise ValidationError("Suppression interdite après publication")
+        instance.delete()
+
 
 # 🔹 ETUDIANT
 class StudentScheduleViewSet(viewsets.ViewSet):
@@ -133,7 +101,6 @@ class TeacherScheduleViewSet(viewsets.ViewSet):
 
         semesters = Semester.objects.filter(
             course_units__modules__teacher=request.user,
-            is_active=True
         ).distinct()
 
         schedules = Schedule.objects.filter(

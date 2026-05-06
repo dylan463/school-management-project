@@ -6,7 +6,7 @@ from .models import (
     SchoolYear, StudentSchoolYear, Enrollment,
     CourseUnit, CourseModule
 )
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer,UserCreateSerializer
 from users.models import CustomUser
 
 # ─────────────────────────────────────────
@@ -90,12 +90,16 @@ class SchoolYearSerializer(serializers.ModelSerializer):
             "id", "label", "status", "start_date", 
             "end_date", "is_locked"
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "status", "start_date", "end_date", "is_locked"]
 
 class SchoolYearCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolYear
         fields = ["label"]
+    def validate(self,attrs):
+        if SchoolYear.objects.filter(status__in=["UPCOMING","ACTIVE"]).exists():
+            raise serializers.ValidationError(
+                "Il ne peut y avoir qu'une seule année scolaire active ou à venir.")
 
 
 class StudentSchoolYearSerializer(serializers.ModelSerializer):
@@ -236,7 +240,7 @@ class ActivateNextSemesterSerializer(serializers.Serializer):
     )
 
 
-class StudentCreateSerializer(serializers.ModelSerializer):
+class StudentCreateSerializer(UserCreateSerializer):
     school_year = serializers.IntegerField()
     level = serializers.IntegerField()
     formation = serializers.IntegerField()

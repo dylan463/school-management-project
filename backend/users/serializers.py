@@ -34,22 +34,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['email', 'role']
 
-    def create(self, validated_data):
-        role = validated_data.pop("role")
-
-        matricule = generate_matricule(role)
-        password = generate_password()
-
-        user = CustomUser.objects.create_user(
-            username=matricule,
-            password=password,
-            role=role,
-            **validated_data
-        )
-
-        user._plain_password = password
-        return user
-
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("cet email est déjà utilisé")

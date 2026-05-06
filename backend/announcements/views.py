@@ -165,7 +165,7 @@ class AnnouncementViewset(viewsets.ModelViewSet):
         )
 
     @action(methods=["get"],detail=False)
-    def unreadcount(self,request):
+    def unread_count(self,request):
         all_announcement = self.get_queryset()
         user = request.user
         count = get_unread_annoncement(all_announcement,user).count()

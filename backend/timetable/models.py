@@ -1,5 +1,5 @@
 from django.db import models
-from structures.models import Semester, CourseModule
+from structures.models import Semester, CourseModule,Formation
 from users.models import TeacherUser
 
 # 🔹 emploi du temps global
@@ -9,6 +9,7 @@ class Schedule(models.Model):
         on_delete=models.CASCADE,
         related_name="schedule"
     )
+    formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="schedules")
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

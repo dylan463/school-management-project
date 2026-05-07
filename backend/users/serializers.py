@@ -32,7 +32,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'role']
+        fields = ['first_name','last_name','email', 'role']
+        extra_kwargs = {
+            'email': {'required': True},
+            'first_name': {'required': False},
+            'last_name': {'required': False}
+        }
+
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():

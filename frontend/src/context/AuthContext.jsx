@@ -1,9 +1,11 @@
 // AuthContext.jsx
 import React, { useState, useEffect, useContext, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { storage } from "../utils/storage";
 import authService from "../services/authService";
+import { authEvents } from "../services/api";
 import { ROLES, ROUTES } from "../utils/constants";
+import extractDRFError from "../utils/extractError";
 
 const AuthContext = React.createContext();
 
@@ -19,10 +21,12 @@ const mapRoleApi = (apiUser) => {
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true); // Initialisation
+  const [loginLoading, setLoginLoading] = useState(false); // Connexion
   const [initialized, setInitialized] = useState(false);
 
   const logout = useCallback(() => {
@@ -41,58 +45,80 @@ export function AuthProvider({ children }) {
       setLoading(true);
       try {
         if (!storage.getAccess()) {
-          setInitialized(true);
-          setLoading(false);
           return;
         }
-        // Si le token est expiré, l'interceptor gère le refresh automatiquement
+
+        // Si le token est expiré, l'interceptor tente le refresh automatiquement.
         const currentUser = await authService.me();
         const currentRole = mapRoleApi(currentUser);
         setUser(currentUser);
         setRole(currentRole);
-        setInitialized(true);
-        // Ne pas rediriger automatiquement ici - laisser l'utilisateur naviguer librement
       } catch {
-        // Refresh aussi échoué -> session invalide
-        setError("Session expirée. Veuillez vous reconnecter.");
+        // Si le refresh échoue, l'interceptor émet l'événement sessionExpired.
         storage.clear();
         setUser(null);
         setRole(null);
-        setInitialized(true);
-        navigate(ROUTES.LOGIN, { replace: true });
       } finally {
+        setInitialized(true);
         setLoading(false);
       }
     };
 
     initAuth();
-  }, [navigate, initialized]);
+  }, [initialized]);
+
+  useEffect(() => {
+    const handleSessionExpired = (event, data) => {
+      if (event !== 'sessionExpired') return;
+
+      storage.clear();
+      setUser(null);
+      setRole(null);
+      setError('Session expirée');
+
+      if (location.pathname !== ROUTES.LOGIN) {
+        navigate(ROUTES.LOGIN, { replace: true });
+      }
+    };
+
+    const unsubscribe = authEvents.subscribe(handleSessionExpired);
+    return unsubscribe;
+  }, [navigate, location.pathname]);
 
   const login = useCallback(async (matricule, motDePasse) => {
-    const { access, refresh } = await authService.login(matricule, motDePasse);
-    storage.setAccess(access);
-    storage.setRefresh(refresh);
-    const currentUser = await authService.me();
-    const currentRole = mapRoleApi(currentUser);
-    setUser(currentUser);
-    setRole(currentRole);
-    // Supprimer la redirection automatique après la connexion pour permettre la navigation libre
-    // navigateByRole(currentRole);
+    setLoginLoading(true);
+    try {
+      setError(null);
+      const { access, refresh } = await authService.login(matricule, motDePasse);
+      storage.setAccess(access);
+      storage.setRefresh(refresh);
+      const currentUser = await authService.me();
+      const currentRole = mapRoleApi(currentUser);
+      setUser(currentUser);
+      setRole(currentRole);
+
+    } catch (err) {
+      const errorMessage = "Échec de la connexion";
+      setError(errorMessage);
+    } finally {
+      setLoginLoading(false);
+    }
   }, []);
 
   const value = {
     user,
-    loading,
-    error,
+    loading: loginLoading,
     role,
     login,
     logout,
     isAuthenticated: !!user,
+    error,
+    setError,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? null : children}
     </AuthContext.Provider>
   );
 }

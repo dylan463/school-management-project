@@ -5,14 +5,14 @@ import { ROUTES, ROLES } from '../../utils/constants'
 import Input  from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import '../../index.css' // Assure-toi que la police Poppins est importée dans ton CSS global
+import { toast } from 'react-toastify'
 
 export default function LoginPage() {
-  const { login, loading, isAuthenticated, role} = useAuth()
+  const { login, loading, isAuthenticated, role, error, setError } = useAuth()
   const navigate = useNavigate()
 
   const [matricule,   setMatricule]   = useState('')
   const [motDePasse,  setMotDePasse]  = useState('')
-  const [error,       setError]        = useState(null)
   const [showPassword, setShowPassword] = useState(false)
 
   // Rediriger vers le dashboard approprié après la connexion
@@ -28,13 +28,33 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, role, navigate])
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { toastId: error });
+      setMatricule("")
+      setMotDePasse("")
+    }
+  }, [error]);
+
+  // Remettre l'erreur à null quand l'utilisateur commence à taper
+  const handleMatriculeChange = (e) => {
+    setMatricule(e.target.value);
+    if (error) setError(null); // Effacer l'erreur quand l'utilisateur tape
+  };
+
+  const handleMotDePasseChange = (e) => {
+    setMotDePasse(e.target.value);
+    if (error) setError(null); // Effacer l'erreur quand l'utilisateur tape
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       if (!matricule.trim() || !motDePasse.trim()) return
-      login(matricule.trim(), motDePasse)
+      await login(matricule.trim(), motDePasse)
     } catch (err) {
-      setError("Erreur lors de la connexion")
+      // L'erreur est déjà gérée dans le contexte AuthContext
+      console.error("Login error:", err)
     }
   }
 
@@ -75,7 +95,7 @@ export default function LoginPage() {
               label="Matricule"
               placeholder="ex : ETU-2024-001"
               value={matricule}
-              onChange={e => setMatricule(e.target.value)}
+              onChange={handleMatriculeChange}
               autoComplete="username"
               required
               className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
@@ -90,7 +110,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={motDePasse}
-                  onChange={e => setMotDePasse(e.target.value)}
+                  onChange={handleMotDePasseChange}
                   autoComplete="current-password"
                   required
                   className="w-full px-3 py-2.5 pr-10 rounded-lg border text-sm font-normal text-slate-800 outline-none transition-all duration-150 bg-white placeholder:text-slate-400 border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
@@ -113,16 +133,6 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2.5 rounded-lg">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 16 16">
-                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
-                  <path d="M8 5v3.5M8 11h.01" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </svg>
-                {error}
-              </div>
-            )}
 
             <Button
               type="submit"

@@ -21,10 +21,35 @@ class LevelSerializer(serializers.ModelSerializer):
 
 
 class FormationSerializer(serializers.ModelSerializer):
+    first_level = serializers.SerializerMethodField()
+    last_level = serializers.SerializerMethodField()
+    
     class Meta:
         model = Formation
-        fields = ["id", "label", "code", "description"]
+        fields = ["id", "label", "code", "description", "first_level", "last_level"]
         read_only_fields = ["id"]
+    
+    def get_first_level(self, obj):
+        """Retourne le niveau le plus bas de la formation"""
+        first_level = obj.formation_levels.select_related('level').order_by('level__order').first()
+        if first_level:
+            return {
+                'id': first_level.level.id,
+                'code': first_level.level.code,
+                'order': first_level.level.order
+            }
+        return None
+    
+    def get_last_level(self, obj):
+        """Retourne le niveau le plus élevé de la formation"""
+        last_level = obj.formation_levels.select_related('level').order_by('level__order').last()
+        if last_level:
+            return {
+                'id': last_level.level.id,
+                'code': last_level.level.code,
+                'order': last_level.level.order
+            }
+        return None
 
 
 class FormationCreateSerializer(serializers.ModelSerializer):
@@ -34,6 +59,11 @@ class FormationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Formation
         fields = ["label", "code", "description", "from_level", "to_level"]
+        extra_kwargs = {
+            "label": {"required": True},
+            "code": {"required": True},
+            "description": {"required": False},
+        }
 
 
     def validate(self, attrs):
@@ -71,10 +101,11 @@ class FormationCreateSerializer(serializers.ModelSerializer):
 
 
 class SemesterSerializer(serializers.ModelSerializer):
+    level = LevelSerializer()
     class Meta:
         model = Semester
-        fields = ["id", "code", "order"]
-        read_only_fields = ["id","order"]
+        fields = ["id", "code", "order","level"]
+        read_only_fields = ["id","order","level"]
 
 
 
@@ -88,18 +119,19 @@ class SchoolYearSerializer(serializers.ModelSerializer):
         model = SchoolYear
         fields = [
             "id", "label", "status", "start_date", 
-            "end_date", "is_locked"
+            "end_date", "is_locked","period"
         ]
-        read_only_fields = ["id", "status", "start_date", "end_date", "is_locked"]
+        read_only_fields = ["id", "status", "start_date", "end_date", "is_locked","period"]
 
 class SchoolYearCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolYear
         fields = ["label"]
     def validate(self,attrs):
-        if SchoolYear.objects.filter(status__in=["UPCOMING","ACTIVE"]).exists():
+        if SchoolYear.objects.filter(status="UPCOMING").exists():
             raise serializers.ValidationError(
-                "Il ne peut y avoir qu'une seule année scolaire active ou à venir.")
+                "Il ne peut y avoir qu'une seule année scolaire à venir.")
+        return attrs
 
 
 class StudentSchoolYearSerializer(serializers.ModelSerializer):

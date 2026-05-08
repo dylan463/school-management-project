@@ -27,7 +27,7 @@ def activate_school_year(school_year: SchoolYear):
 
     if school_year.status == SchoolYear.Status.ACTIVE:
         return school_year  
-
+    
     school_year.status = SchoolYear.Status.ACTIVE
     school_year.is_locked = True
 
@@ -92,6 +92,7 @@ def go_to_first_periode(school_year: SchoolYear):
     school_year.save()
 
     if StudentSchoolYear.objects.filter(school_year=school_year).exists():
+<<<<<<< HEAD
     
         last_level_order = Semester.objects.order_by("-order").first().order
         firts_period_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 1]
@@ -106,6 +107,22 @@ def go_to_first_periode(school_year: SchoolYear):
             semester__order__in=firts_period_semesters_order
         ).update(is_current=True)
     return school_year
+=======
+        last_level_order = Semester.objects.order_by("-order").first().order
+        firts_period_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 1]
+        second_periode_semesters_order = [order for order in range(1,last_level_order+1) if order % 2 == 0]
+
+        Enrollment.objects.filter(
+            student_school_years__school_year=school_year,
+            semester__order__not_in=second_periode_semesters_order
+        ).update(is_current=False)
+        Enrollment.objects.filter(
+            student_school_years__school_year=school_year,
+            semester__order__in=firts_period_semesters_order
+        ).update(is_current=True)
+    return school_year
+
+>>>>>>> recuperation
 
 def go_to_second_periode(school_year: SchoolYear):
     if school_year.is_locked:

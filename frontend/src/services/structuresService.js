@@ -76,7 +76,11 @@ const structuresService = {
       const response = await api.get(`/structures/school_years/${id}/`)
       return response.data
     },
+<<<<<<< HEAD
     updateSchoolYear: async (id, data) => {      
+=======
+    updateSchoolYear: async (id, data) => {
+>>>>>>> recuperation
       const response = await api.patch(`/structures/school_years/${id}/`, data)
       return response.data
     },

@@ -1,7 +1,18 @@
 // api.js
 import axios from "axios";
 import { storage } from "../utils/storage";
-import { ROUTES } from "../utils/constants";
+
+// ── Event system for auth errors ────────────────────────────────────────────
+const authEvents = {
+  listeners: [],
+  subscribe(callback) {
+    this.listeners.push(callback);
+    return () => this.listeners = this.listeners.filter(l => l !== callback);
+  },
+  emit(event, data) {
+    this.listeners.forEach(callback => callback(event, data));
+  }
+};
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -20,6 +31,7 @@ api.interceptors.request.use((config) => {
 // Sur 401 : tente un refresh, relance la requête, sinon redirige vers login
 let isRefreshing = false;
 let pendingQueue = []; // requêtes en attente pendant le refresh
+let sessionExpiredNotified = false;
 
 const resolvePending = (newToken) =>
   pendingQueue.forEach(({ resolve }) => resolve(newToken));
@@ -53,16 +65,17 @@ api.interceptors.response.use(
 
     try {
       const refreshToken = storage.getRefresh();
-      if (!refreshToken) throw new Error("No refresh token");
+      if (!refreshToken) throw new Error("veuillez vous reconnecter.");
 
       // Appel direct axios pour éviter de passer par l'interceptor
       const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/token/refresh/`,
+        `${import.meta.env.VITE_API_URL}/auth/refresh/`,
         { refresh: refreshToken }
       );
 
       storage.setAccess(data.access);
       storage.setRefresh(data.refresh); // ✅ rotation
+      sessionExpiredNotified = false;
 
       // Relance toutes les requêtes en attente avec le nouveau token
       resolvePending(data.access);
@@ -72,7 +85,16 @@ api.interceptors.response.use(
     } catch (refreshError) {
       rejectPending(refreshError);
       storage.clear();
-      window.location.href = ROUTES.LOGIN;
+
+      if (!sessionExpiredNotified) {
+        if (refreshError.response) {
+          refreshError.response.data = { detail: 'Session expirée' };
+        }
+        refreshError.message = 'Session expirée';
+        authEvents.emit('sessionExpired', { reason: 'refresh_failed' });
+        sessionExpiredNotified = true;
+      }
+
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
@@ -81,4 +103,5 @@ api.interceptors.response.use(
   }
 );
 
+export { authEvents };
 export default api;

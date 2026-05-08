@@ -160,66 +160,6 @@ class FormationViewSet(viewsets.ModelViewSet):
 #     def perform_create(self, serializer):
 #         serializer.save(teacher=self.request.user)
 
-#     def get_queryset(self):
-#         user = self.request.user
-#         if is_user_student(user):
-#             return get_student_formation_queryset(user)
-#         elif is_user_teacher(user):
-#             return get_teacher_formation_queryset(user)
-#         else:
-#             return Formation.objects.all()
-    
-#     def get_permissions(self):
-#         if self.action == 'list':
-#             permissions = [IsAuthenticated]
-#         else:
-#             permissions = [IsSuperUser]
-#         return [permission() for permission in permissions]
-
-#     def create(self, request, *args, **kwargs):
-#         serializer = FormationCreateSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-
-#         formation = create_formation_and_its_levels(
-#             serializer.validated_data.copy()
-#         )
-
-#         response_serializer = FormationSerializer(formation)
-#         return Response(
-#             response_serializer.data,
-#             status=status.HTTP_201_CREATED
-#         )
-
-
-#     def update(self, request, *args, **kwargs):
-#         instance = self.get_object()
-
-#         serializer = FormationCreateSerializer(
-#             instance,
-#             data=request.data,
-#             partial=True
-#         )
-#         serializer.is_valid(raise_exception=True)
-
-#         formation = update_formation_and_its_level(
-#             instance,
-#             serializer.validated_data.copy()
-#         )
-
-#         response_serializer = FormationSerializer(formation)
-#         return Response(
-#             response_serializer.data,
-#             status=status.HTTP_200_OK
-#         )
-
-#     @action(methods=["post"],detail=True,url_path="remove-levels")
-#     def removelevels(self,request,pk=None):
-#         formation = self.get_object()
-#         FormationLevel.objects.filter(formation=formation).delete()
-#         return Response({"formation levels":"deleted"},status=status.HTTP_200_OK)
-
-
-
 class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewsets.mixins.CreateModelMixin,viewsets.mixins.UpdateModelMixin,viewsets.mixins.RetrieveModelMixin):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
@@ -233,7 +173,7 @@ class LevelViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,viewse
             permissions = [IsAuthenticated]
         else:
             permissions = [IsSuperUser]
-        return [permission for permission in permissions]
+        return [permission() for permission in permissions]
 
     def get_queryset(self):
         user = self.request.user
@@ -366,8 +306,14 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         school_year = self.get_object()
         try:
             school_year = go_to_first_periode(school_year=school_year)
+<<<<<<< HEAD
             return Response(school_year)
         except Exception as e:
+=======
+            serializer = self.get_serializer(school_year)
+            return Response(serializer.data)
+        except ValidationError as e:
+>>>>>>> recuperation
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['POST'],url_path="go-seconde")
@@ -376,9 +322,21 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         school_year = self.get_object()
         try:
             school_year = go_to_second_periode(school_year=school_year)
+<<<<<<< HEAD
             return Response(school_year)
         except Exception as e:
+=======
+            serializer = self.get_serializer(school_year)
+            return Response(serializer.data)
+        except ValidationError as e:
+>>>>>>> recuperation
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def perform_destroy(self, instance):
+        if instance.is_locked:
+            raise ValidationError("vous ne pouvez pas supprimer une année scolaire bloquée")
+
+        return super().perform_destroy(instance)
 
 # ─────────────────────────────────────────
 # INSCRIPTION ANNUELLE

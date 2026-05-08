@@ -279,7 +279,11 @@ class StudentCreateSerializer(UserCreateSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ["email","role","school_year","level","formation"]
+        fields = ["first_name","last_name","email","role","school_year","level","formation"]
+        extra_kwargs = {
+            "first_name": {"required": False},
+            "last_name": {"required": False},
+        }
 
     def validate_school_year(self,value):
         if not SchoolYear.objects.filter(id=value).exists():

@@ -2,8 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction, IntegrityError
 from django.db.models import Q
 
-from ..models import SchoolYear,Level, StudentSchoolYear,Semester,Enrollment
-from users.models import CustomUser
+from ..models import SchoolYear,StudentSchoolYear,Semester,Enrollment
 
 # ─────────────────────────────────────────
 # ANNÉE SCOLAIRE
@@ -68,11 +67,6 @@ def end_school_year(school_year: SchoolYear):
     school_year.save()
 
     return school_year
-
-
-def get_open_school_year():
-    return SchoolYear.objects.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING]).distinct()
-
 
 def toggle_school_year_lock(school_year: SchoolYear):
     """

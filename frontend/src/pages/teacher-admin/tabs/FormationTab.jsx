@@ -198,6 +198,7 @@ export default function FormationTab() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 })
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
 
@@ -332,6 +333,7 @@ export default function FormationTab() {
               </p>
             </div>
           ) : (
+            <div className="overflow-x-auto overflow-visible">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-400">
@@ -376,14 +378,31 @@ export default function FormationTab() {
                       <td className="py-3 text-center">
                         <div className="relative">
                           <button
-                            onClick={() => setOpenMenuId(openMenuId === formation.id ? null : formation.id)}
+                            onClick={(e) => {
+                              const rect = e.target.getBoundingClientRect()
+                              if (openMenuId === formation.id) {
+                                setOpenMenuId(null)
+                              } else {
+                                setMenuPosition({
+                                  top: rect.bottom + 5,
+                                  right: window.innerWidth - rect.right
+                                })
+                                setOpenMenuId(formation.id)
+                              }
+                            }}
                             className="px-3 py-1 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded transition"
                           >
                             ⋮
                           </button>
                           
                           {openMenuId === formation.id && (
-                            <div className="absolute right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[160px]">
+                            <div 
+                              className="fixed bg-white border border-slate-200 rounded-lg shadow-lg z-[9999] min-w-[160px]"
+                              style={{
+                                top: menuPosition.top + 'px',
+                                right: menuPosition.right + 'px'
+                              }}
+                            >
                               <button
                                 onClick={() => {
                                   openEditModal(formation.id)
@@ -408,7 +427,8 @@ export default function FormationTab() {
                   ))}                  
                 </tbody>
               </table>          
-            )}
+            </div>
+          )}
         </div>
       </Card>
 

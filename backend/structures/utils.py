@@ -1,6 +1,6 @@
 from users.models import CustomUser
 from .models import SchoolYear,Level,Formation
-from .services import force_create_student_school_year_for_new_year as force_create
+from .services import create_student_school_year
 from users.utils import generate_matricule,generate_password
 from django.db import transaction
 from .serializers import StudentSchoolYearSerializer
@@ -46,12 +46,10 @@ def create_student(data):
     level = Level.objects.get(pk = data.pop("level"))
     formation = Formation.objects.get(pk = data.pop("formation"))
     student = create_user(data)
-    student_sy = force_create(
+    create_student_school_year(
         student= student,
         level= level,
-        new_school_year=school_year,
+        school_year=school_year,
         formation=formation
     )
-    student_serializer = UserSerializer(student)
-    ssy_serializer = StudentSchoolYearSerializer(student_sy)
-    return {"student":student_serializer.data,"student_school_year":ssy_serializer.data}
+    return student

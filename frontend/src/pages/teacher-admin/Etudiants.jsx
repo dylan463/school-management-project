@@ -1,234 +1,611 @@
-import { useState,useEffect } from 'react'
-import Card from '../../components/ui/Card'
-import Button from '../../components/ui/Button'
-import Pill from '../../components/ui/Pill'
-import Avatar from '../../components/ui/Avatar'
-import etudiantService from '../../services/studentService'
+import { useState, useEffect } from "react"
+import Button from "../../components/ui/Button"
+import Pill from "../../components/ui/Pill"
+import Card from "../../components/ui/Card"
+import Modal from "../../components/Modal"
+import ConfirmModal from "../../components/ConfirmModal"
+import Avatar from "../../components/ui/Avatar"
+import etudiantService from "../../services/studentService"
+import structuresService from "../../services/structuresService"
+import extractDRFError from "../../utils/extractError"
+import { toast } from "react-toastify"
 
-const ETUDIANTS_INITIAL = [
-  { id: 1, matricule: 'ETU-001', nom: 'Rakoto', prenom: 'Ny Aina', email: 'rakoto@espa.mg', statut: 'Actif', niveau: 'L1' },
-  { id: 2, matricule: 'ETU-002', nom: 'Rabe', prenom: 'Miora', email: 'rabe@espa.mg', statut: 'Actif', niveau: 'L1' },
-  { id: 3, matricule: 'ETU-003', nom: 'Andrianampoinimerina', prenom: 'Jean', email: 'jean@espa.mg', statut: 'Actif', niveau: 'L2' },
-  { id: 4, matricule: 'ETU-004', nom: 'Rajoelina', prenom: 'Marie', email: 'marie@espa.mg', statut: 'Actif', niveau: 'L2' },
-  { id: 5, matricule: 'ETU-005', nom: 'Rasoa', prenom: 'Philippe', email: 'philippe@espa.mg', statut: 'Inactif', niveau: 'L3' },
-]
+function FormulaireAjoutEtudiant({ onClose, onSubmit }) {
+  const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [schoolYear, setSchoolYear] = useState('')
+  const [formation, setFormation] = useState('')
+  const [level, setLevel] = useState('')
+  const [schoolYears, setSchoolYears] = useState([])
+  const [formations, setFormations] = useState([])
+  const [levels, setLevels] = useState([])
 
-const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2']
+  useEffect(() => {
+    async function fetchOptions() {
+      try {
+        const [schoolYearsData, formationsData] = await Promise.all([
+          structuresService.schoolYearsService.getSchoolYears({status:"open"}),
+          structuresService.FormationService.getFormations(),
+        ])
+        setSchoolYears(schoolYearsData)
+        setFormations(formationsData)
+      } catch (error) {
+        console.error('Erreur lors du chargement des options:', error)
+      }
+    }
+    fetchOptions()
+  }, [])
 
-function renderTable(rows) {
+  useEffect(() => {
+    if (formation) {
+      // Charger les niveaux pour la formation sélectionnée
+      structuresService.levelService.getLevels({formation: formation})
+        .then((levelsData) => {
+          setLevels(levelsData)
+        })
+        .catch((error) => {
+          console.error('Erreur lors du chargement des niveaux:', error)
+        })
+    }
+  }, [formation])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    // Validation côté client
+    if (!email.trim()) {
+      toast.error('L\'email est requis')
+      return
+    }
+    
+    if (!firstName.trim()) {
+      toast.error('Le prénom est requis')
+      return
+    }
+    
+    if (!lastName.trim()) {
+      toast.error('Le nom est requis')
+      return
+    }
+    
+    const data = {
+      email: email.trim(),
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      school_year: schoolYear,
+      formation: formation,
+      level: level,
+    }
+    try{
+      await onSubmit(data)
+      // Réinitialiser le formulaire après succès
+      setEmail('')
+      setFirstName('')
+      setLastName('')
+      setSchoolYear('')
+      setFormation('')
+      setLevel('')
+      onClose()
+    }catch(error){
+      const errorMessage = extractDRFError(error)
+      toast.error(errorMessage || 'Une erreur est survenue')
+    }
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-slate-100 text-slate-400">
-            <th className="text-left pb-3 font-medium">Étudiant</th>
-            <th className="text-left pb-3 font-medium">Matricule</th>
-            <th className="text-left pb-3 font-medium">Email</th>
-            <th className="text-center pb-3 font-medium">Statut</th>
-            <th className="text-center pb-3 font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((etudiant, i) => (
-            <tr key={etudiant.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-              <td className="py-3">
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={`${etudiant.prenom} ${etudiant.nom}`} size="sm" colorIndex={i % 5} />
-                  <span className="font-medium text-slate-800">{etudiant.prenom} {etudiant.nom}</span>
-                </div>
-              </td>
-              <td className="py-3 text-slate-400 font-mono">{etudiant.matricule}</td>
-              <td className="py-3 text-slate-500">{etudiant.email}</td>
-              <td className="py-3 text-center">
-                <Pill label={etudiant.statut} color={etudiant.statut === 'Actif' ? 'Validé' : 'En attente'} />
-              </td>
-              <td className="py-3 text-center">
-                <div className="flex gap-2 justify-center">
-                  <button className="text-blue-600 hover:text-blue-800">Modifier</button>
-                  <button className="text-red-600 hover:text-red-800">Supprimer</button>
-                </div>
-              </td>
-            </tr>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Email
+        </label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Ex: etudiant@espa.mg"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+          required
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Prénom
+          </label>
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Ex: Jean"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Nom
+          </label>
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Ex: Dupont"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Année scolaire
+        </label>
+        <select
+          value={schoolYear}
+          onChange={(e) => setSchoolYear(e.target.value)}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+        >
+          <option value="">Sélectionner une année scolaire</option>
+          {schoolYears.map((sy) => (
+            <option key={sy.id} value={sy.id}>
+              {sy.label}
+            </option>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Formation
+        </label>
+        <select
+          value={formation}
+          onChange={(e) => setFormation(e.target.value)}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+        >
+          <option value="">Sélectionner une formation</option>
+          {formations.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Niveau
+        </label>
+        <select
+          value={level}
+          onChange={(e) => setLevel(e.target.value)}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+        >
+          <option value="">Sélectionner un niveau</option>
+          {levels.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.code}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-3 py-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+        >
+          Annuler
+        </button>
+        <button
+          type="submit"
+          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+        >
+          Ajouter
+        </button>
+      </div>
+    </form>
   )
 }
 
-function ModalAjoutEtudiant({ isOpen, onClose, onAdd, niveaux }) {
+function FormulaireModificationEtudiant({ etudiant, onClose, onSubmit }) {
+  const [email, setEmail] = useState(etudiant?.email || '')
+  const [firstName, setFirstName] = useState(etudiant?.first_name || '')
+  const [lastName, setLastName] = useState(etudiant?.last_name || '')
 
-  const [formData, setFormData] = useState({
-    prenom: '',
-    nom: '',
-    email: '',
-    niveau: 'L1',
-    statut: 'Actif',
-  })
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onAdd(formData)
-    setFormData({ prenom: '', nom: '', email: '', niveau: 'L1', statut: 'Actif' })
+    
+    if (!email.trim()) {
+      toast.error('L\'email est requis')
+      return
+    }
+    
+    if (!firstName.trim()) {
+      toast.error('Le prénom est requis')
+      return
+    }
+    
+    if (!lastName.trim()) {
+      toast.error('Le nom est requis')
+      return
+    }
+    
+    const data = {
+      email: email.trim(),
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+    }
+    try{
+      await onSubmit(data)
+      onClose()
+    }catch(error){
+      const errorMessage = extractDRFError(error)
+      toast.error(errorMessage || 'Une erreur est survenue')
+    }
   }
-
-  if (!isOpen) return null
 
   return (
-    // <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-        <div className="p-6 border-b border-slate-100">
-          <h2 className="text-xl font-bold text-slate-800">Ajouter un étudiant</h2>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Prénom</label>
-            <input
-              type="text"
-              name="prenom"
-              value={formData.prenom}
-              onChange={handleChange}
-              placeholder="Ex: Ny Aina"
-              required
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-blue-400 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Nom</label>
-            <input
-              type="text"
-              name="nom"
-              value={formData.nom}
-              onChange={handleChange}
-              placeholder="Ex: Rakoto"
-              required
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-blue-400 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Ex: etudiant@espa.mg"
-              required
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-blue-400 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Niveau</label>
-            <select
-              name="niveau"
-              value={formData.niveau}
-              onChange={handleChange}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-blue-400 focus:outline-none bg-white"
-            >
-              {niveaux.map(niveau => (
-                <option key={niveau} value={niveau}>{niveau}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Statut</label>
-            <select
-              name="statut"
-              value={formData.statut}
-              onChange={handleChange}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-blue-400 focus:outline-none bg-white"
-            >
-              <option value="Actif">Actif</option>
-              <option value="Inactif">Inactif</option>
-            </select>
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-3 py-2 text-xs font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-3 py-2 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition"
-            >
-              Ajouter
-            </button>
-          </div>
-        </form>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Email
+        </label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Ex: etudiant@espa.mg"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+          required
+        />
       </div>
-    // </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Prénom
+          </label>
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Ex: Jean"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Nom
+          </label>
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Ex: Dupont"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            required
+          />
+        </div>
+      </div>
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-3 py-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+        >
+          Annuler
+        </button>
+        <button
+          type="submit"
+          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+        >
+          Modifier
+        </button>
+      </div>
+    </form>
   )
 }
 
 export default function Etudiants() {
-  const [search, setSearch] = useState('')
   const [etudiants, setEtudiants] = useState([])
-  const [showModal, setShowModal] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 })
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(false)
+  const [deleteId, setDeleteId] = useState(null)
 
   useEffect(() => {
-    const fetchEtudiants = async () => {
-      const data = await etudiantService.getStudents()
-      setEtudiants(data)
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    async function fetchEtudiants() {
+      const params = {}
+      if (debouncedSearch) params.search = debouncedSearch
+      
+      const response = await etudiantService.getStudents(params)
+      setEtudiants(response)
     }
     fetchEtudiants()
-  }, [])
+  }, [debouncedSearch])
 
+  const editingEtudiant = editingId ? etudiants.find(e => e.id === editingId) : null
 
-  const handleAddEtudiant = (formData) => {
-    const createEtudiant = async () => {
-      try {
-        await etudiantService.createStudent(formData)
-        const updatedEtudiants = await etudiantService.getStudents()
-        setEtudiants(updatedEtudiants)
-        setShowModal(false)
-      } catch (error) {
-        console.error('Erreur lors de la création de l\'étudiant:', error)
+  const handleAddEtudiant = async (formData) => {
+    await etudiantService.createStudent(formData)
+    const params = {}
+    if (debouncedSearch) params.search = debouncedSearch
+    
+    const response = await etudiantService.getStudents(params)
+    setEtudiants(response)
+    toast.success('Étudiant ajouté avec succès')
+  }
+  
+  const handleEditEtudiant = async (formData) => {
+    const updated = await etudiantService.updateStudent(editingId, formData)
+    // Mettre à jour localement sans recharger toute la liste
+    setEtudiants(etudiants.map(e => e.id === editingId ? updated : e))
+    setEditingId(null)
+    toast.success('Étudiant modifié avec succès')
+  }
+
+  const handleDeleteEtudiant = async (id) => {
+    try{
+      await etudiantService.deleteStudent(id)
+      // Recharger la liste avec les filtres actuels
+      const params = {}
+      if (debouncedSearch) params.search = debouncedSearch
+      
+      const response = await etudiantService.getStudents(params)
+      setEtudiants(response)
+      toast.success('Étudiant supprimé avec succès')
+    }catch(error){
+      toast.error(extractDRFError(error))
+    }
+  }
+
+  const openDeleteConfirmModal = (id) => {
+    setDeleteId(id)
+    setDeleteConfirmModal(true)
+    setOpenMenuId(null)
+  }
+
+  const closeDeleteConfirmModal = () => {
+    setDeleteId(null)
+    setDeleteConfirmModal(false)
+  }
+
+  // Ouvrir le modal pour ajouter
+  const openAddModal = () => {
+    setEditingId(null)
+    setIsModalOpen(true)
+  }
+
+  // Ouvrir le modal pour éditer
+  const openEditModal = (id) => {
+    setEditingId(id)
+    setIsModalOpen(true)
+  }
+
+  // Fermer le modal
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingId(null)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId !== null) {
+        const menuElement = document.querySelector(`[data-menu-id="${openMenuId}"]`)
+        const actionButton = event.target.closest('button[aria-label="action-menu"]')
+        
+        if (menuElement && !menuElement.contains(event.target) && !actionButton) {
+          setOpenMenuId(null)
+        }
       }
     }
-    createEtudiant()
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openMenuId])
+
+  function renderTable(rows) {
+    return (
+      <div className="overflow-x-auto overflow-visible">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-100 text-slate-400">
+              <th className="text-left pb-3 pl-3 font-medium">Étudiant</th>
+              <th className="text-left pb-3 font-medium">Email</th>
+              <th className="text-left pb-3 font-medium">Matricule</th>
+              <th className="text-left pb-3 font-medium">Statut</th>
+              <th className="text-center pb-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((etudiant) => (
+              <tr key={etudiant.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                <td className="py-3 pl-3">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={`${etudiant.first_name} ${etudiant.last_name}`} size="sm" />
+                    <div>
+                      <div className="font-medium text-slate-800">
+                        {etudiant.first_name && etudiant.last_name ? `${etudiant.first_name} ${etudiant.last_name}` : etudiant.username || 'Nom non disponible'}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3">
+                  <span className="text-slate-600 text-xs">{etudiant.email}</span>
+                </td>
+                <td className="py-3">
+                  <span className="font-mono text-slate-600 text-xs">{etudiant.username || '-'}</span>
+                </td>
+                <td className="py-3">
+                  <Pill 
+                    variant={etudiant.is_active ? 'success' : 'danger'}
+                    size="sm"
+                  >
+                    {etudiant.is_active ? 'Actif' : 'Inactif'}
+                  </Pill>
+                </td>
+                <td className="py-3 text-center">
+                  <div className="relative">
+                    <button
+                      aria-label="action-menu"
+                      onClick={(e) => {
+                        const rect = e.target.getBoundingClientRect()
+                        if (openMenuId === etudiant.id) {
+                          setOpenMenuId(null)
+                        } else {
+                          setMenuPosition({
+                            top: rect.bottom + 5,
+                            right: window.innerWidth - rect.right
+                          })
+                          setOpenMenuId(etudiant.id)
+                        }
+                      }}
+                      className="px-3 py-1 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded transition"
+                    >
+                      ⋮
+                    </button>
+                    
+                    {openMenuId === etudiant.id && (
+                      <div 
+                        data-menu-id={etudiant.id} 
+                        className="fixed bg-white border border-slate-200 rounded-lg shadow-lg z-[9999] min-w-[160px]"
+                        style={{
+                          top: menuPosition.top + 'px',
+                          right: menuPosition.right + 'px'
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            openEditModal(etudiant.id)
+                            setOpenMenuId(null)
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition first:rounded-t-lg"
+                        >
+                          Modifier
+                        </button>
+                        
+                        <button
+                          onClick={() => openDeleteConfirmModal(etudiant.id)}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition border-t border-slate-200 last:rounded-b-lg"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}                  
+          </tbody>
+        </table>
+      </div>
+    )
   }
 
   return (
     <div className="fade-in space-y-5">
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-slate-800">Étudiants</h2>
-        <p className="text-sm text-slate-500 mt-1">Gérer les inscriptions et profils étudiants par niveau</p>
+        <p className="text-sm text-slate-500 mt-1">Gérer les étudiants de l'établissement</p>
       </div>
 
       <Card>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <input
-            type="text"
-            placeholder="Rechercher un étudiant…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white w-full sm:w-56"
-          />
-          <Button onClick={() => setShowModal(true)}>+ Ajouter</Button>
+        <div className="flex flex-col gap-4 mb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              type="text"
+              placeholder="Rechercher un étudiant…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white w-full sm:w-56"
+            />
+            <Button onClick={openAddModal}>+ Ajouter</Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSearch('')}
+              disabled={!search}
+              className={`px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none transition-colors ${
+                search 
+                  ? 'text-slate-600 hover:bg-slate-50 cursor-pointer' 
+                  : 'text-slate-300 cursor-not-allowed'
+              }`}
+            >
+              Réinitialiser
+            </button>
+          </div>
         </div>
 
-        {etudiants.length > 0 ? (<div className="space-y-8">
-                                    {renderTable(etudiants)}
-                                 </div>) : (
-                                  <div className="text-center py-10">
-                                    <p className="text-sm text-slate-500">Aucun étudiant trouvé. Cliquez sur "Ajouter" pour en créer un nouveau.</p>
-                                  </div>
-                                )}
+        <div className="space-y-3">
+          {etudiants.length === 0 && debouncedSearch === "" ? (
+            <div className="text-center py-10">
+              <p className="text-sm text-slate-500">
+                Aucun étudiant disponible.
+              </p>
+            </div>
+          ) : etudiants.length === 0 && debouncedSearch !== "" ? (
+            <div className="text-center py-10">
+              <p className="text-sm text-slate-500">
+                Aucun résultat trouvé pour « {debouncedSearch} ».
+              </p>
+            </div>
+          ) : (
+            renderTable(etudiants)
+          )}
+        </div>
       </Card>
 
-      <ModalAjoutEtudiant
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onAdd={handleAddEtudiant}
-        niveaux={NIVEAUX}
+      {/* Modal pour ajouter un étudiant */}
+      {isModalOpen && !editingId && (
+        <Modal isOpen={isModalOpen} onClose={closeModal}>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">
+            Ajouter un étudiant
+          </h3>
+          <FormulaireAjoutEtudiant
+            onClose={closeModal}
+            onSubmit={handleAddEtudiant}
+          />
+        </Modal>
+      )}
+
+      {/* Modal pour modifier un étudiant */}
+      {isModalOpen && editingId && (
+        <Modal isOpen={isModalOpen} onClose={closeModal}>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">
+            Modifier un étudiant
+          </h3>
+          <FormulaireModificationEtudiant
+            etudiant={editingEtudiant}
+            onClose={closeModal}
+            onSubmit={handleEditEtudiant}
+          />
+        </Modal>
+      )}
+
+      {/* Modal de confirmation pour la suppression */}
+      <ConfirmModal
+        isOpen={deleteConfirmModal}
+        onClose={closeDeleteConfirmModal}
+        onConfirm={() => handleDeleteEtudiant(deleteId)}
+        title="Supprimer l'étudiant"
+        message="Êtes-vous sûr de vouloir supprimer cet étudiant ? Cette action est irréversible."
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
       />
     </div>
   )

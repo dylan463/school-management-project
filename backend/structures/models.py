@@ -66,7 +66,7 @@ class SchoolYear(models.Model):
         CLOSED = "CLOSED", "Closed"             # terminée proprement
     class Period(models.TextChoices):
         FIRST = "FIRST", "First"
-        SECONDE = "SECONDE", "Second"
+        SECONDE = "SECOND", "Second"
 
     label = models.CharField(max_length=20, unique=True)
     status = models.CharField(

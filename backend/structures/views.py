@@ -19,8 +19,6 @@ from .serializers import (
     ChangeEnrollmentDecisionSerializer,StudentCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseUnitListSerializer
 )
 from .services import (
-    get_current_enrollment,
-    change_enrollement_decision,
     create_formation_and_its_levels,
     create_level,
     update_formation_and_its_level,
@@ -28,11 +26,9 @@ from .services import (
     end_school_year,
     toggle_school_year_lock,
     promote_or_repeat_for_new_school_years,
-    force_create_student_school_year_for_new_year,
-    get_last_student_school_year,
     go_to_first_periode,
     go_to_second_periode,
-    get_open_school_year
+    create_student_school_year
 )
 
 from users.permissions import IsSuperUser, IsStudent, IsTeacher, IsSuperUserOrTeacher
@@ -43,7 +39,6 @@ from .queryset import *
 
 from users.utils import (
     is_user_student,
-    is_user_superuser,
     is_user_teacher
 )
 from django_filters.rest_framework import DjangoFilterBackend
@@ -400,7 +395,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
             formation = Formation.objects.get(pk=serializer.validated_data['formation_id'])
             level = Level.objects.get(pk=serializer.validated_data['level_id'])
 
-            student_school_year = force_create_student_school_year_for_new_year(
+            student_school_year = create_student_school_year(
                 student=student,
                 level=level,
                 formation=formation,
@@ -578,6 +573,8 @@ from .utils import create_student,create_user
 class StudentPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStudent]
     serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["username","first_name","last_name"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -585,7 +582,9 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = StudentCreateSerializer(data=request.data)
+        raw_data = request.data.copy()
+        raw_data['role'] = 'STUDENT'
+        serializer = StudentCreateSerializer(data=raw_data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
         response = create_student(data)
@@ -634,37 +633,22 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
         student = request.user
         
         try:
-            current_school_year = StudentSchoolYear.objects.select_related(
-                'formation', 'level', 'school_year'
-            ).get(
+            current_school_year = StudentSchoolYear.objects.get(
                 student=student,
                 school_year__status=SchoolYear.Status.ACTIVE
             )
-            current_enrollment = get_current_enrollment(current_school_year)
+            current_enrollment = Enrollment.objects.filter(
+                student_school_year=current_school_year,
+                is_current=True 
+            ).first()
             
             if not current_enrollment:
                 return Response({
                     'error': 'Aucun semestre actif trouvé'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-            return Response({
-                'semester': {
-                    'id': current_enrollment.semester.id,
-                    'code': current_enrollment.semester.code,
-                    'decision': current_enrollment.decision,
-                    'opened_at': current_enrollment.opened_at
-                },
-                'formation': {
-                    'id': current_school_year.formation.id,
-                    'code': current_school_year.formation.code,
-                    'label': current_school_year.formation.label
-                },
-                'level': {
-                    'id': current_school_year.level.id,
-                    'code': current_school_year.level.code,
-                    'order': current_school_year.level.order
-                }
-            })
+            serializer = EnrollmentSerializer(current_enrollment)
+            return Response(serializer.data)
         except StudentSchoolYear.DoesNotExist:
             return Response({
                 'error': 'Aucune inscription active trouvée'

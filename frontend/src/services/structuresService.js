@@ -25,6 +25,7 @@ const structuresService = {
   FormationService:{
     getFormations: async (filters={}) => {
       const params = new URLSearchParams()
+      if (filters.search) params.append('search', filters.search)
       const response = await api.get(`/structures/formations/?${params.toString()}`)
       return response.data
     },

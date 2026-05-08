@@ -61,7 +61,7 @@ class FormationViewSet(viewsets.ModelViewSet):
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
-    search_field = ["label", "code"]
+    search_fields = ["label", "code"]
 
 
     def get_queryset(self):

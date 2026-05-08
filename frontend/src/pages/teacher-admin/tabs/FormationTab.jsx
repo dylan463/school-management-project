@@ -213,7 +213,6 @@ export default function FormationTab() {
     async function fetchFormations() {
       const params = {}
       if (debouncedSearch) params.search = debouncedSearch
-      
       const response = await structuresService.FormationService.getFormations(params)
       setFormations(response)
     }

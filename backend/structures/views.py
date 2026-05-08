@@ -574,7 +574,7 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStudent]
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
-    search_fields = ["username","first_name","last_name"]
+    search_fields = ["username","first_name","last_name","email"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -679,7 +679,9 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
 class TeacherPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsTeacher]
     serializer_class = UserSerializer
-
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["username","first_name","last_name","email"]
+    
     def create(self, request, *args, **kwargs):
         serializer = UserCreateSerializer(request.data)
         serializer.is_valid(raise_exception=True)

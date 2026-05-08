@@ -365,8 +365,8 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         """Bascule le verrouillage d'une année scolaire"""
         school_year = self.get_object()
         try:
-            go_to_first_periode(school_year=school_year)
-            return Response({"status":"first periode activated"})
+            school_year = go_to_first_periode(school_year=school_year)
+            return Response(school_year)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -375,8 +375,8 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         """Bascule le verrouillage d'une année scolaire"""
         school_year = self.get_object()
         try:
-            go_to_second_periode(school_year=school_year)
-            return Response({"status":"seconde periode activated"})
+            school_year = go_to_second_periode(school_year=school_year)
+            return Response(school_year)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

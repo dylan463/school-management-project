@@ -306,14 +306,9 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         school_year = self.get_object()
         try:
             school_year = go_to_first_periode(school_year=school_year)
-<<<<<<< HEAD
-            return Response(school_year)
-        except Exception as e:
-=======
             serializer = self.get_serializer(school_year)
             return Response(serializer.data)
         except ValidationError as e:
->>>>>>> recuperation
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['POST'],url_path="go-seconde")
@@ -322,14 +317,9 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
         school_year = self.get_object()
         try:
             school_year = go_to_second_periode(school_year=school_year)
-<<<<<<< HEAD
-            return Response(school_year)
-        except Exception as e:
-=======
             serializer = self.get_serializer(school_year)
             return Response(serializer.data)
         except ValidationError as e:
->>>>>>> recuperation
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def perform_destroy(self, instance):

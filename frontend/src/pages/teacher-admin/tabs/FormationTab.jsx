@@ -22,15 +22,15 @@ function FormulaireFormation({ formation = null, onClose, onSubmit, isEditing = 
       setNiveaux(response)
       
       // En mode édition, initialiser fromLevel et toLevel avec les IDs correspondants
-      if (formation && formation.from_level && formation.to_level) {
-        const fromNiveau = response.find(n => n.order === formation.from_level)
-        const toNiveau = response.find(n => n.order === formation.to_level)
+      if (formation && formation.last_level && formation.first_level) {
+        const fromNiveau = response.find(n => n.order === formation.first_level.order)
+        const toNiveau = response.find(n => n.order === formation.last_level.order)
         if (fromNiveau) setFromLevel(fromNiveau.id.toString())
         if (toNiveau) setToLevel(toNiveau.id.toString())
       }
     }
     fetchNiveaux()
-  }, [formation])
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

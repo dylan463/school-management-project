@@ -5,6 +5,7 @@ const structuresService = {
     getLevels:async (filters={})=>{
       const params = new URLSearchParams()
       if (filters.formation) params.append('formation', filters.formation)
+      if (filters.search) params.append('search',filters.search)
       const response = await api.get(`/structures/levels/?${params.toString()}`)
       return response.data
     },
@@ -48,6 +49,8 @@ const structuresService = {
     getSemesters: async (filters={}) => {
       const params = new URLSearchParams()
       if (filters.level) params.append('level', filters.level)
+      if (filters.search) params.append('search', filters.search)
+      
       const response = await api.get(`/structures/semesters/?${params.toString()}`)
       return response.data
     },
@@ -60,15 +63,20 @@ const structuresService = {
     getSchoolYears: async (filter = {}) => {
       const params = new URLSearchParams()
       if (filter.status) params.append('status', filter.status)
-        if (filter.is_locked !== undefined) params.append('is_locked', filter.is_locked)
-          const response = await api.get(`/structures/school_years/?${params.toString()}`)
-        return response.data
-      },
-      createSchoolYear:async (data) => {
+      if (filter.is_locked !== undefined) params.append('is_locked', filter.is_locked)
+      if (filter.search) params.append("search", filter.search)
+      const response = await api.get(`/structures/school_years/?${params.toString()}`)
+      return response.data
+    },
+    createSchoolYear:async (data) => {
         const response = await api.post('/structures/school_years/', data)
       return response.data
     },
-    updateSchoolYear: async (id, data) => {
+    retrieveSchoolYear: async (id) => {
+      const response = await api.get(`/structures/school_years/${id}/`)
+      return response.data
+    },
+    updateSchoolYear: async (id, data) => {      
       const response = await api.patch(`/structures/school_years/${id}/`, data)
       return response.data
     },
@@ -89,11 +97,11 @@ const structuresService = {
       return response.data
     },
     goToFisrtPeriod: async (id) => {
-      const response = await api.post(`/structures/school_years/${id}/go_to_first_period/`)
+      const response = await api.post(`/structures/school_years/${id}/go-first/`)
       return response.data
     },
     goToSecondPeriod: async (id) => {
-      const response = await api.post(`/structures/school_years/${id}/go_to_second_period/`)
+      const response = await api.post(`/structures/school_years/${id}/go-seconde/`)
       return response.data
     }
   },

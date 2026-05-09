@@ -3,9 +3,7 @@ import api from './api'
 const structuresService = {
   levelService:{
     getLevels:async (filters={})=>{
-      const params = new URLSearchParams()
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.search) params.append('search',filters.search)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/levels/?${params.toString()}`)
       return response.data
     },
@@ -24,8 +22,7 @@ const structuresService = {
   },
   FormationService:{
     getFormations: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.search) params.append('search', filters.search)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/formations/?${params.toString()}`)
       return response.data
     },
@@ -48,10 +45,7 @@ const structuresService = {
   },
   SemesterService:{
     getSemesters: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.level) params.append('level', filters.level)
-      if (filters.search) params.append('search', filters.search)
-      
+      const params = new URLSearchParams(filters)     
       const response = await api.get(`/structures/semesters/?${params.toString()}`)
       return response.data
     },
@@ -61,11 +55,8 @@ const structuresService = {
     }
   },
   schoolYearsService:{
-    getSchoolYears: async (filter = {}) => {
-      const params = new URLSearchParams()
-      if (filter.status) params.append('status', filter.status)
-      if (filter.is_locked !== undefined) params.append('is_locked', filter.is_locked)
-      if (filter.search) params.append("search", filter.search)
+    getSchoolYears: async (filters = {}) => {
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/school_years/?${params.toString()}`)
       return response.data
     },
@@ -108,11 +99,7 @@ const structuresService = {
   },
   studentSchoolYearsService:{
     getStudentSchoolYears: async (filters={}) =>{
-      const params = new URLSearchParams()
-      if (filters.school_year) params.append('school_year', filters.school_year)
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.level) params.append('level', filters.level)
-      if (filters.status) params.append('status', filters.status)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/student_school_years/?${params.toString()}`)
       return response.data
     },
@@ -133,21 +120,14 @@ const structuresService = {
   },
   EnrollmentService:{
     getEnrollments: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.school_year) params.append('school_year', filters.school_year)
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.level) params.append('level', filters.level)
-      if (filters.semester) params.append('semester', filters.semester)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/enrollments/?${params.toString()}`)
       return response.data
     }
   },
   courseUnitService:{
     getCourseUnits: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.semester) params.append('semester', filters.semester)
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.is_active !== undefined) params.append('is_active', filters.is_active)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/course_units/?${params.toString()}`)
       return response.data
     },
@@ -170,11 +150,7 @@ const structuresService = {
   },
   courseModuleService:{
     getCourseModules: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.semester) params.append('semester', filters.semester)
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.course_unit) params.append('course_unit', filters.course_unit)
-      if (filters.is_active !== undefined) params.append('is_active', filters.is_active)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/course_modules/?${params.toString()}`)
       return response.data
     },

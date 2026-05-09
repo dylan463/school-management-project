@@ -3,9 +3,7 @@ import api from './api'
 const timetableService = {
   scheduleService:{
     getSchedules: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.semester) params.append('semester', filters.semester)
-      if (filters.formation) params.append('formation', filters.formation)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/timetable/schedules/?${params.toString()}`)
       return response.data
     },
@@ -33,9 +31,7 @@ const timetableService = {
   },
   scheduleEntryService:{
     getScheduleEntries: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.schedule) params.append('schedule', filters.schedule)
-      if (filters.course_module) params.append('course_module', filters.course_module)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/timetable/schedule_entries/?${params.toString()}`)
       return response.data
     },

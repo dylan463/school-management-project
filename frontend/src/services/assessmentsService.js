@@ -3,10 +3,7 @@ import api from './api'
 const assessmentsService = {
   assessmentService:{
     getAssessments: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.semester) params.append('semester', filters.semester)
-      if (filters.formation) params.append('formation', filters.formation)
-      if (filters.level) params.append('level', filters.level)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/assessments/?${params.toString()}`)
       return response.data
     },
@@ -28,9 +25,7 @@ const assessmentsService = {
   },
   gradeService:{
     getGrades: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.assessment) params.append('assessment', filters.assessment)
-      if (filters.student) params.append('student', filters.student)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/assessments/grades/?${params.toString()}`)
       return response.data
     },
@@ -50,9 +45,7 @@ const assessmentsService = {
   },
   resultService:{
     getResults: async (filters={}) => {
-      const params = new URLSearchParams()
-      if (filters.student) params.append('student', filters.student)
-      if (filters.course_module) params.append('course_module', filters.course_module)
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/assessments/results/?${params.toString()}`)
       return response.data
     }

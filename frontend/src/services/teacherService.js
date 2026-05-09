@@ -1,14 +1,13 @@
 import api from './api'
 
-const enseignantService = {
+const teacherService = {
   getTeachers: async function (filters = {}) {
     const params = new URLSearchParams(filters);
     const response = await api.get(`/structures/teachers/?${params.toString()}`);
     return response.data;
   },
-  createTeacher: async function (role,email){
-    const data = {role,email}
-    const response = await api.post('/structures/teachers/',data)
+  createTeacher: async function (data){
+    const response = await api.post('/structures/teachers/', data)
     return response.data;
   },
   updateTeacher: async function (id, data) {
@@ -25,4 +24,4 @@ const enseignantService = {
   }
 }
 
-export default enseignantService
+export default teacherService

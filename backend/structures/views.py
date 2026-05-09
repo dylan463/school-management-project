@@ -683,9 +683,10 @@ class TeacherPortalViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
     search_fields = ["username","first_name","last_name","email"]
+    filterset_fields = ["is_active"]
 
     def create(self, request, *args, **kwargs):
-        serializer = UserCreateSerializer(request.data)
+        serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         teacher = create_user(serializer.validated_data.copy())
         response_serializer = UserSerializer(teacher)

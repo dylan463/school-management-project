@@ -312,6 +312,7 @@ export default function Etudiants() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('')
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 })
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
@@ -328,12 +329,12 @@ export default function Etudiants() {
     async function fetchEtudiants() {
       const params = {}
       if (debouncedSearch) params.search = debouncedSearch
-      
+      if (statusFilter) params.is_active = statusFilter === "true"
       const response = await etudiantService.getStudents(params)
       setEtudiants(response)
     }
     fetchEtudiants()
-  }, [debouncedSearch])
+  }, [debouncedSearch, statusFilter])
 
   const editingEtudiant = editingId ? etudiants.find(e => e.id === editingId) : null
 
@@ -370,6 +371,14 @@ export default function Etudiants() {
     }
   }
 
+  const handletoggleActivation = async (id) => {
+    try{
+      const updated = await etudiantService.updateStudent(id, {is_active: !etudiants.find(e => e.id === id).is_active})
+      setEtudiants(etudiants.map(e => e.id === id ? updated : e))
+    }catch(error){
+      toast.error(extractDRFError(error))
+    }
+  }
   const openDeleteConfirmModal = (id) => {
     setDeleteId(id)
     setDeleteConfirmModal(true)
@@ -451,11 +460,9 @@ export default function Etudiants() {
                 </td>
                 <td className="py-3">
                   <Pill 
-                    variant={etudiant.is_active ? 'success' : 'danger'}
-                    size="sm"
-                  >
-                    {etudiant.is_active ? 'Actif' : 'Inactif'}
-                  </Pill>
+                    color={etudiant.is_active ? 'green' : 'red'}
+                    label={etudiant.is_active ? 'Actif' : 'Inactif'}
+                  />
                 </td>
                 <td className="py-3 text-center">
                   <div className="relative">
@@ -496,7 +503,12 @@ export default function Etudiants() {
                         >
                           Modifier
                         </button>
-                        
+                        <button
+                          onClick={() =>handletoggleActivation(etudiant.id)}
+                          className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition first:rounded-t-lg"
+                        >
+                          {etudiant.is_active ? 'Désactiver' : 'Activer'}
+                        </button>
                         <button
                           onClick={() => openDeleteConfirmModal(etudiant.id)}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition border-t border-slate-200 last:rounded-b-lg"
@@ -536,11 +548,26 @@ export default function Etudiants() {
           </div>
           
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-slate-600">Statut:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+              >
+                <option value="">Tous</option>
+                <option value="true">Actif</option>
+                <option value="false">Inactif</option>
+              </select>
+            </div>
             <button
-              onClick={() => setSearch('')}
-              disabled={!search}
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('');
+              }}
+              disabled={!search && statusFilter === ""}
               className={`px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none transition-colors ${
-                search 
+                search || statusFilter !== ""
                   ? 'text-slate-600 hover:bg-slate-50 cursor-pointer' 
                   : 'text-slate-300 cursor-not-allowed'
               }`}

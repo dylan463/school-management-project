@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name','role','is_superuser']
+        fields = ['id', 'username', 'email',"is_active", 'first_name', 'last_name','role','is_superuser']
         read_only_fields = ['id','role', 'is_superuser']
     
     def to_representation(self, instance):

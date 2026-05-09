@@ -3,7 +3,6 @@ import api from './api'
 const etudiantService = {
   getStudents: async function (filters = {}) {
     const params = new URLSearchParams(filters);
-    if (filters.search) params.append("search",filters.search)
     const response = await api.get(`/structures/students/?${params.toString()}`);
     return response.data;
   },

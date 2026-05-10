@@ -203,10 +203,24 @@ class CourseUnitListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id","code","label","formation","semester","is_active","created_at","modules"]
     
 class CourseUnitSerializer(serializers.ModelSerializer):
+    formation = FormationSerializer(read_only=True)
+    semester = SemesterSerializer(read_only=True)
     class Meta:
         model = CourseUnit
         fields = ["id","code","label","formation","semester","is_active","created_at"]
         read_only_fields = ["id","created_at"]
+
+class CourseUnitCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseUnit
+        fields = ["code","label","formation","semester","is_active"]  
+        extra_kwargs = {
+            "formation": {"required": True},
+            "semester": {"required": True},
+            "label": {"required": True},
+            "code": {"required": True},
+            "is_active": {"required": False},
+        }           
 
 
 # ─────────────────────────────────────────

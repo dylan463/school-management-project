@@ -1,7 +1,7 @@
 import django_filters
 from users.models import StudentUser,TeacherUser
 from structures.models import (
-    Level,Formation,FormationLevel,SchoolYear,StudentSchoolYear,Enrollment,CourseModule,CourseUnit
+    Level,Formation,FormationLevel,Semester,SchoolYear,StudentSchoolYear,Enrollment,CourseModule,CourseUnit
 )
 
 class LevelFilter(django_filters.FilterSet):
@@ -44,3 +44,10 @@ class SchoolYearFilter(django_filters.FilterSet):
             return queryset.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING])
         return queryset
     
+class SemesterFilter(django_filters.FilterSet):
+    formation = django_filters.NumberFilter(
+        field_name="level__formation_levels__formation__id"
+    )
+    class Meta:
+        model = Semester
+        fields = ["level"]

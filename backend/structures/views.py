@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Prefetch
 
 # Django REST Framework
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -16,7 +16,7 @@ from .serializers import (
     CourseUnitSerializer, CourseModuleSerializer, SchoolYearSerializer,
     StudentSchoolYearSerializer, EnrollmentSerializer,
     CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
-    ChangeEnrollmentDecisionSerializer,StudentCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseUnitListSerializer
+    ChangeEnrollmentDecisionSerializer,StudentCreateSerializer,CourseUnitCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseUnitListSerializer
 )
 from .services import (
     create_formation_and_its_levels,
@@ -49,7 +49,7 @@ from rest_framework.filters import SearchFilter
 # ─────────────────────────────────────────
 
 from .filter import (
-    LevelFilter,EnrollmentFilter,CourseModuleFilter,SchoolYearFilter
+    LevelFilter,EnrollmentFilter,CourseModuleFilter,SchoolYearFilter,SemesterFilter
 )
 
 class FormationViewSet(viewsets.ModelViewSet):
@@ -210,7 +210,7 @@ class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,vie
     permission_classes = [IsSuperUser]
     filter_backends = [DjangoFilterBackend,SearchFilter]
     search_fields = ["code","order"]
-    filterset_fields = ["level"]
+    filterset_class = SemesterFilter
 
     def get_permissions(self):
         if self.action == 'list':
@@ -483,15 +483,22 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
         else:
             permissions = [IsSuperUser]
         return [permission() for permission in permissions]
+    
+    def get_serializer_class(self):
+        if self.action == "list":
+            return CourseUnitSerializer
+        else:
+            return CourseUnitCreateSerializer
         
     def get_queryset(self):
         user = self.request.user
         if is_user_student(user):
-            return get_student_course_unit_queryset(user)
+            queryset =  get_student_course_unit_queryset(user)
         elif is_user_teacher(user):
-            return get_teacher_course_unit_queryset(user)
+            queryset = get_teacher_course_unit_queryset(user)
         else:
-            return CourseUnit.objects.all()
+            queryset = CourseUnit.objects.all()
+        return queryset.select_related("semester","formation")
     
     @action(methods=["post"],detail=True)
     def toggle_active(self, request, pk=None):

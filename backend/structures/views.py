@@ -1,11 +1,12 @@
 # Django
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 
 # Django REST Framework
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 
 from .models import (
     Level, Formation, Semester, CourseUnit, CourseModule,
@@ -16,7 +17,7 @@ from .serializers import (
     CourseUnitSerializer, CourseModuleSerializer, SchoolYearSerializer,
     StudentSchoolYearSerializer, EnrollmentSerializer,
     CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
-    ChangeEnrollmentDecisionSerializer,StudentCreateSerializer,CourseUnitCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseUnitListSerializer
+    ChangeEnrollmentDecisionSerializer,StudentCreateSerializer,CourseUnitCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseModuleCreateSerializer
 )
 from .services import (
     create_formation_and_its_levels,
@@ -322,6 +323,21 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
             raise ValidationError("vous ne pouvez pas supprimer une année scolaire bloquée")
 
         return super().perform_destroy(instance)
+    
+    @action(methods=["get"], detail=False)
+    def search(self, request):
+        search = request.query_params.get("search")
+        limit = request.query_params.get("limit")
+
+        if search:
+            teachers = SchoolYear.objects.filter(
+                Q(label__icontains=search)
+            )[:int(limit)]
+
+            serializer = UserSerializer(teachers, many=True)
+            return Response(serializer.data)
+
+        return Response([])
 
 # ─────────────────────────────────────────
 # INSCRIPTION ANNUELLE
@@ -498,7 +514,7 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
             queryset = get_teacher_course_unit_queryset(user)
         else:
             queryset = CourseUnit.objects.all()
-        return queryset.select_related("semester","formation")
+        return queryset.select_related("semester","formation").prefetch_related("modules")
     
     @action(methods=["post"],detail=True)
     def toggle_active(self, request, pk=None):
@@ -518,6 +534,11 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     search_fields = ["code","label","teacher__first_name","teacher__last_name","teacher__username"]
     filterset_class = CourseModuleFilter
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return CourseModuleSerializer
+        else:
+            return CourseModuleCreateSerializer
 
     def get_permissions(self):
         if self.action == 'list':
@@ -535,43 +556,6 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
         else:
             return CourseModule.objects.all()
 
-    @action(detail=True, methods=['POST'])
-    def assign_teacher(self, request, pk=None):
-        """Assigne un enseignant à un module"""
-        course_module = self.get_object()
-        teacher_id = request.data.get('teacher')
-
-        if not teacher_id:
-            return Response({
-                'error': 'teacher id est requis'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            teacher = TeacherUser.objects.get(pk=teacher_id)
-            course_module.teacher = teacher
-            course_module.save()
-            serializer = self.get_serializer(course_module)
-            return Response({
-                'status': 'teacher assigned',
-                'course_module': serializer.data
-            })
-        except TeacherUser.DoesNotExist:
-            return Response({
-                'error': 'Teacher not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-    @action(methods=["delete"],detail=True)
-    def remove_teacher(self,request,pk):
-        """supprimer un teacher d'un module"""
-        course_module = self.get_object()
-        course_module.teacher = None
-        course_module.save()
-        serializer = self.get_serializer(course_module)
-        return Response({
-            'status': 'teacher removed',
-            'course_module': serializer.data
-        })
-    
 # ─────────────────────────────────────────
 # PORTAIL ÉTUDIANT
 # ─────────────────────────────────────────
@@ -698,6 +682,7 @@ class TeacherPortalViewSet(viewsets.ModelViewSet):
         teacher = create_user(serializer.validated_data.copy())
         response_serializer = UserSerializer(teacher)
         return Response(response_serializer.data,status=status.HTTP_201_CREATED)
+    
 
     def get_permissions(self):
         if self.action == 'list':
@@ -707,6 +692,26 @@ class TeacherPortalViewSet(viewsets.ModelViewSet):
         else:
             permissions = [IsSuperUser]
         return [permission() for permission in permissions]
+
+    @action(methods=["get"], detail=False)
+    def search_teacher(self, request):
+        search = request.query_params.get("search")
+        limit = request.query_params.get("limit")
+
+        if search:
+            teachers = TeacherUser.objects.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search),
+                is_active=True
+            )[:int(limit)]
+
+            serializer = UserSerializer(teachers, many=True)
+            return Response(serializer.data)
+
+        return Response([])
+        
         
     def get_queryset(self):
         user = self.request.user

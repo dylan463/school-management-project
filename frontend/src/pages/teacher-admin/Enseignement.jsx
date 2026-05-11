@@ -9,9 +9,9 @@ import ResultsColumn from './enseignementcolumns/ResultsColumn'
 // Composant pour les breadcrumbs
 function Breadcrumbs({ selectedUE, selectedCours, selectedExamen, onClearAll }) {
   const parts = []
-  if (selectedUE) parts.push({ label: selectedUE.nom, type: 'UE' })
-  if (selectedCours) parts.push({ label: selectedCours.nom, type: 'Cours' })
-  if (selectedExamen) parts.push({ label: selectedExamen.nom, type: 'Examen' })
+  if (selectedUE) parts.push({ label: selectedUE.code, type: 'UE' })
+  if (selectedCours) parts.push({ label: selectedCours.code, type: 'Cours' })
+  if (selectedExamen) parts.push({ label: selectedExamen.name, type: 'Examen' })
 
   const hasSelections = parts.length > 0
 
@@ -58,7 +58,6 @@ export default function Enseignement() {
     setSelectedCours(null)
     setSelectedExamen(null)
   }
-
   const handleSelectCours = (cours) => {
     setSelectedCours(cours)
     setSelectedExamen(null)
@@ -96,12 +95,16 @@ export default function Enseignement() {
             selectedItem={selectedUE}
             onSelectItem={handleSelectUE}
           />
-          
+        </div>
+      </Card>
+
+      <Card className="p-0">
+        <div className="flex h-[400px]">
           <CoursColumn
             selectedUE={selectedUE}
             selectedItem={selectedCours}
             onSelectItem={handleSelectCours}
-          />
+          />       
         </div>
       </Card>
 
@@ -113,7 +116,11 @@ export default function Enseignement() {
             selectedItem={selectedExamen}
             onSelectItem={handleSelectExamen}
           />
-          
+        </div>
+      </Card>
+
+      <Card className="p-0">
+        <div className="flex h-[400px]">
           <NotesColumn
             selectedExamen={selectedExamen}
           />

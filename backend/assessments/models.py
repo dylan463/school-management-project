@@ -43,7 +43,7 @@ class Assessment(models.Model):
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
-    date = models.DateField(default=date.today)
+    date = models.DateField(default=date.today())
 
     course_module = models.ForeignKey(
         CourseModule,

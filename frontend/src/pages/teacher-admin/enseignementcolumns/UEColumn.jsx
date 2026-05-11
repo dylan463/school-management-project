@@ -13,6 +13,7 @@ function AddUEForm({ onClose, onSubmit ,editingItem = null,isEditing = false}) {
     label: '',
     formation: '',
     semester: '',
+    is_active: true,
   })
   const [formations, setFormations] = useState([])
   const [semester, setSemester] = useState([])
@@ -34,7 +35,8 @@ function AddUEForm({ onClose, onSubmit ,editingItem = null,isEditing = false}) {
             code: editingItem.code,
             label: editingItem.label,
             formation: editingItem.formation.id,
-            semester: editingItem.semester.id
+            semester: editingItem.semester.id,
+            is_active: editingItem.is_active !== undefined ? editingItem.is_active : true
           })
         } catch (error) {
           toast.error(extractDRFError(error))
@@ -86,7 +88,8 @@ function AddUEForm({ onClose, onSubmit ,editingItem = null,isEditing = false}) {
         code: formData.code.trim(),
         label: formData.label.trim(),
         formation: formData.formation,
-        semester: formData.semester
+        semester: formData.semester,
+        is_active: formData.is_active
       }
       await onSubmit(data)
       onClose()
@@ -176,6 +179,19 @@ function AddUEForm({ onClose, onSubmit ,editingItem = null,isEditing = false}) {
         </select>
       </div>
 
+      <div className="flex items-center">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            name="is_active"
+            checked={formData.is_active}
+            onChange={(e) => setFormData(prev => ({...prev, is_active: e.target.checked}))}
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm font-medium text-slate-700">Unité d'enseignement active</span>
+        </label>
+      </div>
+
       <div className="flex gap-3 pt-4">
         <button
           type="button"
@@ -206,6 +222,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
   const [semesterFilter, setSemesterFilter] = useState("")
   const [formations,setFormations] = useState([])
   const [semesters,setSemester] = useState([])
+  const [statusFilter,setStatusFilter] = useState(true)
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen,setIsEditModalOpen] = useState(false)
@@ -219,6 +236,8 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
     if (debouncedSearch) filters.search = debouncedSearch
     if (formationFilter) filters.formation = formationFilter
     if (semesterFilter) filters.semester = semesterFilter
+    if (statusFilter !== "") filters.is_active = statusFilter
+    
     try {
       const response = await structuresService.courseUnitService.getCourseUnits(filters)
       setUes(response)
@@ -261,13 +280,27 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
   }, [openMenuId])
 
   useEffect(() => {
+    const handleCourseModuleEvent = (event) => {
+      const { action, courseUnitId } = event.detail
+      
+      // Recharger les UEs si l'événement concerne une UE spécifique
+      if (action && courseUnitId) {
+        loadUEs()
+      }
+    }
+
+    document.addEventListener('courseModuleChanged', handleCourseModuleEvent)
+    return () => document.removeEventListener('courseModuleChanged', handleCourseModuleEvent)
+  }, [])
+
+  useEffect(() => {
     loadUEs()
-  }, [debouncedSearch,formationFilter,semesterFilter])
+  }, [debouncedSearch,formationFilter,semesterFilter,statusFilter])
 
   const handleAddUe = async (formData) => {
     try {
       await structuresService.courseUnitService.createCourseUnit(formData)
-      loadUE()
+      loadUEs()
       toast.success('Unité d\'enseignement créée avec succès')
     } catch (error) {
       toast.error("Erreur lors de l'ajout de l\'unité d\'enseignement")
@@ -277,7 +310,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
   const handleEditUe = async (formData) => {
     try {
       await structuresService.courseUnitService.updateCourseUnit(actionItem.id, formData)
-      loadUE()
+      loadUEs()
       toast.success('Unité d\'enseignement modifiée avec succès')
     } catch (error) {
       toast.error('Erreur lors de la modification de l\'unité d\'enseignement')
@@ -287,10 +320,21 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
   const handleDeleteUe = async () => {
     try {
       await structuresService.courseUnitService.deleteCourseUnit(actionItem.id)
-      loadUE()
+      loadUEs()
       toast.success('Unité d\'enseignement supprimée avec succès')
     } catch (error) {
       toast.error('Erreur lors de la suppression de l\'unité d\'enseignement')
+    }
+  }
+
+  const handleToggleUEActivation = async (id,is_active) => {
+    try{
+      await structuresService.courseUnitService.updateCourseUnit(id,{is_active:!is_active})
+      loadUEs()
+      toast.success("ok")
+    }catch(error){
+      toast.error("erreur lors de la modification du cours")
+      console.log(error)
     }
   }
 
@@ -316,7 +360,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
         />
-        {/* {filtrage ici */}        
+        {/* filtrage ici */}        
         <div className="flex items-center gap-2 mt-2">
           {/* formation */}
           <div className="flex items-center gap-2">
@@ -351,6 +395,20 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
             </select>
           </div>
 
+          {/* statut */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-slate-600">statut:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            >
+              <option value="">Tous</option>
+              <option value="true">Actif</option>
+              <option value="false">Inactif</option>
+            </select>
+          </div>
+
           <button
             onClick={() => {
               setSearch('');
@@ -368,6 +426,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
           </button>
         </div>
       </div>
+
       <div className="p-2 h-96 overflow-y-auto">
         {ues.length === 0 ? (
           <p className="text-xs text-slate-500">Aucune UE trouvée</p>
@@ -398,6 +457,12 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
                   {ue.semester && (
                     <span className="text-xs opacity-75 bg-green-100 px-1 py-0.5 rounded">S: {ue.semester.code}</span>
                   )}
+                  {ue.total_credits !== undefined && ue.total_credits !== null && (
+                    <span className="text-xs opacity-75 bg-blue-100 px-1 py-0.5 rounded">{ue.total_credits} crédits</span>
+                  )}
+                  {(ue.is_active == true || ue.is_active == false) && (
+                    <span className={`text-xs opacity-75 px-1 py-0.5 rounded ${ue.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{ue.is_active? "active":"inactive"}</span>                    
+                  )}
                 </div>
               </button>
               <button
@@ -414,8 +479,9 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
               >
                 ⋮
               </button>
+              {/* menu flottant */}
               {openMenuId === ue.id && (
-                <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[100px]">
+                <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-lg shadow-lg z-10 w-[120px]">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -426,6 +492,14 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
                     className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
                   >
                     Modifier
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleToggleUEActivation(ue.id,ue.is_active)
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
+                  >
+                    {!ue.is_active?'Activer':'Desactiver'}
                   </button>
                   <button
                     onClick={(e) => {

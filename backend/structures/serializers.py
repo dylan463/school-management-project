@@ -7,7 +7,7 @@ from .models import (
     CourseUnit, CourseModule
 )
 from users.serializers import UserSerializer,UserCreateSerializer
-from users.models import CustomUser
+from users.models import CustomUser, TeacherUser
 
 # ─────────────────────────────────────────
 # STRUCTURE ACADEMIQUE
@@ -182,33 +182,40 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 # ─────────────────────────────────────────
 
 class CourseModuleSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
     class Meta:
         model = CourseModule
-        fields = ["code","label","credits","min_val_score","course_unit","teacher","volume_hours","is_active","created_at"]
+        fields = ["id","code","label","teacher","credits","min_val_score","volume_hours","is_active","created_at"]
         read_only_fields = ["id","created_at"]
-
-class CourseModuleForListUnitSerializer(serializers.ModelSerializer):
-    teacher_name = serializers.SerializerMethodField()
+        
+class CourseModuleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseModule
-        fields = ["code","label","credits","teacher_name"]
-    def get_teacher_name(self,obj):
-        return obj.teacher.get_full_name()
+        fields = ["code","label","credits","min_val_score","course_unit","volume_hours","is_active","teacher"]
+        read_only_fields = ["created_at"]
+        extra_kwargs = {
+            "code": {"required": True},
+            "label": {"required": True},
+            "credits": {"required": True},
+            "min_val_score": {"required": True},
+            "course_unit": {"required": True},
+            "volume_hours": {"required": False},
+            "is_active": {"required": False},
+            "teacher":{"required":False}
+        }
+    
 
-class CourseUnitListSerializer(serializers.ModelSerializer):
-    modules = CourseModuleForListUnitSerializer(read_only=True,many=True)
-    class Meta:
-        model = CourseUnit
-        fields = ["id","code","label","formation","semester","is_active","created_at","modules"]
-        read_only_fields = ["id","code","label","formation","semester","is_active","created_at","modules"]
     
 class CourseUnitSerializer(serializers.ModelSerializer):
     formation = FormationSerializer(read_only=True)
     semester = SemesterSerializer(read_only=True)
+    total_credits = serializers.SerializerMethodField()
     class Meta:
         model = CourseUnit
-        fields = ["id","code","label","formation","semester","is_active","created_at"]
+        fields = ["id","code","label","formation","semester","is_active","created_at","total_credits"]
         read_only_fields = ["id","created_at"]
+    def get_total_credits(self,obj):
+        return sum([ credit for credit in obj.modules.values_list('credits', flat=True)])
 
 class CourseUnitCreateSerializer(serializers.ModelSerializer):
     class Meta:

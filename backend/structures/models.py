@@ -223,7 +223,7 @@ class CourseModule(models.Model):
     """
     code = models.CharField(max_length=20)   # "EC-ALGO"
     label = models.CharField(max_length=200)  # "Algorithmique"
-    credits = models.DecimalField(max_digits=4, decimal_places=2, default=1)
+    credits = models.PositiveIntegerField(default=1)
     # note minimale pour validé le module, note avant la multiplication avec le credit , sur 20
     min_val_score = models.IntegerField(default=1,validators=[
         MinValueValidator(1),MaxValueValidator(20)

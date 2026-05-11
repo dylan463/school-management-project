@@ -60,6 +60,11 @@ const structuresService = {
       const response = await api.get(`/structures/school_years/?${params.toString()}`)
       return response.data
     },
+    searchSchoolYears: async (filters = {}) => {
+      const params = new URLSearchParams(filters)
+      const response = await api.get(`/structures/school_years/search/?${params.toString()}`)
+      return response.data
+    },  
     createSchoolYear:async (data) => {
         const response = await api.post('/structures/school_years/', data)
       return response.data
@@ -131,6 +136,10 @@ const structuresService = {
       const response = await api.get(`/structures/course_units/?${params.toString()}`)
       return response.data
     },
+    retrieveUnit: async (id) => {
+      const response = await api.get(`/structures/course_units/${id}/`)
+      return response.data
+    },
     createCourseUnit: async (data) => {
       const response = await api.post('/structures/course_units/', data)
       return response.data
@@ -154,8 +163,7 @@ const structuresService = {
       const response = await api.get(`/structures/course_modules/?${params.toString()}`)
       return response.data
     },
-    createCourseModule: async (code, label, credits, min_val_score, course_unit, teacher, volume_hours) => {
-      const data = { code, label, credits, min_val_score, course_unit, teacher, volume_hours }
+    createCourseModule: async (data) => {
       const response = await api.post('/structures/course_modules/', data)
       return response.data
     },
@@ -169,15 +177,6 @@ const structuresService = {
     },
     toggleActiveCourseModule: async (id) => {
       const response = await api.post(`/structures/course_modules/${id}/toggle_active/`)
-      return response.data
-    },
-    assignTeacherToCourseModule: async (id, teacher_id) => {
-      const data = { teacher:teacher_id }
-      const response = await api.post(`/structures/course_modules/${id}/assign_teacher/`, data)
-      return response.data
-    },
-    removeTeacherFromCourseModule: async (id) => {
-      const response = await api.post(`/structures/course_modules/${id}/remove_teacher/`)
       return response.data
     }
   }

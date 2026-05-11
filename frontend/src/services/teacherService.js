@@ -6,6 +6,11 @@ const teacherService = {
     const response = await api.get(`/structures/teachers/?${params.toString()}`);
     return response.data;
   },
+  searchTeachers : async function (filters = {}) {
+    const params = new URLSearchParams(filters);
+    const response = await api.get(`/structures/teachers/search_teacher/?${params.toString()}`);
+    return response.data;
+  },
   createTeacher: async function (data){
     const response = await api.post('/structures/teachers/', data)
     return response.data;

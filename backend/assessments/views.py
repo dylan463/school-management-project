@@ -2,6 +2,7 @@ from rest_framework import viewsets
 
 from .models import Assessment, Grade
 from .serializers import AssessmentSerializer, GradeSerializer
+from .filter import AssessmentFilter
 
 from users.permissions import (
     IsStudent,
@@ -21,9 +22,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from .services import create_assessment,publish_result_course_module
 
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+
 class AssessmentViewSet(viewsets.ModelViewSet):
     queryset = Assessment.objects.all()
     serializer_class = AssessmentSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = AssessmentFilter
+    search_fields = ["label", "code"]
 
     def get_queryset(self):
         user = self.request.user

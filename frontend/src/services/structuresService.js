@@ -148,12 +148,12 @@ const structuresService = {
       const response = await api.patch(`/structures/course_units/${id}/`, data)
       return response.data
     },
-    deleteCourseUnit: async (id) => {
-      const response = await api.delete(`/structures/course_units/${id}/`)
+    toggleCourseUnitActive: async (id) => {
+      const response = await api.post(`/structures/course_units/${id}/toggle_active/`)
       return response.data
     },
-    toggleActiveCourseUnit: async (id) => {
-      const response = await api.post(`/structures/course_units/${id}/toggle_active/`)
+    deleteCourseUnit: async (id) => {
+      const response = await api.delete(`/structures/course_units/${id}/`)
       return response.data
     }
   },

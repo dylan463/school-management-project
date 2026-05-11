@@ -337,7 +337,7 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
   const [formationFilter, setFormationFilter] = useState("")
   const [semesterFilter, setSemesterFilter] = useState("")
   const [UEFilter,setUEFilter] =  useState("selected")
-  const [statusFilter,setStatusFilter] = useState(true)
+  const [statusFilter,setStatusFilter] = useState("true")
   const [formations,setFormations] = useState([])
   const [semesters,setSemester] = useState([])
   
@@ -350,16 +350,13 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
   const [openMenuId, setOpenMenuId] = useState(null)
 
   const loadCours = async () => {
-    if (!selectedUE && UEFilter === "selected") {
-      setCours([])
-      return
-    }
     const filters = {}
     if (debouncedSearch) filters.search = debouncedSearch
     if (selectedUE && UEFilter==="selected") filters.course_unit = selectedUE.id
     if (formationFilter) filters.formation = formationFilter
     if (semesterFilter) filters.semester = semesterFilter
-    if (statusFilter !== "") filters.is_active = statusFilter == "true" ? true : false
+    if (statusFilter === "true") filters.is_active = true
+    if (statusFilter === "false") filters.is_active = false
 
     try {
       const response = await structuresService.courseModuleService.getCourseModules(filters)
@@ -404,12 +401,24 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
     loadCours()
   }, [debouncedSearch, selectedUE,UEFilter,formationFilter,semesterFilter,statusFilter])
 
+  useEffect(() => {
+    const handleCourseUnitChanged = (event) => {
+      console.log("toggleUE reçu", event.detail)
+      loadCours()
+    }
+
+    document.addEventListener('toggleUE', handleCourseUnitChanged)
+
+    return () => {
+      document.removeEventListener('toggleUE', handleCourseUnitChanged)
+    }
+  }, [loadCours])
+
   const handleAddCours = async (formData) => {
     try {
       await structuresService.courseModuleService.createCourseModule(formData)
+      onSelectItem(null)
       loadCours()
-      
-      // Émettre un événement pour notifier UEColumn
       const event = new CustomEvent('courseModuleChanged', {
         detail: { 
           action: 'added', 
@@ -417,7 +426,6 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
         }
       })
       document.dispatchEvent(event)
-      
       toast.success('Cours créé avec succès')
     } catch (error) {
       toast.error("Erreur lors de la création du cours")
@@ -428,8 +436,6 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
     try {
       await structuresService.courseModuleService.updateCourseModule(actionItem.id, formData)
       loadCours()
-      
-      // Émettre un événement pour notifier UEColumn
       const event = new CustomEvent('courseModuleChanged', {
         detail: { 
           action: 'edited', 
@@ -448,7 +454,16 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
     try{
 
       await structuresService.courseModuleService.updateCourseModule(id,{is_active:!is_active})
+      onSelectItem(null)
       loadCours()
+      const event = new CustomEvent('courseModuleChanged', {
+        detail: { 
+          action: 'toggleCourse', 
+          courseUnitId: selectedUE?.id 
+        }
+      })
+      document.dispatchEvent(event)
+  
       toast.success("ok")
     }catch(error){
       toast.error("erreur lors de la modification du cours")
@@ -460,6 +475,7 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
     try {
       await structuresService.courseModuleService.deleteCourseModule(actionItem.id)
       loadCours()
+      onSelectItem(null)
       
       // Émettre un événement pour notifier UEColumn
       const event = new CustomEvent('courseModuleChanged', {
@@ -481,6 +497,7 @@ export default function CoursColumn({ selectedUE, selectedItem, onSelectItem}) {
       await structuresService.courseModuleService.updateCourseModule(courseId, {teacher: teacher?.id || null})
       loadCours()
       setActionItem(null)
+      onSelectItem(null)
       setIsTeacherModalOpen(false)
       toast.success('Enseignant modifié avec succès')
     } catch (error) {

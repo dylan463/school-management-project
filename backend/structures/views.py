@@ -327,14 +327,14 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     @action(methods=["get"], detail=False)
     def search(self, request):
         search = request.query_params.get("search")
-        limit = request.query_params.get("limit")
+        limit = request.query_params.get("limit", 10)
 
         if search:
-            teachers = SchoolYear.objects.filter(
+            scool_year = SchoolYear.objects.filter(
                 Q(label__icontains=search)
             )[:int(limit)]
 
-            serializer = UserSerializer(teachers, many=True)
+            serializer = SchoolYearSerializer(scool_year, many=True)
             return Response(serializer.data)
 
         return Response([])
@@ -520,11 +520,18 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
     def toggle_active(self, request, pk=None):
         """Bascule l'activation d'une unité d'enseignement"""
         course_unit = self.get_object()
-        course_unit.is_active = not course_unit.is_active
+        new_status = not course_unit.is_active
+        course_unit.is_active = new_status
         course_unit.save()
-
+        
+        modules = course_unit.modules
+        updated_count = modules.update(is_active=new_status)
+        
         serializer = self.get_serializer(course_unit)
-        return Response(serializer.data)
+        return Response({
+            "data": serializer.data,
+            "message": f"Unité d'enseignement {'activée' if new_status else 'désactivée'} avec succès. {updated_count} modules mis à jour."
+        })
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
     queryset = CourseModule.objects.all()

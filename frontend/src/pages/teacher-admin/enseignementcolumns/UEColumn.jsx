@@ -222,7 +222,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
   const [semesterFilter, setSemesterFilter] = useState("")
   const [formations,setFormations] = useState([])
   const [semesters,setSemester] = useState([])
-  const [statusFilter,setStatusFilter] = useState(true)
+  const [statusFilter,setStatusFilter] = useState("true")
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen,setIsEditModalOpen] = useState(false)
@@ -236,7 +236,8 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
     if (debouncedSearch) filters.search = debouncedSearch
     if (formationFilter) filters.formation = formationFilter
     if (semesterFilter) filters.semester = semesterFilter
-    if (statusFilter !== "") filters.is_active = statusFilter
+    if (statusFilter == "true") filters.is_active = true
+    if (statusFilter == "false") filters.is_active = false
     
     try {
       const response = await structuresService.courseUnitService.getCourseUnits(filters)
@@ -281,17 +282,12 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
 
   useEffect(() => {
     const handleCourseModuleEvent = (event) => {
-      const { action, courseUnitId } = event.detail
-      
-      // Recharger les UEs si l'événement concerne une UE spécifique
-      if (action && courseUnitId) {
-        loadUEs()
-      }
+      loadUEs()
     }
 
     document.addEventListener('courseModuleChanged', handleCourseModuleEvent)
     return () => document.removeEventListener('courseModuleChanged', handleCourseModuleEvent)
-  }, [])
+  }, [loadUEs])
 
   useEffect(() => {
     loadUEs()
@@ -301,6 +297,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
     try {
       await structuresService.courseUnitService.createCourseUnit(formData)
       loadUEs()
+      onSelectItem(null)
       toast.success('Unité d\'enseignement créée avec succès')
     } catch (error) {
       toast.error("Erreur lors de l'ajout de l\'unité d\'enseignement")
@@ -311,6 +308,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
     try {
       await structuresService.courseUnitService.updateCourseUnit(actionItem.id, formData)
       loadUEs()
+      onSelectItem(null)
       toast.success('Unité d\'enseignement modifiée avec succès')
     } catch (error) {
       toast.error('Erreur lors de la modification de l\'unité d\'enseignement')
@@ -321,20 +319,30 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
     try {
       await structuresService.courseUnitService.deleteCourseUnit(actionItem.id)
       loadUEs()
+      onSelectItem(null)
       toast.success('Unité d\'enseignement supprimée avec succès')
     } catch (error) {
       toast.error('Erreur lors de la suppression de l\'unité d\'enseignement')
     }
   }
 
-  const handleToggleUEActivation = async (id,is_active) => {
+  const handleToggleUEActivation = async (id) => {
     try{
-      await structuresService.courseUnitService.updateCourseUnit(id,{is_active:!is_active})
+      await structuresService.courseUnitService.toggleCourseUnitActive(id)
       loadUEs()
+      onSelectItem(null)
+      
+      // Émettre un événement pour notifier CoursColumn
+      const event = new CustomEvent('toggleUE', {
+        detail: { 
+          action: 'toggled', 
+          courseUnitId: id 
+        }
+      })
+      document.dispatchEvent(event)
       toast.success("ok")
     }catch(error){
       toast.error("erreur lors de la modification du cours")
-      console.log(error)
     }
   }
 
@@ -495,7 +503,7 @@ export default function UEColumn({ selectedItem, onSelectItem }) {
                   </button>
                   <button
                     onClick={() => {
-                      handleToggleUEActivation(ue.id,ue.is_active)
+                      handleToggleUEActivation(ue.id)
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
                   >

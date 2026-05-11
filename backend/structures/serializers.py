@@ -215,7 +215,7 @@ class CourseUnitSerializer(serializers.ModelSerializer):
         fields = ["id","code","label","formation","semester","is_active","created_at","total_credits"]
         read_only_fields = ["id","created_at"]
     def get_total_credits(self,obj):
-        return sum([ credit for credit in obj.modules.values_list('credits', flat=True)])
+        return sum([ credit for credit in obj.modules.filter(is_active=True).values_list('credits', flat=True)])
 
 class CourseUnitCreateSerializer(serializers.ModelSerializer):
     class Meta:

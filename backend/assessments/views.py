@@ -30,7 +30,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     serializer_class = AssessmentSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
     filterset_class = AssessmentFilter
-    search_fields = ["label", "code"]
+    search_fields = ["name"]
 
     def get_queryset(self):
         user = self.request.user

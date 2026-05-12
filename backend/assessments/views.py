@@ -2,7 +2,7 @@ from rest_framework import viewsets
 
 from .models import Assessment, Grade
 from .serializers import AssessmentSerializer, GradeSerializer
-from .filter import AssessmentFilter
+from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter
 
 from users.permissions import (
     IsStudent,
@@ -20,7 +20,7 @@ from .queryset import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from .services import create_assessment,publish_result_course_module
+from .services import publish_assessment_result,delete_assessment,unpublish_assessment_result
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
@@ -47,18 +47,39 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         else:
             return [IsSuperUserOrTeacher()]
     
-    def create(self, request, *args, **kwargs):
-        serializer = AssessmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data.copy()
-        assessment = create_assessment(data)
-        response_serializer= AssessmentSerializer(assessment)
-        return Response(response_serializer.data)
+    def destroy(self, request, *args, **kwargs):
+        assessment = self.get_object()
+        try:
+            delete_assessment(assessment)
+            return Response({"detail": "Assessment deleted successfully"},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=["post"])
+    def publish(self, request, pk=None):
+        assessment = self.get_object()
+        try:
+            publish_assessment_result(assessment)
+            return Response({"detail": "Assessment published successfully"},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True,methods=["post"])
+    def unpublish(self,request):
+        assessment = self.get_object()
+        try:
+            unpublish_assessment_result(assessment)
+            return Response({"detail": "Assessment unpublished successfully"},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
         
 
 class GradeViewSet(viewsets.ModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = GradeFilter
+    search_fields = ["enrollment__student_school_year__student__first_name","enrollment__student_school_year__student__last_name"]
 
     def get_queryset(self):
         user = self.request.user
@@ -78,6 +99,9 @@ class GradeViewSet(viewsets.ModelViewSet):
 
 class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
     queryset = EnrollmentResult.objects.all()
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = EnrollmentResultFilter
+    search_fields = ["enrollment__student_school_year__student__first_name","enrollment__student_school_year__student__last_name"]
 
     def get_queryset(self):
         user = self.request.user

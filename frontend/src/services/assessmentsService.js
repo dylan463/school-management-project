@@ -7,10 +7,7 @@ const assessmentsService = {
       const response = await api.get(`/assessments/?${params.toString()}`)
       return response.data
     },
-    createAssessment: async (name,type,session,location,grade_weight,date,course_module,school_year) => {
-      const data = {
-        name,type,session,location,grade_weight,date,course_module,school_year
-      }
+    createAssessment: async (data) => {
       const response = await api.post('/assessments/', data)
       return response.data
     },
@@ -20,6 +17,14 @@ const assessmentsService = {
     },
     deleteAssessment: async (id) => {
       const response = await api.delete(`/assessments/${id}/`)
+      return response.data
+    },
+    publishAssessment: async (id) => {
+      const response = await api.post(`/assessments/${id}/publish/`)
+      return response.data
+    },
+    unpublishAssessment: async (id) => {
+      const response = await api.post(`/assessments/${id}/unpublish/`)
       return response.data
     }
   },

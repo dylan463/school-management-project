@@ -17,8 +17,9 @@ class AssessmentSerializer(serializers.ModelSerializer):
             "date",
             "course_module",
             "school_year",
+            "is_published"
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id","is_published"]
 
 
 class GradeSerializer(serializers.ModelSerializer):

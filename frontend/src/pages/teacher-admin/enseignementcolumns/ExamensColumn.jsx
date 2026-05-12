@@ -308,6 +308,16 @@ export default function ExamensColumn({ selectedCours, selectedItem, onSelectIte
     setSchoolYearSearch('')
     setShowSchoolYearDropdown(false)
   }
+
+  const handletogglePublish = (examen) => {
+    if (!examen) return;
+    if (examen.is_published) {
+      assessmentsService.assessmentService.unpublishAssessment(examen.id)
+    } else {
+      assessmentsService.assessmentService.publishAssessment(examen.id)
+    }
+    loadExamens()
+  }
   
   // Check if actions are allowed (only for active school year)
   const canEditOrDelete = selectedSchoolYear && activeSchoolYear && selectedSchoolYear.id === activeSchoolYear.id
@@ -527,6 +537,15 @@ export default function ExamensColumn({ selectedCours, selectedItem, onSelectIte
                         className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
                       >
                         Modifier
+                      </button>
+                      <button
+                        onClick={() => {
+                          handletogglePublish(examen)
+                          setOpenMenuId(null)
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
+                      >
+                        {examen.is_published ? 'Dépublier' : 'Publier'}
                       </button>
                       <button
                         onClick={(e) => {

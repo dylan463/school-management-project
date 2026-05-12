@@ -20,6 +20,7 @@ class EnrollmentResult(models.Model):
         on_delete=models.PROTECT,
         related_name="enrollment_results",
     )
+    is_repeated = models.BooleanField(default=False)
     final_score = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(choices=Status.choices,default=Status.NOT_VALIDATED)
     comment = models.CharField(max_length=255, blank=True, null=True)
@@ -43,7 +44,7 @@ class Assessment(models.Model):
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
-    date = models.DateField(default=date.today())
+    date = models.DateField(default=date.today)
 
     course_module = models.ForeignKey(
         CourseModule,
@@ -55,6 +56,7 @@ class Assessment(models.Model):
         on_delete=models.PROTECT,
         related_name="assessments",
     )
+    is_published = models.BooleanField(default=False)
 
 
 class Grade(models.Model):
@@ -75,4 +77,18 @@ class Grade(models.Model):
 
     class Meta:
         unique_together = ("enrollment","assessment")
-    
+
+class Debt(models.Model):
+    enrollment = models.ForeignKey(
+        Enrollment,
+        on_delete=models.CASCADE,
+        related_name="debts",
+    )
+    course_module = models.ForeignKey(
+        CourseModule,
+        on_delete=models.PROTECT,
+        related_name="debts",
+    )
+    cleared = models.BooleanField(default=False)
+    class Meta:
+        unique_together = ("enrollment","course_module")

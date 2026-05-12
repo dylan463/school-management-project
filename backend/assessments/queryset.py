@@ -4,12 +4,13 @@ from structures.models import (
 from .models import (
     Assessment,Grade,EnrollmentResult
 )
+from django.db.models import Q
 
 def get_student_assessment_queryset(student):
-    return Assessment.objects.filter(course_module__course_unit__semester__enrollments__student_school_year__student=student).distinct()
+    return Assessment.objects.filter(Q(course_module__course_unit__semester__enrollments__student_school_year__student=student) | Q(course_module__debts__enrollment__student_school_year__student=student)).distinct()
 
 def get_student_grade_queryset(student):
-    return Grade.objects.filter(assessment__course_module__course_unit__semester__enrollments__student_school_year__student=student)
+    return Grade.objects.filter(enrollment__student_school_year__student=student)
 
 def get_student_result_queryset(student):
     return EnrollmentResult.objects.filter(enrollment__student_school_year__student=student)

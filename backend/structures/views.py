@@ -14,9 +14,8 @@ from .models import (
 )
 from .serializers import (
     LevelSerializer, FormationSerializer, SemesterSerializer,
-    CourseUnitSerializer, CourseModuleSerializer, SchoolYearSerializer,
-    StudentSchoolYearSerializer, EnrollmentSerializer,
-    CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,
+    CourseUnitSerializer, CourseModuleSerializer, SchoolYearSerializer,EnrollmentSerializer,
+    CreateStudentSchoolYearSerializer, PromoteRepeatSerializer,SSYListSerializer,
     ChangeEnrollmentDecisionSerializer,StudentCreateSerializer,CourseUnitCreateSerializer, SchoolYearCreateSerializer, FormationCreateSerializer,CourseModuleCreateSerializer
 )
 from .services import (
@@ -209,7 +208,7 @@ class SemesterViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin,vie
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
     permission_classes = [IsSuperUser]
-    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filter_backends = [SearchFilter,DjangoFilterBackend]
     search_fields = ["code","order"]
     filterset_class = SemesterFilter
 
@@ -238,7 +237,7 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
     queryset = SchoolYear.objects.all()
     serializer_class = SchoolYearSerializer
     permission_classes = [IsSuperUser]
-    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filter_backends = [SearchFilter,DjangoFilterBackend]
     search_fields = ["label"]
     filterset_class = SchoolYearFilter
 
@@ -348,12 +347,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                                 viewsets.mixins.RetrieveModelMixin,
                                 viewsets.mixins.DestroyModelMixin 
                             ):
-    queryset = (
-        StudentSchoolYear.objects
-        .select_related('student', 'school_year', 'formation', 'level')
-        .annotate(enrollments_count=Count('enrollments'))
-    )
-    serializer_class = StudentSchoolYearSerializer
+    serializer_class = SSYListSerializer
     permission_classes = [IsSuperUser]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["school_year","formation","level","status"]
@@ -369,11 +363,12 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
     def get_queryset(self):
         user = self.request.user
         if is_user_student(user):
-            return get_student_student_school_year_queryset(user)
+            queryset = get_student_student_school_year_queryset(user)
         elif is_user_teacher(user):
-            return get_teacher_student_school_year_queryset(user)
+            queryset = get_teacher_student_school_year_queryset(user)
         else:
-            return StudentSchoolYear.objects.all()
+            queryset =  StudentSchoolYear.objects.all()
+        return queryset.select_related('student', 'school_year', 'formation', 'level')
 
     @action(detail=False, methods=['POST'])
     def promote_repeat(self, request):
@@ -391,7 +386,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                 student=student,
                 new_school_year=new_school_year
             )
-            response_serializer = StudentSchoolYearSerializer(student_school_year)
+            response_serializer = SSYListSerializer(student_school_year)
             return Response(response_serializer.data)
 
         except ValidationError as e:
@@ -404,7 +399,6 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
         
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             student = StudentUser.objects.get(pk=serializer.validated_data['student_id'])
             school_year = SchoolYear.objects.get(pk=serializer.validated_data['school_year_id'])
@@ -417,7 +411,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                 formation=formation,
                 new_school_year=school_year
             )
-            response_serializer = StudentSchoolYearSerializer(student_school_year)
+            response_serializer = SSYListSerializer(student_school_year)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
         except ValidationError as e:
@@ -568,6 +562,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
 # ─────────────────────────────────────────
 
 from .utils import create_student,create_user
+from .serializers import StudentSearchSerializer
 class StudentPortalViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStudent]
     serializer_class = UserSerializer
@@ -620,7 +615,7 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
                 student=student,
                 school_year__status=SchoolYear.Status.ACTIVE
             )
-            serializer = StudentSchoolYearSerializer(current_school_year)
+            serializer = SSYListSerializer(current_school_year)
             return Response(serializer.data)
         except StudentSchoolYear.DoesNotExist:
             return Response({
@@ -669,8 +664,36 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
             )
         )
 
-        response_serializer = CourseUnitListSerializer(course_units,many=True)
+        response_serializer = CourseUnitSerializer(course_units,many=True)
         return Response(response_serializer.data)
+
+    @action(detail=False,methods=['get'])
+    def search_student(self,request):
+        """
+        pour faire le recherche des étudiant pour les inscriptions
+        """
+        queryset = self.get_queryset()
+        search = request.query_params.get("search")
+        limit = request.query_params.get("limit")
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search),
+                is_active=True
+            ).prefetch_related(
+                Prefetch(
+                    "student_school_year",
+                    queryset=StudentSchoolYear.objects.filter(status="ACTIVE"),
+                    to_attr="prefeched_active_ssy"
+                )
+            )[:int(limit)]
+            serializer = StudentSearchSerializer(queryset,many=True)
+            return Response(serializer.data)
+        return Response([])
+
+
 
 # ─────────────────────────────────────────
 # PORTAIL ENSEIGNANT
@@ -779,6 +802,6 @@ class TeacherPortalViewSet(viewsets.ModelViewSet):
         if semester:
             course_unit.filter(semester__id=semester)
 
-        serializer = CourseUnitListSerializer(course_unit, many=True)
+        serializer = CourseUnitSerializer(course_unit, many=True)
         return Response(serializer.data)
 

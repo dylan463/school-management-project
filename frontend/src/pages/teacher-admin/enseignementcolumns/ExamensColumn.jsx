@@ -309,14 +309,19 @@ export default function ExamensColumn({ selectedCours, selectedItem, onSelectIte
     setShowSchoolYearDropdown(false)
   }
 
-  const handletogglePublish = (examen) => {
-    if (!examen) return;
-    if (examen.is_published) {
-      assessmentsService.assessmentService.unpublishAssessment(examen.id)
-    } else {
-      assessmentsService.assessmentService.publishAssessment(examen.id)
+  const handletogglePublish = async (examen) => {
+    try {
+      if (examen.is_published) {
+        await assessmentsService.assessmentService.unpublishAssessment(examen.id)
+      } else {
+        await assessmentsService.assessmentService.publishAssessment(examen.id)
+      }
+      loadExamens()
+      toast.success(examen.is_published ? 'Examen dépublié avec succès' : 'Examen publié avec succès')
+    } catch (error) {
+      toast.error('Erreur lors de la publication/dépublication de l\'examen')
+      console.error('Error toggling publish status:', error)
     }
-    loadExamens()
   }
   
   // Check if actions are allowed (only for active school year)
@@ -503,8 +508,13 @@ export default function ExamensColumn({ selectedCours, selectedItem, onSelectIte
                   )}
                   {examen.grade_weight && (
                     <span className="text-xs opacity-75 bg-purple-100 px-1 py-0.5 rounded">
-                      {examen.grade_weight}
+                      poid de note : {examen.grade_weight}
                     </span>
+                  )}
+                  {examen.is_published && (
+                    <span className="text-xs opacity-75 bg-green-100 px-1 py-0.5 rounded">
+                      publié
+                    </span> 
                   )}
                 </div>
               </button>

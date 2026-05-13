@@ -29,6 +29,7 @@ class CourseModuleFilter(django_filters.FilterSet):
 
 class SchoolYearFilter(django_filters.FilterSet):
     status = django_filters.CharFilter(method="filter_status")
+    limit = django_filters.NumberFilter(method="filter_limit")
     class Meta:
         model = SchoolYear
         fields = ["is_locked"]
@@ -42,11 +43,16 @@ class SchoolYearFilter(django_filters.FilterSet):
         elif value == "open":
             return queryset.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING])
         return queryset
+    def filter_limit(self,queryset,name,value):
+        return queryset[:value]
     
 class SemesterFilter(django_filters.FilterSet):
     formation = django_filters.NumberFilter(
         field_name="level__formation_levels__formation__id"
     )
+    limit = django_filters.NumberFilter(method="filter_limit")
     class Meta:
         model = Semester
         fields = ["level"]
+    def filter_limit(self,queryset,name,value):
+        return queryset[:value]

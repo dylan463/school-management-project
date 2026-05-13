@@ -16,14 +16,18 @@ from users.utils import (
     is_user_student,
     is_user_superuser
 )
+from structures.models import CourseModule,SchoolYear
 from .queryset import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from .services import publish_assessment_result,delete_assessment,unpublish_assessment_result
+from .services import publish_assessment_result,unpublish_assessment_result,create_assessment,get_attendant_data
+from .services import update_results as update_all_result
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from structures.queryset import get_teacher_enrollment_queryset
+from .query import attend_to_assessment,people_with_course_debt
 
 class AssessmentViewSet(viewsets.ModelViewSet):
     queryset = Assessment.objects.all()
@@ -47,13 +51,16 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         else:
             return [IsSuperUserOrTeacher()]
     
-    def destroy(self, request, *args, **kwargs):
-        assessment = self.get_object()
+    def create(self, request, *args, **kwargs):
+        serializer = AssessmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data.copy()
         try:
-            delete_assessment(assessment)
-            return Response({"detail": "Assessment deleted successfully"},status=status.HTTP_200_OK)
+            response_serializer = AssessmentSerializer(create_assessment(data))
+            return Response(response_serializer.data,status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
+
     
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
@@ -65,7 +72,7 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True,methods=["post"])
-    def unpublish(self,request):
+    def unpublish(self,request,pk=None):
         assessment = self.get_object()
         try:
             unpublish_assessment_result(assessment)
@@ -73,7 +80,41 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
         
+    @action(detail=True,methods=["get"])
+    def attendant_student(self,request,pk):
+        assessment :Assessment = self.get_object()
+        has_grade = request.query_params.get("has_grade")
+        has_debt = request.query_params.get("has_debt")
+        search = request.query_params.get("search")
 
+        user = request.user
+        if user.role == "TEACHER":
+            queryset = get_teacher_enrollment_queryset(user)
+        else:
+            queryset = Enrollment.objects.all()
+
+        attendant = queryset.filter(attend_to_assessment(assessment))
+
+        if search:
+            attendant = attendant.filter(
+                Q(student_school_year__student__last_name=search)|
+                Q(student_school_year__student__first_name=search)
+            )
+
+        if not has_grade is None:
+            query = Q(grades__assessment=assessment)
+            query = query if has_grade else ~query
+            attendant = attendant.filter(query)
+        
+        if not has_debt is None:
+            query = people_with_course_debt(assessment.course_module)
+            query = query if has_debt else ~query
+            attendant = attendant.filter(query)
+
+        data = get_attendant_data(attendant,assessment)
+        return Response(data)
+        
+        
 class GradeViewSet(viewsets.ModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
@@ -119,11 +160,11 @@ class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
             return [IsSuperUserOrTeacher()]
 
     @action(methods=["post"],detail=False)
-    def publish_results(self,request):
+    def publish(self,request):
         try:
-            course_module_id = request.data["course_module_id"]
-            response = publish_result_course_module(course_module_id)
-            return Response(response,status=status.HTTP_200_OK)
+            course_module = CourseModule.objects.get(request.data.get("course_module"))
+            update_all_result(course_module)
+            return Response({"detail":"result updated"},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 

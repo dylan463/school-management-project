@@ -17,14 +17,9 @@ def create_student_school_year(
     Méthode centralisée pour créer une inscription annuelle d'étudiant.
     Vérifie les doublons, le verrouillage et crée le StudentSchoolYear avec transaction.
     """
-    if StudentSchoolYear.objects.filter(student=student,status__in=[StudentSchoolYear.Status.ACTIVE,StudentSchoolYear.Status.DELIBERATING]).exists():
+    if StudentSchoolYear.objects.filter(student=student,status__in=[StudentSchoolYear.Status.ACTIVE]).exists():
         raise ValidationError(
             "Cet étudiant est déjà inscrit dans une année scolaire ouverte."
-        )
-    # Vérification du verrouillage de l'année scolaire
-    if school_year.is_locked:
-        raise ValidationError(
-            "L'année scolaire est verrouillée. Aucune inscription n'est possible."
         )
     # Vérification du statut de l'année scolaire
     if school_year.status == SchoolYear.Status.CLOSED:

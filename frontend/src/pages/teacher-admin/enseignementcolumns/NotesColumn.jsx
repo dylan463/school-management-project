@@ -6,63 +6,37 @@ import { toast } from 'react-toastify'
 import extractDRFError from '../../../utils/extractError'
 
 // Composant de formulaire pour ajouter/modifier une note
-function NoteForm({ onClose, onSubmit, selectedExamen, note = null }) {
+function NoteForm({ onClose, onSubmit,selectedExamen,actionItem}) {
   const [formData, setFormData] = useState({
-    student: '',
-    value: '',
-    comment: ''
+    score:'',
   })
-  const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(false)
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  const handleChangeScore = (score) => {
+    setFormData(prev => ({...prev,score}))
   }
 
   useEffect(() => {
-    const loadStudents = async () => {
-      try {
-        // TODO: Charger les étudiants de la formation/cours
-        // const response = await userService.getStudents({formation: selectedExamen?.formation})
-        // setStudents(response.data || response)
-        setStudents([]) // Temporaire
-      } catch (error) {
-        console.error('Error loading students:', error)
-        setStudents([])
-      }
-    }
-    if (selectedExamen) {
-      loadStudents()
-    }
-  }, [selectedExamen])
-
-  useEffect(() => {
-    if (note) {
+    if (actionItem) {
       setFormData({
-        student: note.student?.id || '',
-        value: note.value || '',
-        comment: note.comment || ''
+        score:actionItem.grade?.score
       })
     }
-  }, [note])
+  }, [actionItem])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.student || !formData.value) {
-      toast.error('Veuillez sélectionner un étudiant et une note')
+    if (!formData.score) {
+      toast.error('Veuillez attribuer une note')
       return
     }
 
     setLoading(true)
     try {
       await onSubmit({
-        ...formData,
-        assessment: selectedExamen.id,
-        value: parseFloat(formData.value)
+        enrollment:actionItem.id,
+        assessment:selectedExamen.id,
+        score:parseFloat(formData.score)
       })
       onClose()
     } catch (error) {
@@ -76,22 +50,13 @@ function NoteForm({ onClose, onSubmit, selectedExamen, note = null }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">
-          Étudiant *
+          Nom et prénom : {actionItem.full_name} 
         </label>
-        <select
-          name="student"
-          value={formData.student}
-          onChange={handleChange}
-          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
-          required
-        >
-          <option value="">Sélectionner un étudiant</option>
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.first_name} {student.last_name}
-            </option>
-          ))}
-        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          matricule : {actionItem.username} 
+        </label>
       </div>
       
       <div>
@@ -101,7 +66,7 @@ function NoteForm({ onClose, onSubmit, selectedExamen, note = null }) {
         <input
           type="number"
           name="value"
-          value={formData.value}
+          value={formData.score}
           onChange={handleChange}
           placeholder="Ex: 15.5"
           min="0"
@@ -109,20 +74,6 @@ function NoteForm({ onClose, onSubmit, selectedExamen, note = null }) {
           step="0.5"
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
           required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Commentaire
-        </label>
-        <textarea
-          name="comment"
-          value={formData.comment}
-          onChange={handleChange}
-          placeholder="Commentaire sur la note..."
-          rows={3}
-          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white resize-none"
         />
       </div>
 
@@ -139,7 +90,7 @@ function NoteForm({ onClose, onSubmit, selectedExamen, note = null }) {
           disabled={loading}
           className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Enregistrement...' : (note ? 'Modifier' : 'Ajouter')}
+          {loading ? 'Enregistrement...' : (actionItem.grade ? 'Modifier' : 'Ajouter')}
         </button>
       </div>
     </form>
@@ -150,189 +101,192 @@ export default function NotesColumn({ selectedExamen }) {
   const [notes, setNotes] = useState([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [filters, setFilters] = useState({})
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [editingNote, setEditingNote] = useState(null)
 
-  useEffect(() => {
+  const [hasNoteFilter,setHasNoteFilter] = useState('')
+  const [hasDebtFilter,setHasDebtFilter] = useState('')
+
+  const [actionItem,setActionItem]= useState('')
+
+  const [isgradeModalOpen, setIsGradeModalOpen] = useState(false)
+  const [isDeleteConfirmModalOpen,setIsDeleteConfirmModalOpen]=useState(false)
+  
+  const [openMenuId,setOpenMenuId] = useState(null)
+
+
+  const loadNotes = async ()=>{
+    if (!selectedExamen){
+      setNotes([])
+      return
+    }
     const filters = {}
     if (debouncedSearch) filters.search = debouncedSearch
-    if (selectedExamen) filters.assessment = selectedExamen.id
-    setFilters(filters)
-  }, [debouncedSearch, selectedExamen])
-
+    if (hasNoteFilter === "true") filters.has_grade = true
+    if (hasNoteFilter === "false") filters.has_grade = false
+    if (hasDebtFilter === "true") filters.has_debt = true
+    if (hasDebtFilter === "false") filters.has_debt = false
+    try{
+      const response = await assessmentsService.assessmentService.getAsessementAttendant(selectedExamen.id,filters)
+      setNotes(response)
+    }catch (error){
+      toast.error('erreur lors du chargement des notes')
+      setNotes([])
+    }
+  }
+    
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search)
     }, 400)
-
     return () => clearTimeout(timer)
   }, [search])
+  
+  useEffect(() => {
+    loadNotes()
+  }, [selectedExamen,debouncedSearch,hasNoteFilter,hasDebtFilter])
 
   useEffect(() => {
-    const loadNotes = async () => {
-      if (!selectedExamen) {
-        setNotes([])
-        return
-      }
-      try {
-        // TODO: Connecter avec le service approprié
-        // const response = await assessmentsService.gradeService.getGrades(filters)
-        // setNotes(response.data || response)
-        setNotes([]) // Temporaire
-      } catch (error) {
-        console.error('Error loading notes:', error)
-        setNotes([])
+    const handleClickOutside = (event) => {
+      if (openMenuId && !event.target.closest('.note-menu-container')) {
+        setOpenMenuId(null)
       }
     }
-    loadNotes()
-  }, [filters, selectedExamen])
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [openMenuId])
 
-  const handleAddNote = async (formData) => {
-    try {
-      // TODO: Connecter avec le service approprié
-      // await assessmentsService.gradeService.createGrade(formData)
-      toast.success('Note ajoutée avec succès')
-      // Recharger la liste
-      // const response = await assessmentsService.gradeService.getGrades(filters)
-      // setNotes(response.data || response)
-    } catch (error) {
-      console.error('Error creating note:', error)
-      throw error
+  const handleGradeSubmit = async (formData) => {
+    if (actionItem){
+      if (actionItem.grade) {
+        await assessmentsService.gradeService.updateGrade(actionItem.grade.id,formData.score)
+      }else{
+        await assessmentsService.gradeService.createGrade(formData)
+      }
+      loadNotes()
+      toast.success("ok")
     }
   }
 
-  const handleEditNote = (note) => {
-    setEditingNote(note)
-    setIsAddModalOpen(true)
-  }
+  const canPerformAction = true
 
-  const handleUpdateNote = async (formData) => {
-    try {
-      // TODO: Connecter avec le service approprié
-      // await assessmentsService.gradeService.updateGrade(editingNote.id, formData)
-      toast.success('Note modifiée avec succès')
-      // Recharger la liste
-      // const response = await assessmentsService.gradeService.getGrades(filters)
-      // setNotes(response.data || response)
-    } catch (error) {
-      console.error('Error updating note:', error)
-      throw error
-    }
-  }
 
-  const handleDeleteNote = async (note) => {
+  const handleDeleteNote = async (actionItem) => {
     try {
-      // TODO: Connecter avec le service approprié
-      // await assessmentsService.gradeService.deleteGrade(note.id)
-      toast.success('Note supprimée avec succès')
-      // Recharger la liste
-      // const response = await assessmentsService.gradeService.getGrades(filters)
-      // setNotes(response.data || response)
+      if (actionItem.grade){
+        await assessmentsService.gradeService.deleteGrade(actionItem.grade.id)
+        loadNotes()
+        toast.success('ok')
+      }
     } catch (error) {
       console.error('Error deleting note:', error)
       toast.error('Erreur lors de la suppression de la note')
     }
   }
 
-  const closeModal = () => {
-    setIsAddModalOpen(false)
-    setEditingNote(null)
-  }
-
   return (
     <div className="flex-1 min-w-0">
       <div className="p-4 border-b border-slate-200 bg-slate-50">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-sm text-slate-700">Notes</h3>
-          <Button
-            onClick={() => setIsAddModalOpen(true)}
-            size="sm"
-            variant="outline"
-            className="text-xs px-2 py-1 h-7"
-            disabled={!selectedExamen}
-          >
-            + Ajouter
-          </Button>
+          <h3 className="font-semibold text-sm text-slate-700">Participant et Notes</h3>
         </div>
         <input
           type="text"
-          placeholder="Rechercher une note..."
+          placeholder="Rechercher un participant..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
           disabled={!selectedExamen}
         />
       </div>
+
       <div className="p-2 h-96 overflow-y-auto">
         {!selectedExamen ? (
-          <p className="text-xs text-slate-500">Sélectionnez un examen pour voir les notes</p>
+          <p className="text-xs text-slate-500">Sélectionnez un exament pour voir les participants</p>
         ) : notes.length === 0 ? (
-          <p className="text-xs text-slate-500">Aucune note trouvée</p>
+          <p className="text-xs text-slate-500">Aucun éleve trouvé</p>
         ) : (
-          <div className="space-y-1">
-            {notes.map((note) => (
-              <div key={note.id} className="relative group p-2 border border-slate-200 rounded-lg mb-1">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">
-                      {note.student?.first_name} {note.student?.last_name}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-sm font-bold text-slate-700">
-                        {note.value}/20
-                      </span>
-                      {note.value >= 10 ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                          Validé
-                        </span>
-                      ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                          Non validé
-                        </span>
-                      )}
-                    </div>
-                    {note.comment && (
-                      <div className="text-xs text-slate-500 mt-1">{note.comment}</div>
-                    )}
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEditNote(note)}
-                      className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                      title="Modifier"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteNote(note)}
-                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
-                      title="Supprimer"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+          notes.map((note) => (
+            <div
+              key={note.id}
+              className="relative note-menu-container"
+            >
+              <div className='w-full text-left px-3 py-2 rounded-lg text-xs transition-colors mb-1 hover:bg-slate-100 text-slate-700'>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="font-medium">{note.full_name}</div>
+                  {note.username && (
+                    <span className="text-xs opacity-75 font-mono bg-slate-100 px-1 py-0.5 rounded">
+                      {note.username}
+                    </span>
+                  )}
+                  {note.grade && (
+                    <span className="text-xs opacity-75 bg-blue-100 px-1 py-0.5 rounded">
+                      note à examen : {note.grade.score}
+                    </span>
+                  )}
+                  {note.debt_year && (
+                    <span className="text-xs opacity-75 bg-green-100 px-1 py-0.5 rounded">
+                      endété sur l'examen de : {note.debt_year}
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+              
+              {CanPerformAction && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (openMenuId === note.id) {
+                        setOpenMenuId(null)
+                      } else {
+                        setOpenMenuId(examen.id)
+                      }
+                    }}
+                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                    title="Actions"
+                  >
+                    ⋮
+                  </button>
+                  {openMenuId === note.id && (
+                    <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-lg shadow-lg z-10 w-[100px]">
+                      <button
+                        onClick={(e) => {
+                          setActionItem(note)
+                          setIsGradeModalOpen(true)
+                          setOpenMenuId(null)
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
+                      >
+                        {note.grade ? "Modifier": "Ajouter"}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          setActionItem(examen)
+                          setIsDeleteConfirmModalOpen(true)
+                          setOpenMenuId(null)
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))
         )}
       </div>
       
-      {isAddModalOpen && (
-        <Modal isOpen={isAddModalOpen} onClose={closeModal}>
+      {isgradeModalOpen && (
+        <Modal isOpen={isgradeModalOpen} onClose={() => {setIsGradeModalOpen(false);setActionItem(null)}}>
           <h3 className="text-lg font-bold text-slate-800 mb-4">
-            {editingNote ? 'Modifier une Note' : 'Ajouter une Note'}
+            {actionItem.grade ? 'Modifier une Note' : 'Ajouter une Note'}
           </h3>
           <NoteForm 
-            onClose={closeModal} 
-            onSubmit={editingNote ? handleUpdateNote : handleAddNote}
+            onClose={() => {setIsGradeModalOpen(false);setActionItem(null)}} 
+            onSubmit={handleGradeSubmit}
             selectedExamen={selectedExamen}
-            note={editingNote}
+            actionItem={actionItem}
           />
         </Modal>
       )}

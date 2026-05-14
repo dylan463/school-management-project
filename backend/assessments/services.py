@@ -1,20 +1,38 @@
 from .models import (
     Assessment,Grade,EnrollmentResult,Debt
 )
-from structures.models import Enrollment
+from structures.models import Enrollment,SchoolYear,CourseModule
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Prefetch
 from collections import defaultdict
-from .query import attend_to_assessment,has_no_grade_in_assessment
+from .query import attend_to_assessment,has_no_grade_in_assessment,promoted_people,people_with_course_debt
+from .serializers import AttendantSerializer
+
+@transaction.atomic
+def create_assessment(data: dict):
+    session = data.get("session")
+    course_module = CourseModule.objects.get(data.get("cours_module"))
+    school_year = SchoolYear.objects.get(data.get("school_year"))
+
+    if session == "RETAKE":
+        if not Assessment.objects.filter(session="NORMAL",course_module=course_module,school_year=school_year,is_published=True):
+            raise ValidationError("veillez publier une session normal avant d'entamer un rattrappage")
+        
+    return Assessment.objects.create(**data)
+
 
 def compute_weighted_score(grades):
     weighted = [(g.score, g.assessment.grade_weight) for g in grades]
     total_weight = sum(w for _, w in weighted)
     return sum(s * w for s, w in weighted) / total_weight, weighted
 
-
 @transaction.atomic
-def update_results(course_module, school_year):
+def update_results(course_module):
+    school_year = SchoolYear.objects.get(status="ACTIVE")
+    if school_year is None:
+        raise ValidationError("vous ne pouvez publier les résultat que pendant une année scolaire active")
+
     def get_grades(session):
         assessments = Assessment.objects.filter(
             course_module=course_module, school_year=school_year,
@@ -36,14 +54,48 @@ def update_results(course_module, school_year):
                 enrollment=enrollment, course_module=course_module,
                 defaults={"final_score": score, "status": status}
             )
-            if not created and result.final_score < score:
-                result.final_score, result.status = score, status
-                result.save()
-            if status == validated_status:
-                Debt.objects.filter(enrollment=enrollment, course_module=course_module).update(cleared=True)
+            if not created:
+                if session == "RETAKE":
+                    result.final_score = max(result.final_score, score)
+                    result.status = status  # statut RETAKE prioritaire
+                    result.save()
+                elif result.final_score < score:
+                    result.final_score = score
+                    result.status = status
+                    result.save()
 
-    process_session("NORMAL", "VALIDATED")
-    process_session("RETAKE", "VALIDATED_AFTER_RETAKE")
+    has_published_assessments = Assessment.objects.filter(
+        course_module=course_module, school_year=school_year, is_published=True
+    ).exists()
+
+    if has_published_assessments:
+        process_session("NORMAL", "VALIDATED")
+        process_session("RETAKE", "VALIDATED_AFTER_RETAKE")
+    else:
+        EnrollmentResult.objects.filter(
+            enrollment__in=Enrollment.objects.filter(promoted_people(course_module, school_year)),
+            course_module=course_module
+        ).delete()
+
+        debt_attendants = Enrollment.objects.filter(
+            people_with_course_debt(course_module, school_year)
+        ).prefetch_related(
+            Prefetch("debts", queryset=Debt.objects.filter(course_module=course_module))
+        ).prefetch_related(
+            Prefetch("enrollment_results", queryset=EnrollmentResult.objects.filter(course_module=course_module))
+        )
+
+        for debt_attendant in debt_attendants:
+            result = debt_attendant.enrollment_results.first()
+            debt = debt_attendant.debts.first()
+
+            if result is not None and debt is not None:
+                # Fix #3 : .update() sur instance → assignation + .save()
+                result.final_score = debt.original_score
+                result.status = debt.original_status
+                result.save()
+
+
 
 @transaction.atomic
 def publish_assessment_result(assessment : Assessment):
@@ -51,6 +103,10 @@ def publish_assessment_result(assessment : Assessment):
         published_normal_session = Assessment.objects.filter(course_module=assessment.course_module, school_year=assessment.school_year, session="NORMAL", is_published=True)
         if published_normal_session.exists():
             raise ValidationError("La session normale doit être publiée avant la session de rattrapage")
+    else:
+        published_retake_session = Assessment.objects.filter(course_module=assessment.course_module, school_year=assessment.school_year, session="RETAKE", is_published=True)
+        if published_retake_session.exists():
+            raise ValidationError("La session de rattrapage doit être dépubliée avant de publier la session normale")
 
     query1 = attend_to_assessment(assessment)
     query2 = has_no_grade_in_assessment(assessment)
@@ -60,17 +116,37 @@ def publish_assessment_result(assessment : Assessment):
     
     assessment.is_published = True
     assessment.save()
-    update_results(query1,assessment.course_module,assessment.school_year)
     return assessment
 
-@transaction.atomic
-def delete_assessment(assessment:Assessment):
-    assessment.delete()
-    update_results(assessment.course_module,assessment.school_year)
 
 @transaction.atomic
 def unpublish_assessment_result(assessment:Assessment):
     assessment.is_published = False
     assessment.save()
-    update_results(assessment.course_module,assessment.school_year)
     return assessment
+
+def get_attendant_data(enrollments,assessment : Assessment):
+    enrollments = enrollments.select_related("student_school_year__student","student_school_year__school_year")
+    grades = Grade.objects.select_related("assessment").filter(
+        enrollment__in=enrollments,
+        assessment=assessment
+    )
+    grades_map = {grade.enrollment_id: grade for grade in grades}
+
+    debts = Debt.objects.filter(
+        enrollment__in=enrollments,
+        course_module=assessment.course_module,
+        cleared=False
+    )
+    debts_map = {debt.enrollment_id: debt for debt in debts}
+
+    serializer = AttendantSerializer(
+        enrollments,
+        many=True,
+        context={
+            "assessment": assessment,
+            "grades_map": grades_map,
+            "debts_map": debts_map,
+        }
+    )
+    return serializer.data

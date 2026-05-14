@@ -134,40 +134,37 @@ class SchoolYearCreateSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class StudentSchoolYearSerializer(serializers.ModelSerializer):
-    student = UserSerializer(read_only=True)
-    school_year = SchoolYearSerializer(read_only=True)
-    formation = FormationSerializer(read_only=True)
-    level = LevelSerializer(read_only=True)
-    
-    student_id = serializers.IntegerField(write_only=True)
-    school_year_id = serializers.IntegerField(write_only=True)
-    formation_id = serializers.IntegerField(write_only=True)
-    level_id = serializers.IntegerField(write_only=True)
-    
-    enrollments_count = serializers.SerializerMethodField()
-    
+class SSYListSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    formation = serializers.SerializerMethodField()
+    level = serializers.SerializerMethodField()
+    school_year = serializers.SerializerMethodField()
+
     class Meta:
         model = StudentSchoolYear
-        fields = [
-            "id", "student", "school_year", "formation", "level",
-            "status", "created_at", "enrollments_count",
-            "student_id", "school_year_id", "formation_id", "level_id"
-        ]
-        read_only_fields = ["id", "created_at", "enrollments_count"]
+        fields = ['id','full_name','status','username','formation','level','school_year']
     
-    def get_enrollments_count(self, obj):
-        return getattr(obj, 'enrollments_count', obj.enrollments.count())
+    def get_full_name(self,obj):
+        return f"{obj.student.first_name} {obj.student.last_name}"
 
+    def get_username(self,obj):
+        return obj.student.username
+
+    def get_formation(self,obj):
+        return obj.formation.code
+    
+    def get_level(self,obj):
+        return obj.level.code
+    
+    def get_school_year(self,obj):
+        return obj.school_year.label
         
 # ─────────────────────────────────────────
 # INSCRIPTION PAR SEMESTRE
 # ─────────────────────────────────────────
 
 class EnrollmentSerializer(serializers.ModelSerializer):
-    student_school_year = StudentSchoolYearSerializer(read_only=True)
-    semester = SemesterSerializer(read_only=True)
-        
     class Meta:
         model = Enrollment
         fields = [
@@ -320,3 +317,13 @@ class StudentCreateSerializer(UserCreateSerializer):
         if not Formation.objects.filter(id=value).exists():
             raise ValidationError("La formation spécifiée n'existe pas")
         return value
+
+class StudentSearchSerializer(serializers.ModelSerializer):
+    active_ssy = serializers.SerializerMethodField()
+    class Meta:
+        model = CustomUser
+        fields = ["id","last_name","first_name","email","username","active_ssy"]
+    def get_active_ssy(self,obj):
+        if obj.prefeched_active_ssy:
+            return obj.prefeched_active_ssy[0]
+        return None

@@ -3,7 +3,6 @@ from .models import SchoolYear,Level,Formation
 from .services import create_student_school_year
 from users.utils import generate_matricule,generate_password
 from django.db import transaction
-from .serializers import StudentSchoolYearSerializer
 from users.serializers import UserSerializer
 from django.core.mail import send_mail
 

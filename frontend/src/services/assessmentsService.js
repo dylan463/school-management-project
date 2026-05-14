@@ -26,6 +26,11 @@ const assessmentsService = {
     unpublishAssessment: async (id) => {
       const response = await api.post(`/assessments/${id}/unpublish/`)
       return response.data
+    },
+    getAsessementAttendant: async (id,filters = {}) => {
+      const params = new URLSearchParams(filters)
+      const response = await api.get(`/assessments/${id}/attendant_student/?${params.toString()}`)
+      return response.data
     }
   },
   gradeService:{
@@ -34,8 +39,7 @@ const assessmentsService = {
       const response = await api.get(`/assessments/grades/?${params.toString()}`)
       return response.data
     },
-    createGrade: async (enrollment,assessment,score) => {
-      const data = { enrollment,assessment,score }
+    createGrade: async (data) => {
       const response = await api.post('/assessments/grades/', data)
       return response.data
     },
@@ -53,6 +57,9 @@ const assessmentsService = {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/assessments/results/?${params.toString()}`)
       return response.data
+    },
+    publish: async (data) => {
+      const response = await api.post(`/assessments/results/pubish/`,data)
     }
   }
 }

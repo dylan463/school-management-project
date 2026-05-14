@@ -100,7 +100,7 @@ class SchoolYear(models.Model):
 
     
     def has_pending_student_school_years(self):
-        return self.student_school_years.filter(status__in=["ACTIVE","DELIBERATING",]).exists()
+        return self.student_school_years.filter(status__in=["ACTIVE"]).exists()
     
 
 # ─────────────────────────────────────────
@@ -116,8 +116,6 @@ class StudentSchoolYear(models.Model):
     class Status(models.TextChoices):
         # état pendant l'année scolaire
         ACTIVE = 'ACTIVE', 'Active'
-        DELIBERATING = 'DELIBERATING', 'En délibération'
-        # basé sur le résultat de la délibération
         PROMOTED = 'PROMOTED', 'Promu'
         REPEAT = 'REPEAT', 'Redoublant'
         EXCLUDED = 'EXCLUDED', 'Exclu'

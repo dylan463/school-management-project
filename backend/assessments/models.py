@@ -70,8 +70,8 @@ class Grade(models.Model):
         on_delete=models.CASCADE,
         related_name="grades",
     )
-    score = models.PositiveIntegerField(
-        default=1,
+    score = models.FloatField(
+        default=1.0,
         validators=[MinValueValidator(0), MaxValueValidator(20)],
     )
 
@@ -90,5 +90,7 @@ class Debt(models.Model):
         related_name="debts",
     )
     cleared = models.BooleanField(default=False)
+    original_score = models.PositiveIntegerField(null=True, blank=True)
+    original_status = models.CharField(choices=EnrollmentResult.Status.choices,default=EnrollmentResult.Status.NOT_VALIDATED)
     class Meta:
         unique_together = ("enrollment","course_module")

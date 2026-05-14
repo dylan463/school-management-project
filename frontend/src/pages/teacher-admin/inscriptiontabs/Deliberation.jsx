@@ -1,69 +1,14 @@
 import {useEffect, useState,useId} from 'react'
+import BadgeInscription from '../../BadgeService'
 
 
-function getUsername(inscription){
-  return {content:inscription.username}  
-}
-function getFullName(inscription){
-  return {content:inscription.full_name} 
-}
-function getStatus(inscription){
-  let value = inscription.status
-  let content = ""
-  let color = 'stale'
-  if (value == "ACTIVE"){
-    content='en cour'
-    color='green'
-  } else if (value == "PROMOTED") {
-    content='promus'
-    color ='yellow'
-  } else if (value == "REPEAT"){
-    content='redouble'
-    color='red'
-  } else {
-    content='exclus'
-    color='red'
-  }
-  return {content,color,label:'etat : '}
-}
-function geFormation(inscription){
-  return {content:inscription.formation,color:'blue'}
-}
-function getLevel(inscription){
-  return {content:inscription.level,color:'blue'}
-}
-function getSchoolYear(inscription){
-  return {content:inscription.school_year,color:'blue'}
-}
-
-function getLabel(year){
-  return {content:year.label}
-}
-function getStatusfor(year){
-  let value = year.status
-  let color = 'stale'
-  let content = ""
-  if(value=="UPCOMING"){
-    content = "à venir"
-    color = 'yellow'
-  }else if (value == "ACTIVE"){
-    content = "active"
-    color = 'green'
-  }else{
-    content ="clôt"
-    color = 'red'
-  }
-  return {content,color}
-}
-
-function RegistreFiltered({inscriptionFilter,selectedYear}){
+function RegistreFiltered({inscriptionFilter,statusIn = [],selectedYear}){
   const [inscriptions,setInscriptions] = useState([])
   const badgeContent = [
-          getUsername,
-          getLevel,
-          geFormation,
-          getSchoolYear,
-          getStatus
+          BadgeInscription.username,
+          BadgeInscription.level,
+          BadgeInscription.formation,
+          BadgeInscription.status
         ]
 
   const [search,setSearch] = useState("")
@@ -170,13 +115,7 @@ function RegistreFiltered({inscriptionFilter,selectedYear}){
                 defaultValue={statusFilter}
                 onChange={setStatusFilter}
                 label="status"
-                otherOptions={[
-                  {value:'',label:'Tous'},
-                  {value:'ACTIVE',label:'Actif'},
-                  {value:'PROMOTED',label:'Promus'},
-                  {value:'REPEAT',label:'Redouble'},
-                  {value:'EXCLUDED',label:'Excus'},
-                ]}
+                otherOptions={statusIn}
               />
               <ResetButton
                 disabled={!search && formationFilter==="" && levelFilter ==="" && selectedYear===null && statusFilter===""}
@@ -189,19 +128,9 @@ function RegistreFiltered({inscriptionFilter,selectedYear}){
               />
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <SearchSelect
-                clickOutside="inscription-search"
-                label="année scolaire :"
-                contents={years}
-                search={yearSearch}
-                setSearch={setYearSearch}
-                debouncedSearch={yearDebouncedSearch}
-                selectedContent={selectedYear}
-                onSelectContent={setSelectedYear}
-                BadgeContent={[getLabel,getStatusfor]}
-                displayAttr='label'
-                displayPlaceholder='selectionner une année scolaire'
-              />
+              <div className='w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-600'>
+                année scolaire active : {selectedYear.label} nombre d'inscription : {inscriptions.length}
+              </div>
             </div>
           </div>
           <RenderTable
@@ -223,5 +152,8 @@ function RegistreFiltered({inscriptionFilter,selectedYear}){
 
 
 export default function Deliberation(){
-    return <div></div>
+    return <div>
+      <RegistreFiltered
+      />
+    </div>
 }

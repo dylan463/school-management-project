@@ -1,7 +1,8 @@
 import django_filters
 from structures.models import (
-    Level,Semester,SchoolYear,Enrollment,CourseModule,CourseUnit
+    Level,Semester,SchoolYear,Enrollment,CourseModule,CourseUnit,StudentSchoolYear
 )
+from django.db.models import Q
 
 class LevelFilter(django_filters.FilterSet):
     formation = django_filters.NumberFilter(
@@ -56,3 +57,12 @@ class SemesterFilter(django_filters.FilterSet):
         fields = ["level"]
     def filter_limit(self,queryset,name,value):
         return queryset[:value]
+
+class SSYFilter(django_filters.FilterSet):
+    completed = django_filters.BooleanFilter(method="filter_completed")
+    class Meta:
+        model = StudentSchoolYear
+        fields = ["formation","level","school_year","completed"]
+    def filter_completed(self,queryset,name,value):
+        query = Q(status__in=["ACTIVE"])
+        return queryset.filter(query) if (not value) else queryset.filter(~query)

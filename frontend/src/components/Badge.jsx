@@ -1,4 +1,4 @@
-export default function Badge({content = '', color = "slate", label=''}) {
+function Badge({content = '', color = "slate", label=''}) {
     if (!content) return null
 
     const colors = {
@@ -18,3 +18,4 @@ export default function Badge({content = '', color = "slate", label=''}) {
       </span>
     )
 }
+export default Badge

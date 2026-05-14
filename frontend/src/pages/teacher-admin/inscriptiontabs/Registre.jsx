@@ -5,71 +5,17 @@ import Filter from "../../../components/Filter"
 import SearchSelect from "../../../components/searchSelect"
 import structuresService from "../../../services/structuresService"
 import ResetButton from "../../../components/ResetButton"
+import {BadgeInscription,BadgeYear} from "../../BadgeService"
 
-
-function getUsername(inscription){
-  return {content:inscription.username}  
-}
-function getFullName(inscription){
-  return {content:inscription.full_name} 
-}
-function getStatus(inscription){
-  let value = inscription.status
-  let content = ""
-  let color = 'stale'
-  if (value == "ACTIVE"){
-    content='en cour'
-    color='green'
-  } else if (value == "PROMOTED") {
-    content='promus'
-    color ='yellow'
-  } else if (value == "REPEAT"){
-    content='redouble'
-    color='red'
-  } else {
-    content='exclus'
-    color='red'
-  }
-  return {content,color,label:'etat : '}
-}
-function geFormation(inscription){
-  return {content:inscription.formation,color:'blue'}
-}
-function getLevel(inscription){
-  return {content:inscription.level,color:'blue'}
-}
-function getSchoolYear(inscription){
-  return {content:inscription.school_year,color:'blue'}
-}
-
-function getLabel(year){
-  return {content:year.label}
-}
-function getStatusfor(year){
-  let value = year.status
-  let color = 'stale'
-  let content = ""
-  if(value=="UPCOMING"){
-    content = "à venir"
-    color = 'yellow'
-  }else if (value == "ACTIVE"){
-    content = "active"
-    color = 'green'
-  }else{
-    content ="clôt"
-    color = 'red'
-  }
-  return {content,color}
-}
 
 export default function Registre(){
   const [inscriptions,setInscriptions] = useState([])
   const badgeContent = [
-          getUsername,
-          getLevel,
-          geFormation,
-          getSchoolYear,
-          getStatus
+          BadgeInscription.username,
+          BadgeInscription.level,
+          BadgeInscription.formation,
+          BadgeInscription.schoolYear,
+          BadgeInscription.status
         ]
 
   const [search,setSearch] = useState("")
@@ -234,7 +180,7 @@ export default function Registre(){
                 debouncedSearch={yearDebouncedSearch}
                 selectedContent={selectedYear}
                 onSelectContent={setSelectedYear}
-                BadgeContent={[getLabel,getStatusfor]}
+                BadgeContent={[BadgeYear.label,BadgeYear.status]}
                 displayAttr='label'
                 displayPlaceholder='selectionner une année scolaire'
               />

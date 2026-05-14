@@ -49,7 +49,7 @@ from rest_framework.filters import SearchFilter
 # ─────────────────────────────────────────
 
 from .filter import (
-    LevelFilter,EnrollmentFilter,CourseModuleFilter,SchoolYearFilter,SemesterFilter
+    LevelFilter,EnrollmentFilter,CourseModuleFilter,SchoolYearFilter,SemesterFilter,SSYFilter
 )
 
 class FormationViewSet(viewsets.ModelViewSet):
@@ -349,9 +349,9 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                             ):
     serializer_class = SSYListSerializer
     permission_classes = [IsSuperUser]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["school_year","formation","level","status"]
-    search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
+    filter_backends = [SearchFilter,DjangoFilterBackend]
+    filterset_class = SSYFilter
+    search_fields = ["student__first_name","student__last_name","student__email","student__username"]
 
     def get_permissions(self):
         if self.action == 'list':

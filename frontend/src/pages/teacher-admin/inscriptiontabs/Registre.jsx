@@ -165,7 +165,7 @@ export default function Registre(){
     <div className="fade-in space-y-5">
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-slate-800">Registres</h2>
-        <p className="text-sm text-slate-500 mt-1">Gérer les inscription annuelles et les historique des étudiants</p>
+        <p className="text-sm text-slate-500 mt-1">Gérer les inscription annuelles et les historiques des étudiants</p>
       </div>
       <Card>
         <div className="flex-1 min-w-0">

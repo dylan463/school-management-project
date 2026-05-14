@@ -156,15 +156,19 @@ function RenderTable({
 
                 {badgeContent.map(
 
-                  (func,index) => (
-
-                    <div key={index}>
-
-                      {Badge(func(content))}
-
-                    </div>
-
-                  )
+                  (func,index) =>{
+                    try{
+                      return(
+                      <div key={index}>
+                        {Badge(func(content))}
+                      </div>
+                            )
+                    }catch (error) {
+                      console.log("erreur using :",func)
+                      throw error
+                    }
+                    
+                  }
 
                 )}
 
@@ -226,12 +230,13 @@ function RenderTable({
 
                           title,
 
-                          condition = true,
+                          condition = true, // par exemple si seul un superuser peur faire cette action...
 
                           onClick,
 
-                          contentcondition = () => true
-
+                          contentCondition = () => true, // par exemple  content.label == "condition"
+                          
+                          color = "blue"
                         },
 
                         index
@@ -240,7 +245,7 @@ function RenderTable({
 
                         condition &&
 
-                        contentcondition(content) && (
+                        contentCondition(content) && (
 
                           <button
 
@@ -248,13 +253,13 @@ function RenderTable({
 
                             onClick={() => {
 
-                              onClick(content)
+                              onClick(content.id)
 
                               setOpenMenuId(null)
 
                             }}
 
-                            className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50"
+                            className={`w-full text-left px-3 py-2 text-xs text-${color}-600 hover:bg-${color}-50`}
 
                           >
 

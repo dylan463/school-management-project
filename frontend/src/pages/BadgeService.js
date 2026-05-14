@@ -10,7 +10,7 @@ export const BadgeInscription = {
         let content = ""
         let color = 'slate'
         if (value == "ACTIVE"){
-            content='en cour'
+            content='en cours'
             color='green'
         } else if (value == "PROMOTED") {
             content='promus'

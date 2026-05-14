@@ -416,6 +416,18 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
 
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=["post"],detail=True)
+    def change_decision(self,request,pk=True):
+        try:
+            ssy = self.get_object()
+            decision = request.data.get("decision")
+            ssy.status = decision
+            ssy.save()
+            return Response(SSYListSerializer(ssy).data)
+        except Exception as e:
+            return Response({"error":"provide correct decision"},status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # ─────────────────────────────────────────

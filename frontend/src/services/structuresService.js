@@ -112,6 +112,9 @@ const structuresService = {
       const response = await api.delete(`/structures/student_school_years/${id}/`)
       return response.data
     },
+    changeDecision: async (id,data) => {
+      const response = await api.post(`/structures/student_school_years/${id}/change_decision/`,data)
+    },
     createStudentSchoolYear: async (student_id,school_year_id,formation_id,level_id) => {
       const data = { student_id, school_year_id, formation_id, level_id }
       const response = await api.post('/structures/student_school_years/force_create/', data)

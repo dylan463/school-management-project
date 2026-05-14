@@ -6,6 +6,7 @@ import SearchSelect from "../../../components/searchSelect"
 import structuresService from "../../../services/structuresService"
 import ResetButton from "../../../components/ResetButton"
 import {BadgeInscription,BadgeYear} from "../../BadgeService"
+import { toast } from "react-toastify"
 
 
 export default function Registre(){
@@ -103,8 +104,20 @@ export default function Registre(){
     return () => clearTimeout(timer)
   }, [yearSearch])
 
+  // actions
+  const handleDelete = async (id) => {
+    try{
+      await structuresService.studentSchoolYearsService.deleteStudentSchoolYear(id)
+    }catch(error){
+      msg = "erreur pendant la suppression de l'inscription"
+      console.log(msg," : ",error)
+      toast.error(msg)
+    }
+  }
+
 
   const actions = [
+    {title:"Supprimer",color:"red",onClick:handleDelete}
   ]
 
   return(

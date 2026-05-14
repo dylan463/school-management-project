@@ -149,13 +149,10 @@ export default function NotesColumn({ selectedExamen }) {
       if (openMenuId && !event.target.closest('.note-menu-container')) {
         setOpenMenuId(null)
       }
-      if (showSchoolYearDropdown && !event.target.closest('.school-year-search-container')) {
-        setShowSchoolYearDropdown(false)
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [openMenuId, showSchoolYearDropdown])
+  }, [openMenuId])
 
   const handleGradeSubmit = async (formData) => {
     if (actionItem){
@@ -169,7 +166,7 @@ export default function NotesColumn({ selectedExamen }) {
     }
   }
 
-  CanPerformAction = true
+  const canPerformAction = true
 
 
   const handleDeleteNote = async (actionItem) => {

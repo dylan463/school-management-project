@@ -19,10 +19,10 @@ function getStatus(inscription){
   let color = 'stale'
   if (value == "ACTIVE"){
     content='en cour'
-    color='yellow'
+    color='green'
   } else if (value == "PROMOTED") {
     content='promus'
-    color ='green'
+    color ='yellow'
   } else if (value == "REPEAT"){
     content='redouble'
     color='red'
@@ -30,7 +30,7 @@ function getStatus(inscription){
     content='exclus'
     color='red'
   }
-  return {content,color,label:'etat :'}
+  return {content,color,label:'etat : '}
 }
 function geFormation(inscription){
   return {content:inscription.formation,color:'blue'}
@@ -69,14 +69,14 @@ export default function Registre(){
           getLevel,
           geFormation,
           getSchoolYear,
-          getStatusfor
+          getStatus
         ]
 
   const [search,setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [formationFilter,setFormationFilter] = useState('')
   const [levelFilter,setLevelFilter] = useState('')
-  const [yearSelect,setYearSelect] = useState(null)
+  const [selectedYear,setSelectedYear] = useState(null)
   const [yearSearch,setYearSearch] = useState("")
   const [yearDebouncedSearch,setYearDebouncedSearch] = useState("")
 
@@ -92,7 +92,7 @@ export default function Registre(){
     if (debouncedSearch) filters.search = debouncedSearch
     if (formationFilter) filters.formation = formationFilter
     if (levelFilter) filters.level = levelFilter
-    if (yearSelect) filters.school_year = yearSelect.id
+    if (selectedYear) filters.school_year = selectedYear.id
     if (statusFilter) filters.status = statusFilter
     const response = await structuresService.studentSchoolYearsService.getStudentSchoolYears(filters)
     setInscriptions(response)
@@ -133,7 +133,7 @@ export default function Registre(){
     }
   }
   // chargement des inscriptions
-  useEffect(()=>{loadInscriptions()},[formationFilter,levelFilter,yearSelect,statusFilter,debouncedSearch])
+  useEffect(()=>{loadInscriptions()},[formationFilter,levelFilter,selectedYear,statusFilter,debouncedSearch])
   // chargement des formations
   useEffect(()=>{loadFormations()},[])
   // chargement des levels
@@ -164,7 +164,7 @@ export default function Registre(){
   return(
     <div className="fade-in space-y-5">
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-slate-800">Registre</h2>
+        <h2 className="text-2xl font-bold text-slate-800">Registres</h2>
         <p className="text-sm text-slate-500 mt-1">Gérer les inscription annuelles et les historique des étudiants</p>
       </div>
       <Card>
@@ -213,14 +213,14 @@ export default function Registre(){
                 ]}
               />
               <ResetButton
-                disabled={!search && !yearSearch && formationFilter==="" && levelFilter ==="" && yearSelect===null && statusFilter===""}
+                disabled={!search && !yearSearch && formationFilter==="" && levelFilter ==="" && selectedYear===null && statusFilter===""}
                 onReset={()=>{
                   setSearch('')
                   setYearSearch('')
                   setFormationFilter('')
                   setLevelFilter('')
                   setStatusFilter('')
-                  setYearSelect(null)
+                  setSelectedYear(null)
                 }}
               />
             </div>
@@ -232,8 +232,8 @@ export default function Registre(){
                 search={yearSearch}
                 setSearch={setYearSearch}
                 debouncedSearch={yearDebouncedSearch}
-                selectedContent={yearSelect}
-                onSelectContent={setYearSelect}
+                selectedContent={selectedYear}
+                onSelectContent={setSelectedYear}
                 BadgeContent={[getLabel,getStatusfor]}
                 displayAttr='label'
                 displayPlaceholder='selectionner une année scolaire'
@@ -251,6 +251,5 @@ export default function Registre(){
         </div>
       </Card>
     </div>
-
   )
 }

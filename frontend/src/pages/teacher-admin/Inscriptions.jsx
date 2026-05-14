@@ -1,7 +1,7 @@
 import { useState,useEffect } from 'react'
 import Deliberation from './inscriptiontabs/Deliberation'
-import Registre from './inscriptiontabs/registre'
-import Reinscription from './inscriptiontabs/reinscription'
+import Registre from './inscriptiontabs/Registre'
+import Reinscription from './inscriptiontabs/Reinscription'
 
 export default function Inscriptions() {
   const [activeTab, setActiveTab] = useState(0)

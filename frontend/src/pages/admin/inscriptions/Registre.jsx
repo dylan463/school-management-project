@@ -2,7 +2,7 @@ import { useState,useEffect } from "react"
 import RenderTable from "../../../components/renderTable"
 import Card from '../../../components/ui/Card'
 import Filter from "../../../components/Filter"
-import SearchSelect from "../../../components/searchSelect"
+import SearchSelect from "../../../components/SearchSelect"
 import structuresService from "../../../services/structuresService"
 import ResetButton from "../../../components/ResetButton"
 import {BadgeInscription,BadgeYear} from "../../BadgeService"
@@ -26,6 +26,8 @@ export default function Registre(){
   const [selectedYear,setSelectedYear] = useState(null)
   const [yearSearch,setYearSearch] = useState("")
   const [yearDebouncedSearch,setYearDebouncedSearch] = useState("")
+  const [yearSearchLoading,setYearSearchLoading] = useState(false)
+
 
   const [statusFilter,setStatusFilter] = useState('')
 
@@ -65,6 +67,7 @@ export default function Registre(){
     }
   }
   const loadYears = async () => {
+    setYearSearchLoading(true)
     try{
       const filters ={limit:yearListLimit}
       if (yearDebouncedSearch) {
@@ -77,6 +80,8 @@ export default function Registre(){
     }catch (error){
       console.error("erreur du chargement des année scolaire :",error)
       setYears([])
+    }finally {
+      setYearSearchLoading(false)
     }
   }
   // chargement des inscriptions
@@ -146,7 +151,7 @@ export default function Registre(){
               <Filter
                 defaultValue={formationFilter}
                 onChange={setFormationFilter}
-                label="formation :"
+                label="formation"
                 otherOptions={[{value:'',label:'Tous'}]}
                 options={formations}
                 optionAttr='code'
@@ -154,7 +159,7 @@ export default function Registre(){
               <Filter
                 defaultValue={levelFilter}
                 onChange={setLevelFilter}
-                label="level :"
+                label="niveau"
                 otherOptions={[{value:'',label:'Tous'}]}
                 options={levels}
                 optionAttr='code'
@@ -186,16 +191,17 @@ export default function Registre(){
             <div className="flex items-center gap-2 mt-2">
               <SearchSelect
                 clickOutside="inscription-search"
-                label="année scolaire :"
+                label="année scolaire"
                 contents={years}
                 search={yearSearch}
                 setSearch={setYearSearch}
                 debouncedSearch={yearDebouncedSearch}
+                searchLoading={yearSearchLoading}
                 selectedContent={selectedYear}
                 onSelectContent={setSelectedYear}
                 BadgeContent={[BadgeYear.label,BadgeYear.status]}
                 displayAttr='label'
-                displayPlaceholder='selectionner une année scolaire'
+                displayPlaceholder='non selectionnée'
               />
             </div>
           </div>

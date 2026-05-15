@@ -1,12 +1,14 @@
-import { useState,useEffect } from 'react'
-import Deliberation from './inscriptiontabs/Deliberation'
-import Registre from './inscriptiontabs/Registre'
-import Reinscription from './inscriptiontabs/Reinscription'
+import { useState, useEffect } from 'react'
+import AnneeScolaireTab from './structureAcademiques/AnneeScolaireTab'
+import FormationTab from './structureAcademiques/FormationTab'
+import NiveauTab from './structureAcademiques/NiveauTab'
+import SemestreTab from './structureAcademiques/SemestreTab'
 
-export default function Inscriptions() {
+
+export default function StructuresAcademiques() {
   const [activeTab, setActiveTab] = useState(0)
 
-  const TABS = ['registre', 'délibération', 'réinscription']
+  const TABS = ['année scolaire', 'Formation', 'Niveau', 'Semestre']
 
   useEffect(() => {
     handleChangeTab(activeTab)
@@ -16,10 +18,16 @@ export default function Inscriptions() {
     setActiveTab(newTab)
     switch (newTab) {
       case 0:
+        // fetch années scolaires
         break
       case 1:
+        // fetch formations
         break
       case 2:
+        // fetch niveaux
+        break
+      case 3:
+        // fetch semestres
         break
       default:
         break
@@ -29,11 +37,13 @@ export default function Inscriptions() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 0:
-        return <Registre/>
+        return <AnneeScolaireTab />
       case 1:
-        return <Deliberation />
+        return <FormationTab />
       case 2:
-        return <Reinscription />
+        return <NiveauTab />
+      case 3:
+        return <SemestreTab />
       default:
         return <div>Contenu par défaut</div>
     }

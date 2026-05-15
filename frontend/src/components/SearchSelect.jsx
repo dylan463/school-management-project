@@ -7,22 +7,24 @@ export default function SearchSelect({
     contents = [],
     search = '',
     setSearch = (value)=>{},
+    searchLoading=false,
     debouncedSearch,
     selectedContent = null,
     onSelectContent = (content) => {},
     BadgeContent = [],
     displayAttr,
     displayPlaceholder,
+    noDisplay = false,
 }){
     const [showDropDown,setShowDropDown] = useState(false)
 
     useEffect(() => {
-        if (debouncedSearch){
+        if (debouncedSearch && !searchLoading){
             setShowDropDown(true)
         }else{
             setShowDropDown(false)
         }  
-    },[debouncedSearch])
+    },[debouncedSearch,searchLoading])
 
 
     useEffect(() => {
@@ -39,8 +41,8 @@ export default function SearchSelect({
     const displayId = useId()
 
     return (
-    <div className="flex items-center gap-2 mt-2">
-        <label htmlFor={fiedId} className="text-xs font-medium text-slate-600">{label}</label>
+    <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {label && <label htmlFor={fiedId} className="text-xs font-medium text-slate-600">{label}</label>}
         <div className={`relative ${clickOutside}-container flex-1`}>
         <input
             type="text"
@@ -53,7 +55,7 @@ export default function SearchSelect({
         />
         
         {/* Dropdown des résultats */}
-        { showDropDown && (
+        { !searchLoading && showDropDown && (
             <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {contents.length > 0 ? contents.map((content) => (
                 <button
@@ -80,7 +82,7 @@ export default function SearchSelect({
         </div>
         
         {/* Selected school year display */}
-        <div className="flex-1">
+        {!noDisplay && <div className="flex-1">
         <input
             type="text"
             name={displayId}
@@ -90,7 +92,7 @@ export default function SearchSelect({
             placeholder={displayPlaceholder}
             className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-600"
         />
-        </div>
+        </div>}
     </div>
     )
 }

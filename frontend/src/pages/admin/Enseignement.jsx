@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import Card from '../../components/ui/Card'
-import UEColumn from './enseignementcolumns/UEColumn'
-import CoursColumn from './enseignementcolumns/CoursColumn'
-import ExamensColumn from './enseignementcolumns/ExamensColumn'
-import NotesColumn from './enseignementcolumns/NotesColumn'
-import ResultsColumn from './enseignementcolumns/ResultsColumn'
+import UEColumn from './enseignements/UEColumn'
+import CoursColumn from './enseignements/CoursColumn'
+import ExamensColumn from './enseignements/ExamensColumn'
+import NotesColumn from './enseignements/NotesColumn'
+import ResultsColumn from './enseignements/ResultsColumn'
 
 // Composant pour les breadcrumbs
 function Breadcrumbs({ selectedUE, selectedCours, selectedExamen, onClearAll }) {

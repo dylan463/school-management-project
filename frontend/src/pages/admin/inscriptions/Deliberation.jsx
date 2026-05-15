@@ -18,14 +18,8 @@ const inscr = {
 
 }
 
-function getStatus(inscription){
-  const status = inscription.status
-  let content = status == "ACTIVE"? "non délibéré" : status == "PROMOTED" ? "promus" :status == "REPEAT"? "redouble": "exclus"
-  let color = status == "ACTIVE"? "yellow" : status == "PROMOTED" ? "green" : "red"
-  return {content,color}
-}
 
-function RegistreFiltered({
+function RegistreDélibérations({
   inscriptionFilter,
   statusOptions = [],
   selectedYear,
@@ -40,7 +34,7 @@ function RegistreFiltered({
           BadgeInscription.username,
           BadgeInscription.level,
           BadgeInscription.formation,
-          getStatus
+          BadgeInscription.status
         ]
 
   const [search,setSearch] = useState("")
@@ -102,7 +96,7 @@ function RegistreFiltered({
 
 
   return(
-  <Card>
+  <Card className='min-w-[600px]'>
     <div className="flex-1 min-w-0">
       <div className="p-4 border-b border-slate-200 bg-slate-50">
         <div className="flex justify-between items-start mb-2">
@@ -118,7 +112,7 @@ function RegistreFiltered({
           className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
         />
         {/* filtrage */}
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Filter
             defaultValue={formationFilter}
             onChange={setFormationFilter}
@@ -240,7 +234,8 @@ export default function Deliberation(){
     <h2 className="text-2xl font-bold text-slate-800">Déliberation</h2>
     <p className="text-sm text-slate-500 mt-1">Prendre une décision pendant une année scolaire active</p>
   </div>
-  <RegistreFiltered 
+  <div className='flex gap-4 flex-wrap'>
+  <RegistreDélibérations 
   inscriptionFilter={incompleteFilter}
   noActiveMsg={noActiveMsg}
   selectedYear={activeYear}
@@ -249,7 +244,7 @@ export default function Deliberation(){
   actions={incompleteAcitons}
   manyStatus={false}
   />
-  <RegistreFiltered 
+  <RegistreDélibérations
   inscriptionFilter={completeFilter}
   statusOptions={completeStatusOptions}
   title='Etudiants délibéré'
@@ -257,6 +252,7 @@ export default function Deliberation(){
   selectedYear={activeYear}
   actions={completeAcitons}
   />
+  </div>
 </div>
   )
 }

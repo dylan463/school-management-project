@@ -320,10 +320,13 @@ class StudentCreateSerializer(UserCreateSerializer):
 
 class StudentSearchSerializer(serializers.ModelSerializer):
     active_ssy = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
-        fields = ["id","last_name","first_name","email","username","active_ssy"]
+        fields = ["id","full_name","email","username","active_ssy"]
     def get_active_ssy(self,obj):
         if obj.prefeched_active_ssy:
-            return obj.prefeched_active_ssy[0]
+            return obj.prefeched_active_ssy.first()
         return None
+    def get_full_name(self,obj):
+        return f"{obj.first_name} {obj.last_name}"

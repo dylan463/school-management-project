@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'ui-sans-serif', 'system-ui'], // Poppins devient la police par défaut
-        dm: ['DM Sans', 'sans-serif'],                   // DM Sans reste disponible en option
+        sans: ['Poppins', 'ui-sans-serif', 'system-ui'],
+        dm: ['DM Sans', 'sans-serif'],
       },
       colors: {
         navy: {

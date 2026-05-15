@@ -23,12 +23,12 @@ import MesEtudiants        from '../pages/enseignant/MesEtudiants'
 import MesAnnotations      from '../pages/enseignant/MesAnnotations'
 
 // === TEACHER ADMIN ===
-import DashboardTeacherAdmin from '../pages/teacher-admin/DashboardTeacherAdmin'
-import Etudiants            from '../pages/teacher-admin/Etudiants'
-import Enseignants          from '../pages/teacher-admin/Enseignants'
-import StructuresAcademiques from '../pages/teacher-admin/StructuresAcademiques'
-import Enseignement          from '../pages/teacher-admin/Enseignement'
-import Inscriptions          from '../pages/teacher-admin/Inscriptions'
+import DashboardTeacherAdmin from '../pages/admin/DashboardTeacherAdmin'
+import Etudiants            from '../pages/admin/Etudiants'
+import Enseignants          from '../pages/admin/Enseignants'
+import StructuresAcademiques from '../pages/admin/StructuresAcademiques'
+import Enseignement          from '../pages/admin/Enseignement'
+import Inscriptions          from '../pages/admin/Inscriptions'
 
 export default function AppRouter() {
   return (

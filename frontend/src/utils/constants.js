@@ -19,22 +19,22 @@ export const ROUTES = {
 
   // Étudiant
   DASHBOARD_ETU:         '/dashboard-etudiant',
-  INSCRIPTIONS_ETU:      '/dashboard-etudiant/inscriptions',
-  MES_COURS_ETU:         '/dashboard-etudiant/mes-cours',
-  EMPLOI_DU_TEMPS_ETU:   '/dashboard-etudiant/emploi-du-temps',
+  INSCRIPTIONS_ETU:      '/inscriptions',
+  MES_COURS_ETU:         '/mes-cours',
+  EMPLOI_DU_TEMPS_ETU:   '/emploi-du-temps',
 
   // Enseignant
   DASHBOARD_ENS:         '/dashboard-enseignant',
-  MES_ETUDIANTS:         '/dashboard-enseignant/mes-etudiants',
-  MES_ANNOTATIONS:       '/dashboard-enseignant/mes-annotations',
+  MES_ETUDIANTS:         '/mes-etudiants',
+  MES_ANNOTATIONS:       '/mes-annotations',
 
   // Teacher Admin
   DASHBOARD_ADMIN:       '/admin',
-  ETUDIANTS_ADMIN:       '/admin/etudiants',
-  ENSEIGNANTS_ADMIN:     '/admin/enseignants',
-  STRUCTURES_ADMIN:      '/admin/structures',
-  ENSEIGNEMENT_ADMIN:    '/admin/enseignement',
-  INSCRIPTIONS_ADMIN:    '/admin/inscriptions',
+  ETUDIANTS_ADMIN:       '/etudiants',
+  ENSEIGNANTS_ADMIN:     '/enseignants',
+  STRUCTURES_ADMIN:      '/structures',
+  ENSEIGNEMENT_ADMIN:    '/enseignement',
+  INSCRIPTIONS_ADMIN:    '/inscriptions-admin',
   NOTIFICATIONS:         '/notifications',
 }
 

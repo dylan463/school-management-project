@@ -6,23 +6,10 @@ export const BadgeInscription = {
         return {content:ins.full_name}
     },
     status: (ins) => {
-        let value = ins.status
-        let content = ""
-        let color = 'slate'
-        if (value == "ACTIVE"){
-            content='en cours'
-            color='green'
-        } else if (value == "PROMOTED") {
-            content='promus'
-            color='yellow'
-        } else if (value == "REPEAT"){
-            content='redouble'
-            color='red'
-        } else {
-            content='exclus'
-            color='red'
-        }
-        return {content,color,label:'etat : '}
+    const status = ins.status
+    let content = status == "ACTIVE"? "non délibéré" : status == "PROMOTED" ? "promus" :status == "REPEAT"? "redouble": "exclus"
+    let color = status == "ACTIVE"? "yellow" : status == "PROMOTED" ? "green" : "red"
+    return {content,color}
     },
     formation: (ins) => {
         const formation = ins.formation
@@ -61,5 +48,14 @@ export const BadgeYear = {
         return {content,color}
     }
 }
-
-export default {BadgeInscription,BadgeYear}
+export const BadgeUser = {
+    fullname: (user) => {
+        return {content:user.full_name}
+    },
+    username: (user) => {
+        return {content:user.username}
+    },
+    email: (user) => {
+        return {content:user.email}
+    }
+}

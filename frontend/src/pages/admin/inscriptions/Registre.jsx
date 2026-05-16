@@ -89,7 +89,7 @@ export default function Registre(){
   // chargement des formations
   useEffect(()=>{loadFormations()},[])
   // chargement des levels
-  useEffect(()=>{loadLevel()},[formationFilter])
+  useEffect(()=>{loadLevel();setLevelFilter('')},[formationFilter])
   // chargement des years
   useEffect(()=>{
     loadYears()
@@ -110,11 +110,12 @@ export default function Registre(){
   }, [yearSearch])
 
   // actions
-  const handleDelete = async (id) => {
+  const handleDelete = async (ins) => {
     try{
-      await structuresService.studentSchoolYearsService.deleteStudentSchoolYear(id)
+      await structuresService.studentSchoolYearsService.deleteStudentSchoolYear(ins.id)
+      loadInscriptions()
     }catch(error){
-      msg = "erreur pendant la suppression de l'inscription"
+      const msg = "erreur pendant la suppression de l'inscription"
       console.log(msg," : ",error)
       toast.error(msg)
     }
@@ -149,24 +150,24 @@ export default function Registre(){
             {/* filtrage */}
             <div className="flex items-center gap-2 mt-2">
               <Filter
-                defaultValue={formationFilter}
-                onChange={setFormationFilter}
+                value={formationFilter}
+                onChange={(e) => setFormationFilter(e.target.value)}
                 label="formation"
                 otherOptions={[{value:'',label:'Tous'}]}
                 options={formations}
                 optionAttr='code'
               />
               <Filter
-                defaultValue={levelFilter}
-                onChange={setLevelFilter}
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value)}
                 label="niveau"
                 otherOptions={[{value:'',label:'Tous'}]}
                 options={levels}
                 optionAttr='code'
               />
               <Filter
-                defaultValue={statusFilter}
-                onChange={setStatusFilter}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
                 label="status"
                 otherOptions={[
                   {value:'',label:'Tous'},

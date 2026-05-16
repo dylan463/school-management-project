@@ -409,7 +409,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
                 student=student,
                 level=level,
                 formation=formation,
-                new_school_year=school_year
+                school_year=school_year
             )
             response_serializer = SSYListSerializer(student_school_year)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -684,11 +684,10 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
         """
         pour faire le recherche des étudiant pour les inscriptions
         """
-        queryset = self.get_queryset()
         search = request.query_params.get("search")
         limit = request.query_params.get("limit")
         if search:
-            queryset = queryset.filter(
+            queryset = StudentUser.objects.filter(
                 Q(username__icontains=search) |
                 Q(first_name__icontains=search) |
                 Q(last_name__icontains=search) |
@@ -696,7 +695,7 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
                 is_active=True
             ).prefetch_related(
                 Prefetch(
-                    "student_school_year",
+                    "school_years",
                     queryset=StudentSchoolYear.objects.filter(status="ACTIVE"),
                     to_attr="prefeched_active_ssy"
                 )

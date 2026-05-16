@@ -60,9 +60,10 @@ class SemesterFilter(django_filters.FilterSet):
 
 class SSYFilter(django_filters.FilterSet):
     completed = django_filters.BooleanFilter(method="filter_completed")
+
     class Meta:
         model = StudentSchoolYear
-        fields = ["formation","level","school_year","completed"]
+        fields = ["formation","level","school_year","completed","student"]
     def filter_completed(self,queryset,name,value):
         query = Q(status__in=["ACTIVE"])
         return queryset.filter(query) if (not value) else queryset.filter(~query)

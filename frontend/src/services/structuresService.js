@@ -115,8 +115,7 @@ const structuresService = {
     changeDecision: async (id,data) => {
       const response = await api.post(`/structures/student_school_years/${id}/change_decision/`,data)
     },
-    createStudentSchoolYear: async (student_id,school_year_id,formation_id,level_id) => {
-      const data = { student_id, school_year_id, formation_id, level_id }
+    createStudentSchoolYear: async (data) => {
       const response = await api.post('/structures/student_school_years/force_create/', data)
       return response.data
     },

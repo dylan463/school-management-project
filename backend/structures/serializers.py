@@ -325,8 +325,11 @@ class StudentSearchSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ["id","full_name","email","username","active_ssy"]
     def get_active_ssy(self,obj):
-        if obj.prefeched_active_ssy:
-            return obj.prefeched_active_ssy.first()
+        try:
+            if obj.prefeched_active_ssy:
+                return obj.prefeched_active_ssy[0].status
+        except:
+            return None
         return None
     def get_full_name(self,obj):
         return f"{obj.first_name} {obj.last_name}"

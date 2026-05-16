@@ -25,6 +25,11 @@ const etudiantService = {
   mySchedules: async function () {
     const response = await api.get('/timetable/student/my_schedules/');
     return response.data;
+  },
+  search: async function (filters = {}){
+    const params = new URLSearchParams(filters);
+    const r = await api.get(`/structures/students/search_student/?${params.toString()}`)
+    return r.data
   }
 };
 export default etudiantService

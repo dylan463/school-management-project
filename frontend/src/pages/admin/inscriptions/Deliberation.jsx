@@ -85,7 +85,7 @@ function RegistreDélibérations({
   // chargement des formations
   useEffect(()=>{loadFormations()},[])
   // chargement des levels
-  useEffect(()=>{loadLevel()},[formationFilter])
+  useEffect(()=>{loadLevel();setLevelFilter('')},[formationFilter])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -114,16 +114,16 @@ function RegistreDélibérations({
         {/* filtrage */}
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Filter
-            defaultValue={formationFilter}
-            onChange={setFormationFilter}
+            value={formationFilter}
+            onChange={(e) => setFormationFilter(e.target.value)}
             label="formation :"
             otherOptions={[{value:'',label:'Tous'}]}
             options={formations}
             optionAttr='code'
           />
           <Filter
-            defaultValue={levelFilter}
-            onChange={setLevelFilter}
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
             label="level :"
             otherOptions={[{value:'',label:'Tous'}]}
             options={levels}
@@ -131,7 +131,7 @@ function RegistreDélibérations({
           />
           {manyStatus && <Filter
             defaultValue={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
             label="status"
             otherOptions={statusOptions}
           />}
@@ -195,23 +195,23 @@ export default function Deliberation(){
       toast.error(msg)
     }    
   }
-  const handlePromote = async (id) => {
-    await structuresService.studentSchoolYearsService.changeDecision(id,{decision:"PROMOTED"})
+  const handlePromote = async (ins) => {
+    await structuresService.studentSchoolYearsService.changeDecision(ins.id,{decision:"PROMOTED"})
     loadActiveYear()
   }
 
-  const handleExclud = async (id) => {
-    await structuresService.studentSchoolYearsService.changeDecision(id,{decision:"EXCLUDED"})
+  const handleExclud = async (ins) => {
+    await structuresService.studentSchoolYearsService.changeDecision(ins.id,{decision:"EXCLUDED"})
     loadActiveYear()
   }
 
-  const handleRepeat = async (id) => {
-    await structuresService.studentSchoolYearsService.changeDecision(id,{decision:"REPEAT"})
+  const handleRepeat = async (ins) => {
+    await structuresService.studentSchoolYearsService.changeDecision(ins.id,{decision:"REPEAT"})
     loadActiveYear()
   }
 
-  const handleActivate = async (id) => {
-    await structuresService.studentSchoolYearsService.changeDecision(id,{decision:"ACTIVE"})
+  const handleActivate = async (ins) => {
+    await structuresService.studentSchoolYearsService.changeDecision(ins.id,{decision:"ACTIVE"})
     loadActiveYear()
   }
 

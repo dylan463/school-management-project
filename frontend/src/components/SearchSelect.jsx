@@ -59,6 +59,7 @@ export default function SearchSelect({
             <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {contents.length > 0 ? contents.map((content) => (
                 <button
+                type="button"
                 key={content.id}
                 onClick={() => {onSelectContent(content);setSearch('')}}
                 className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-b-0"

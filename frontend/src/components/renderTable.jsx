@@ -18,8 +18,6 @@ function RenderTable({
 
   badgeContent = [],
 
-  canPerformActions = true,
-
   clickoutside='content',
 
   actions = [],
@@ -31,7 +29,14 @@ function RenderTable({
   onSelectedItem = () => {}
 
 }) {
+  // actions [] = [{title,color,onClick,contentCondition,condition}]
+  // title = string
+  // color = string
+  // onClick = (content) => void
+  // contentCondition = (content) => boolean
+  // condition = boolean
 
+  // badgeContent = [function(content) => {content: string | number, color: string, label: string}]
 
 
   const [openMenuId, setOpenMenuId] = useState(null)
@@ -79,45 +84,26 @@ function RenderTable({
 
 
       {!renderCondition ? (
-
         <p className="text-xs text-slate-500">
-
           {renderFailText}
-
         </p>
-
-
-
       ) : contents.length === 0 ? (
-
         <p className="text-xs text-slate-500">
-
           {noContentText}
-
         </p>
-
-
-
       ) : (
-
-        contents.map((content) => (
-
+        contents.map((content) => {
+          const contentConditions = actions.map(ac => {
+            return !!ac.contentCondition ? ac.contentCondition(content) : true && ac.condition ? ac.condition : true
+          })
+          return (
           <div
-
             key={content.id}
-
             className={`relative ${clickoutside}-menu-container`}
-
           >
-
-
-
             <div
-
               onClick={() => onSelectedItem(content)}
-
               className={
-
                 hasSelection
 
                   ? `w-full text-left px-3 py-2 rounded-lg text-xs transition-colors mb-1 ${
@@ -135,9 +121,6 @@ function RenderTable({
               }
 
             >
-
-
-
               <div className="flex items-center gap-2 flex-wrap">
 
 
@@ -177,10 +160,7 @@ function RenderTable({
               </div>
 
             </div>
-
-
-
-            {canPerformActions && (
+            {contentConditions.includes(true) && (
 
               <>
 
@@ -230,11 +210,7 @@ function RenderTable({
 
                           title,
 
-                          condition = true, // par exemple si seul un superuser peur faire cette action...
-
                           onClick,
-
-                          contentCondition = () => true, // par exemple  content.label == "condition"
                           
                           color = "blue"
                         },
@@ -242,10 +218,7 @@ function RenderTable({
                         index
 
                       ) =>
-
-                        condition &&
-
-                        contentCondition(content) && (
+                        contentConditions[index] && (
 
                           <button
 
@@ -253,7 +226,7 @@ function RenderTable({
 
                             onClick={() => {
 
-                              onClick(content.id)
+                              onClick(content)
 
                               setOpenMenuId(null)
 
@@ -281,11 +254,11 @@ function RenderTable({
 
             )}
 
-          </div>
-
+          </div>)
+        }
         ))
 
-      )}
+      }
 
     </div>
 

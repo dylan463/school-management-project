@@ -1,21 +1,24 @@
 import {useId} from "react"
 export default function Filter({
     defaultValue,
+    value,
     label = '',
     onChange,
     options = [],
     optionAttr = '',
-    otherOptions = []}
+    otherOptions = [],
+  }
 ){
   const SelectId = useId()
+  const selectValue = value !== undefined ? value : defaultValue
   return  (
   <div className="flex items-center gap-2">
     <label htmlFor={SelectId} className="text-xs font-medium text-slate-600">{label}</label>
     <select
       id={SelectId}
       name={SelectId}
-      value={defaultValue}
-      onChange={(e) => onChange(e.target.value)}
+      value={selectValue}
+      onChange={(e) => onChange(e)}
       className="px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
     >
       {otherOptions.map((op,index)=>(

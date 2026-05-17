@@ -60,10 +60,16 @@ class SemesterFilter(django_filters.FilterSet):
 
 class SSYFilter(django_filters.FilterSet):
     completed = django_filters.BooleanFilter(method="filter_completed")
+    not_in_year = django_filters.NumberFilter(method="filter_not_in_year")
+    school_year = django_filters.NumberFilter(field_name="school_year__id")
 
     class Meta:
         model = StudentSchoolYear
-        fields = ["formation","level","school_year","completed","student"]
+        fields = ["formation","level","status","completed","student"]
     def filter_completed(self,queryset,name,value):
         query = Q(status__in=["ACTIVE"])
         return queryset.filter(query) if (not value) else queryset.filter(~query)
+    def filter_not_in_year(self,queryset,name,value):
+        # inscription that dont have a student who have a ssy in this year
+        return queryset.exclude(student__school_years__school_year=value)
+    

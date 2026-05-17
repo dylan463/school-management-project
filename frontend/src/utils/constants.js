@@ -19,23 +19,19 @@ export const ROUTES = {
 
   // Étudiant
   DASHBOARD_ETU:         '/dashboard-etudiant',
-  INSCRIPTIONS_ETU:      '/inscriptions',
-  MES_COURS_ETU:         '/mes-cours',
-  EMPLOI_DU_TEMPS_ETU:   '/emploi-du-temps',
+  EMPLOI_DU_TEMPS:   '/emploi-du-temps',
 
   // Enseignant
   DASHBOARD_ENS:         '/dashboard-enseignant',
-  MES_ETUDIANTS:         '/mes-etudiants',
-  MES_ANNOTATIONS:       '/mes-annotations',
 
   // Teacher Admin
-  DASHBOARD_ADMIN:       '/admin',
+  DASHBOARD_ADMIN:       '/dashboard-admin',
   ETUDIANTS_ADMIN:       '/etudiants',
   ENSEIGNANTS_ADMIN:     '/enseignants',
   STRUCTURES_ADMIN:      '/structures',
-  ENSEIGNEMENT_ADMIN:    '/enseignement',
-  INSCRIPTIONS_ADMIN:    '/inscriptions-admin',
-  NOTIFICATIONS:         '/notifications',
+  ENSEIGNEMENT:    '/enseignement',
+  INSCRIPTIONS:    '/inscriptions',
+  INFORMATIONS:    '/informations',
 }
 
 export const PILL_COLORS = {

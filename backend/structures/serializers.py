@@ -140,10 +140,11 @@ class SSYListSerializer(serializers.ModelSerializer):
     formation = serializers.SerializerMethodField()
     level = serializers.SerializerMethodField()
     school_year = serializers.SerializerMethodField()
+    final_year = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentSchoolYear
-        fields = ['id','full_name','status','username','formation','level','school_year']
+        fields = ['id','full_name','student','status','final_year','username','formation','level','school_year']
     
     def get_full_name(self,obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
@@ -159,7 +160,13 @@ class SSYListSerializer(serializers.ModelSerializer):
     
     def get_school_year(self,obj):
         return obj.school_year.label
-        
+    
+    def get_final_year(self,obj):
+        last_formation_level = obj.formation.formation_levels.select_related('level').order_by('-level__order').first()
+        if last_formation_level:
+            return obj.level.order == last_formation_level.level.order
+        return False
+
 # ─────────────────────────────────────────
 # INSCRIPTION PAR SEMESTRE
 # ─────────────────────────────────────────

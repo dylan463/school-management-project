@@ -370,7 +370,7 @@ class StudentSchoolYearViewSet( viewsets.GenericViewSet,
             queryset =  StudentSchoolYear.objects.all()
         return queryset.select_related('student', 'school_year', 'formation', 'level')
 
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=['post'])
     def promote_repeat(self, request):
         """Réinscription automatique (promotion/redoublement)"""
         serializer = PromoteRepeatSerializer(data=request.data)
@@ -585,6 +585,8 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return StudentCreateSerializer
+        if self.action == "retrieve":
+            return StudentSearchSerializer
         return UserSerializer
 
     def create(self, request, *args, **kwargs):
@@ -703,6 +705,15 @@ class StudentPortalViewSet(viewsets.ModelViewSet):
             serializer = StudentSearchSerializer(queryset,many=True)
             return Response(serializer.data)
         return Response([])
+    def retrieve(self,request,*args,**kwargs):
+        student = CustomUser.objects.prefetch_related(
+                Prefetch(
+                    "school_years",
+                    queryset=StudentSchoolYear.objects.filter(status="ACTIVE"),
+                    to_attr="prefeched_active_ssy"
+                )
+            ).get(pk=self.kwargs.get("pk"))
+        return Response(StudentSearchSerializer(student).data)
 
 
 

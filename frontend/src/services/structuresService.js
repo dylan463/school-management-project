@@ -1,13 +1,13 @@
 import api from './api'
 
 const structuresService = {
-  levelService:{
-    getLevels:async (filters={})=>{
+  levelService: {
+    getLevels: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/levels/?${params.toString()}`)
       return response.data
     },
-    createLevel: async (code) =>{
+    createLevel: async (code) => {
       const response = await api.post('/structures/levels/', { code })
       return response.data
     },
@@ -20,8 +20,8 @@ const structuresService = {
       return response.data
     }
   },
-  FormationService:{
-    getFormations: async (filters={}) => {
+  FormationService: {
+    getFormations: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/formations/?${params.toString()}`)
       return response.data
@@ -43,9 +43,9 @@ const structuresService = {
       return response.data
     }
   },
-  SemesterService:{
-    getSemesters: async (filters={}) => {
-      const params = new URLSearchParams(filters)     
+  SemesterService: {
+    getSemesters: async (filters = {}) => {
+      const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/semesters/?${params.toString()}`)
       return response.data
     },
@@ -54,7 +54,7 @@ const structuresService = {
       return response.data
     }
   },
-  schoolYearsService:{
+  schoolYearsService: {
     getSchoolYears: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/school_years/?${params.toString()}`)
@@ -64,9 +64,9 @@ const structuresService = {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/school_years/search/?${params.toString()}`)
       return response.data
-    },  
-    createSchoolYear:async (data) => {
-        const response = await api.post('/structures/school_years/', data)
+    },
+    createSchoolYear: async (data) => {
+      const response = await api.post('/structures/school_years/', data)
       return response.data
     },
     retrieveSchoolYear: async (id) => {
@@ -102,8 +102,8 @@ const structuresService = {
       return response.data
     }
   },
-  studentSchoolYearsService:{
-    getStudentSchoolYears: async (filters={}) =>{
+  studentSchoolYearsService: {
+    getStudentSchoolYears: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/student_school_years/?${params.toString()}`)
       return response.data
@@ -112,28 +112,28 @@ const structuresService = {
       const response = await api.delete(`/structures/student_school_years/${id}/`)
       return response.data
     },
-    changeDecision: async (id,data) => {
-      const response = await api.post(`/structures/student_school_years/${id}/change_decision/`,data)
+    changeDecision: async (id, data) => {
+      const response = await api.post(`/structures/student_school_years/${id}/change_decision/`, data)
     },
     createStudentSchoolYear: async (data) => {
       const response = await api.post('/structures/student_school_years/force_create/', data)
       return response.data
     },
     promoteStudentSchoolYear: async (student_id, school_year_id) => {
-      const data = { student_id, school_year_id }
-      const response = await api.post('/structures/student_school_years/promote/', data)
+      const data = { student_id, new_school_year_id: school_year_id }
+      const response = await api.post('/structures/student_school_years/promote_repeat/', data)
       return response.data
     }
   },
-  EnrollmentService:{
-    getEnrollments: async (filters={}) => {
+  EnrollmentService: {
+    getEnrollments: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/enrollments/?${params.toString()}`)
       return response.data
     }
   },
-  courseUnitService:{
-    getCourseUnits: async (filters={}) => {
+  courseUnitService: {
+    getCourseUnits: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/course_units/?${params.toString()}`)
       return response.data
@@ -159,8 +159,8 @@ const structuresService = {
       return response.data
     }
   },
-  courseModuleService:{
-    getCourseModules: async (filters={}) => {
+  courseModuleService: {
+    getCourseModules: async (filters = {}) => {
       const params = new URLSearchParams(filters)
       const response = await api.get(`/structures/course_modules/?${params.toString()}`)
       return response.data
@@ -169,7 +169,7 @@ const structuresService = {
       const response = await api.post('/structures/course_modules/', data)
       return response.data
     },
-    updateCourseModule: async (id,data) => {
+    updateCourseModule: async (id, data) => {
       const response = await api.patch(`/structures/course_modules/${id}/`, data)
       return response.data
     },

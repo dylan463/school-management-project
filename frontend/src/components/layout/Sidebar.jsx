@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { ROUTES, ROLES } from '../../utils/constants'
+import { useAuth } from '../../context/AuthContext'
 
 /* ── Icon components ── */
 const Icon = ({ d }) => (
@@ -21,28 +21,25 @@ const LogoutIcon  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 16 1
 
 /* ── Nav items per role ── */
 const ETU_NAV = [
-  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,         iconComponent: DashIcon,  section: 'Principal' },
-  { label: 'Mes inscriptions', to: ROUTES.INSCRIPTIONS_ETU,      iconComponent: FileIcon,  section: 'Académique' },
-  { label: 'Mes cours',        to: ROUTES.MES_COURS_ETU,         iconComponent: FileIcon,  section: null },
-  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS_ETU,   iconComponent: CalIcon,   section: null },
-  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,  section: 'Système', badge: 3 },
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,         iconComponent: DashIcon},
+  { label: 'enseignements',        to: ROUTES.ENSEIGNEMENT,         iconComponent: FileIcon},
+  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
 ]
 
 const ENS_NAV = [
-  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,        iconComponent: DashIcon,   section: 'Principal' },
-  { label: 'Mes étudiants',    to: ROUTES.MES_ETUDIANTS,        iconComponent: UsersIcon,  section: 'Pédagogie' },
-  { label: 'Mes annotations',  to: ROUTES.MES_ANNOTATIONS,      iconComponent: NoteIcon,   section: null },
-  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,   section: 'Système', badge: 1 },
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,         iconComponent: DashIcon},
+  { label: 'enseignements',        to: ROUTES.ENSEIGNEMENT,         iconComponent: FileIcon},
+  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
 ]
 
 const ADMIN_NAV = [
-  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ADMIN,      iconComponent: DashIcon,   section: 'Principal' },
-  { label: 'Étudiants',        to: ROUTES.ETUDIANTS_ADMIN,      iconComponent: UsersIcon,  section: 'Gestion' },
-  { label: 'Enseignants',      to: ROUTES.ENSEIGNANTS_ADMIN,    iconComponent: UsersIcon,  section: null },
-  { label: 'Structures',       to: ROUTES.STRUCTURES_ADMIN,     iconComponent: FileIcon,   section: null },
-  { label: 'Enseignement',     to: ROUTES.ENSEIGNEMENT_ADMIN,   iconComponent: NoteIcon,   section: null },
-  { label: 'Inscriptions',     to: ROUTES.INSCRIPTIONS_ADMIN,   iconComponent: FileIcon,   section: null },
-  { label: 'Notifications',    to: ROUTES.NOTIFICATIONS,         iconComponent: BellIcon,   section: 'Système', badge: 0 },
+  { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ADMIN,      iconComponent: DashIcon},
+  { label: 'Étudiants',        to: ROUTES.ETUDIANTS_ADMIN,      iconComponent: UsersIcon},
+  { label: 'Enseignants',      to: ROUTES.ENSEIGNANTS_ADMIN,    iconComponent: UsersIcon},
+  { label: 'Structures',       to: ROUTES.STRUCTURES_ADMIN,     iconComponent: FileIcon},
+  { label: 'Enseignement',     to: ROUTES.ENSEIGNEMENT,   iconComponent: NoteIcon},
+  { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
+  { label: 'Inscriptions',     to: ROUTES.INSCRIPTIONS,   iconComponent: FileIcon},
 ]
 
 
@@ -77,60 +74,42 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
 }
 
 /* ── Main Sidebar ── */
-export default function Sidebar({ role }) {
-  const { logout, user } = useAuth()
-  
-  let nav = ETU_NAV
-  let title = 'Espace étudiant'
-  if (role === ROLES.ENSEIGNANT) {
-    nav = ENS_NAV
-    title = 'Espace enseignant'
-  } else if (role === ROLES.TEACHER_ADMIN) {
-    nav = ADMIN_NAV
-    title = 'Gestion système'
-  }
+export default function Sidebar({ }) {
+  const {user,role,logout} = useAuth()
+  const title = "Plateform de gestion"
+  let roleValue = role
 
-  // Group items by section
-  const sections = []
-  let current = null
-  nav.forEach(item => {
-    if (item.section !== null) {
-      current = { label: item.section, items: [item] }
-      sections.push(current)
-    } else if (current) {
-      current.items.push(item)
-    }
-  })
+  let Nav;
+  if (roleValue == "STUDENT"){
+    Nav = ETU_NAV;
+  }else if (roleValue == "TEACHER"){
+    Nav = ENS_NAV;
+  }else{
+    Nav = ADMIN_NAV;
+  }
 
   return (
     <aside className="w-52 bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col flex-shrink-0 min-h-screen shadow-lg">
-      {/* Header */}
       <div className="px-4 py-6 border-b border-white/[0.1]">
         <h1 className="text-lg font-bold text-white">{title}</h1>
       </div>
-
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
-        {sections.map(sec => (
-          <div key={sec.label}>
-            {sec.items.map(item => (
-              <SidebarItem key={item.to} {...item} />
-            ))}
-          </div>
+        {Nav.map(item => (
+          <SidebarItem key={item.to} {...item} />
         ))}
       </nav>
 
       {/* Footer / logout */}
       <div className="p-3 border-t border-white/[0.1]">
         <div className="flex items-center gap-2 px-1 mb-2">
-          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-semibold text-white">
-            {user?.prenom?.[0]}{user?.nom?.[0]}
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+          </div>
+          <div className='text-[10px] font-semibold text-white'>
+            {user ? `${user.first_name} ${user.last_name}`: "Non authentifiée"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-white truncate">
-              {user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}
-            </p>
-            <p className="text-[10px] text-blue-200 truncate">{user?.matricule}</p>
+            {user && <p className="text-[10px] text-blue-200 truncate">{user?.username}</p>}
           </div>
         </div>
         <button

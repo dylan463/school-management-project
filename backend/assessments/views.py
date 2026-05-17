@@ -1,8 +1,8 @@
 from rest_framework import viewsets
 
 from .models import Assessment, Grade
-from .serializers import AssessmentSerializer, GradeSerializer
-from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter
+from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer
+from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
 
 from users.permissions import (
     IsStudent,
@@ -16,7 +16,7 @@ from users.utils import (
     is_user_student,
     is_user_superuser
 )
-from structures.models import CourseModule,SchoolYear
+from structures.models import CourseModule,SchoolYear,Enrollment
 from .queryset import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -26,7 +26,7 @@ from .services import update_results as update_all_result
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from structures.queryset import get_teacher_enrollment_queryset
+from structures.queryset import get_teacher_enrollment_queryset,get_student_enrollment_queryset
 from .query import attend_to_assessment,people_with_course_debt
 
 class AssessmentViewSet(viewsets.ModelViewSet):
@@ -168,3 +168,23 @@ class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
         except Exception as e:
             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
+class BulletinViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
+    queryset = Enrollment.objects.all()
+    serializer_class = BulletinSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = BulletinFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        if is_user_student(user):
+            return get_student_enrollment_queryset(user)
+        elif is_user_teacher(user):
+            return get_teacher_enrollment_queryset(user)
+        else:
+            return Enrollment.objects.all()
+    
+    def get_permissions(self):
+        if self.action == "list":
+            return [IsAuthenticated()]
+        else:
+            return [IsSuperUserOrTeacher()]

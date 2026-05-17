@@ -75,15 +75,16 @@ def promote_or_repeat_for_new_school_years(
     if last_ssy.status == StudentSchoolYear.Status.PROMOTED:
         next_order = last_ssy.level.order + 1
 
-        new_level = FormationLevel.objects.filter(
+        formation_level = FormationLevel.objects.filter(
             formation=last_ssy.formation,
             level__order=next_order
         ).first()
 
-        if not new_level:
+        if not formation_level:
             raise ValidationError(
                 f"Aucun niveau supérieur après {last_ssy.level.code}."
             )
+        new_level = formation_level.level
     elif last_ssy.status == StudentSchoolYear.Status.REPEAT:
         new_level = last_ssy.level
     else:

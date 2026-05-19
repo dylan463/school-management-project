@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
-export default function Modal({ isOpen, onClose, children }) {
+export default function Modal({ isOpen, onClose, children ,noX = false}) {
   // Fermer avec la touche ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -33,12 +33,12 @@ export default function Modal({ isOpen, onClose, children }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Bouton fermer */}
-        <button
+        {!noX && <button
           className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl"
           onClick={onClose}
         >
           ✕
-        </button>
+        </button>}
 
         {/* Contenu du modal */}
         <div className="pr-6">

@@ -13,7 +13,7 @@ import AppLayout      from '../components/layout/AppLayout'
 
 // === ÉTUDIANT ===
 import DashboardEtudiant   from '../pages/etudiant/DashboardEtudiant'
-import EmploiDuTemps       from '../pages/etudiant/EmploiDuTemps'
+import EmploiDuTemps       from '../pages/commun/EmploiDuTemps'
 
 // === ENSEIGNANT ===
 import DashboardEnseignant from '../pages/enseignant/DashboardEnseignant'
@@ -36,20 +36,20 @@ export default function AppRouter() {
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.INFORMATIONS} element={<InfoPerso />} />
           <Route path={ROUTES.ENSEIGNEMENT}   element={<Enseignement />} />
+          <Route path={ROUTES.EMPLOI_DU_TEMPS}   element={<EmploiDuTemps />} />
+          <Route path={ROUTES.INSCRIPTIONS}   element={<Inscriptions />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["STUDENT"]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.DASHBOARD_ETU}         element={<DashboardEtudiant />} />
-          <Route path={ROUTES.EMPLOI_DU_TEMPS}   element={<EmploiDuTemps />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["TEACHER"]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.DASHBOARD_ENS}        element={<DashboardEnseignant />} />
-          <Route path={ROUTES.EMPLOI_DU_TEMPS}   element={<EmploiDuTemps />} />
         </Route>
       </Route>
 
@@ -60,7 +60,6 @@ export default function AppRouter() {
           <Route path={ROUTES.ETUDIANTS_ADMIN}      element={<Etudiants />} />
           <Route path={ROUTES.ENSEIGNANTS_ADMIN}    element={<Enseignants />} />
           <Route path={ROUTES.STRUCTURES_ADMIN}     element={<StructuresAcademiques />} />
-          <Route path={ROUTES.INSCRIPTIONS}   element={<Inscriptions />} />
         </Route>
       </Route>
 

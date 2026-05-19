@@ -61,7 +61,7 @@ export default function DashboardTeacherAdmin() {
     },
   ]
 
-  return (
+  return ( 
     <div className="fade-in space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-slate-800">Gestion du Système</h2>

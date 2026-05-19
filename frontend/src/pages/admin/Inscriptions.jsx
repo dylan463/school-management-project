@@ -2,8 +2,12 @@ import { useState,useEffect } from 'react'
 import Deliberation from './inscriptions/Deliberation'
 import Registre from './inscriptions/Registre'
 import Reinscription from './inscriptions/Reinscription'
+import { useAuth } from '../../context/AuthContext'
+import Modal from '../../components/Modal'
+import Maintenance from '../../components/Maintenance'
 
 export default function Inscriptions() {
+  const {role} = useAuth()
   const [activeTab, setActiveTab] = useState(0)
 
   const TABS = ['registre', 'délibération', 'réinscription']
@@ -39,7 +43,7 @@ export default function Inscriptions() {
     }
   }
 
-  return (
+  return ( role != "SUPERUSER"? Maintenance() :
     <div className="fade-in space-y-5">
        {/* Onglets */}
       <div className="flex flex-wrap gap-2 mb-6">

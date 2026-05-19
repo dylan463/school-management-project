@@ -5,6 +5,7 @@ import enseignantService from '../../services/teacherService'
 import { storage }   from '../../utils/storage'
 import Card           from '../../components/ui/Card'
 import TeacherProfileModal from '../../components/ui/TeacherProfileModal'
+import Maintenance from '../../components/Maintenance'
 
 export default function DashboardEnseignant() {
   const { user, setUser } = useAuth()
@@ -116,7 +117,7 @@ export default function DashboardEnseignant() {
     }
   }
 
-  return (
+  return ( true? Maintenance() :
     <div className="fade-in space-y-5">
       {/* Welcome */}
       <div className="mb-1 flex flex-col gap-3">

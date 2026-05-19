@@ -505,14 +505,14 @@ export default function Enseignement() {
       }
       loadExamens()
       toast.success(examen.is_published ? 'dépublié' : 'publié')
-    } catch (error){ console.error(error.response.data.error) }
+    } catch (error){ toast.error(error.response.data.error)}
   }
 
   // notes handlers
   const handleGradeSubmit = async (formData) => {
     try {
       if (noteActionItem?.grade) {
-        await assessmentsService.gradeService.updateGrade(noteActionItem.grade.id, formData.score)
+        await assessmentsService.gradeService.updateGrade(noteActionItem.grade.id, {score:formData.score})
       } else {
         await assessmentsService.gradeService.createGrade(formData)
       }

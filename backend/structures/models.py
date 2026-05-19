@@ -59,7 +59,6 @@ class Semester(models.Model):
 # ANNÉE SCOLAIRE
 # ─────────────────────────────────────────
 class SchoolYear(models.Model):
-    """Année scolaire : 2024-2025, 2025-2026..."""
     class Status(models.TextChoices):
         UPCOMING = "UPCOMING", "Upcoming"       # pas encore commencée
         ACTIVE = "ACTIVE", "Active"             # en cours

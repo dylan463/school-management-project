@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
 
 from .models import Assessment, Grade
 from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer,EnrollmentResultSerializer
@@ -59,7 +60,6 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             response_serializer = AssessmentSerializer(create_assessment(data))
             return Response(response_serializer.data,status=status.HTTP_201_CREATED)
         except Exception as e:
-            print(e)
             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
     
@@ -69,8 +69,8 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         try:
             publish_assessment_result(assessment)
             return Response({"detail": "Assessment published successfully"},status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            return Response({"error": str(e.detail[0])},status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True,methods=["post"])
     def unpublish(self,request,pk=None):
@@ -78,8 +78,8 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         try:
             unpublish_assessment_result(assessment)
             return Response({"detail": "Assessment unpublished successfully"},status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            return Response({"error": str(e.detail[0])},status=status.HTTP_400_BAD_REQUEST)
         
     @action(detail=True,methods=["get"])
     def attendant_student(self,request,pk):

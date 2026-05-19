@@ -69,14 +69,9 @@ def update_results(course_module):
                 defaults={"final_score": score, "status": status}
             )
             if not created:
-                if session == "RETAKE":
-                    result.final_score = max(result.final_score, score)
-                    result.status = status  # statut RETAKE prioritaire
-                    result.save()
-                elif result.final_score < score:
-                    result.final_score = score
-                    result.status = status
-                    result.save()
+                result.final_score = score
+                result.status = status
+                result.save()
 
     has_published_assessments = Assessment.objects.filter(
         course_module=course_module, school_year=school_year, is_published=True
@@ -92,7 +87,7 @@ def update_results(course_module):
         ).delete()
 
         debt_attendants = Enrollment.objects.filter(
-            people_with_course_debt(course_module, school_year)
+            people_with_course_debt(course_module)
         ).prefetch_related(
             Prefetch("debts", queryset=Debt.objects.filter(course_module=course_module))
         ).prefetch_related(
@@ -115,7 +110,7 @@ def update_results(course_module):
 def publish_assessment_result(assessment : Assessment):
     if assessment.session == "RETAKE":
         published_normal_session = Assessment.objects.filter(course_module=assessment.course_module, school_year=assessment.school_year, session="NORMAL", is_published=True)
-        if published_normal_session.exists():
+        if not published_normal_session.exists():
             raise ValidationError("La session normale doit être publiée avant la session de rattrapage")
     else:
         published_retake_session = Assessment.objects.filter(course_module=assessment.course_module, school_year=assessment.school_year, session="RETAKE", is_published=True)

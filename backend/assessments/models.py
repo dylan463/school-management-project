@@ -42,7 +42,7 @@ class Assessment(models.Model):
     # pendant un semestre l'etudiant peut avoir plusieurs examens et le grade_weight définit la proportion de la note de cet examen dans le résultat final
     grade_weight = models.PositiveIntegerField(
         default=1,
-        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
     )
     date = models.DateField(default=date.today)
 

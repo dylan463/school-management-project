@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 
 from .models import Assessment, Grade
-from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer
+from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer,EnrollmentResultSerializer
 from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
 
 from users.permissions import (
@@ -53,12 +53,13 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         serializer = AssessmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data.copy()
         try:
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data.copy()
             response_serializer = AssessmentSerializer(create_assessment(data))
             return Response(response_serializer.data,status=status.HTTP_201_CREATED)
         except Exception as e:
+            print(e)
             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
     
@@ -103,12 +104,12 @@ class AssessmentViewSet(viewsets.ModelViewSet):
 
         if not has_grade is None:
             query = Q(grades__assessment=assessment)
-            query = query if has_grade else ~query
+            query = query if has_grade == 'true' else ~query
             attendant = attendant.filter(query)
         
         if not has_debt is None:
             query = people_with_course_debt(assessment.course_module)
-            query = query if has_debt else ~query
+            query = query if has_debt  == 'true' else ~query
             attendant = attendant.filter(query)
 
         data = get_attendant_data(attendant,assessment)
@@ -129,7 +130,7 @@ class GradeViewSet(viewsets.ModelViewSet):
         elif is_user_teacher(user):
             return get_teacher_grade_queryset(user)
         else:
-            return Assessment.objects.all()
+            return Grade.objects.all()
     
     def get_permissions(self):
         if self.action == "list":
@@ -142,6 +143,7 @@ class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
     queryset = EnrollmentResult.objects.all()
     filter_backends = [DjangoFilterBackend,SearchFilter]
     filterset_class = EnrollmentResultFilter
+    serializer_class = EnrollmentResultSerializer
     search_fields = ["enrollment__student_school_year__student__first_name","enrollment__student_school_year__student__last_name"]
 
     def get_queryset(self):
@@ -151,7 +153,7 @@ class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
         elif is_user_teacher(user):
             return get_teacher_result_queryset(user)
         else:
-            return Assessment.objects.all()
+            return EnrollmentResult.objects.all()
     
     def get_permissions(self):
         if self.action == "list":
@@ -162,7 +164,7 @@ class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
     @action(methods=["post"],detail=False)
     def publish(self,request):
         try:
-            course_module = CourseModule.objects.get(request.data.get("course_module"))
+            course_module = CourseModule.objects.get(id=request.data.get("course_module"))
             update_all_result(course_module)
             return Response({"detail":"result updated"},status=status.HTTP_200_OK)
         except Exception as e:

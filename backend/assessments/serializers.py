@@ -93,7 +93,7 @@ class BulletinSerializer(serializers.ModelSerializer):
                 "course_unit": result.course_module.course_unit.label,
                 "course_module": result.course_module.label,
                 "score": result.final_score,
-                "credit": result.course_module.credit,
+                "credit": result.course_module.credits,
                 "status": result.status
             })
         return response_result
@@ -138,5 +138,15 @@ class GradeGridSerializer(serializers.Serializer):
         return response_result
 
 
+class EnrollmentResultSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    course_credit = serializers.CharField(source="course_module.credits")
+    semester = serializers.CharField(source='course_module.course_unit.semester.code')
+    formation = serializers.CharField(source='course_module.course_unit.formation.code')
     
-    
+    class Meta:
+        model=EnrollmentResult
+        fields = ['full_name','final_score','status','course_credit','semester','formation']
+    def get_full_name(self,obj):
+        student = obj.enrollment.student_school_year.student
+        return f'{student.first_name} {student.last_name}'

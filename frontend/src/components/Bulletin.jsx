@@ -6,14 +6,13 @@ const buldMatrix = (results) => {
     let totalScore = 0;
     let totalCredit = 0;
     results.forEach((result) => {
-        const course_unit = result.course_module.course_unit.label;
-        const course_module = result.course_module.label;
-        const score = result.final_score;
-        const credit = result.course_module.credit;
+        const course_unit = result.course_unit;
+        const course_module = result.course_module;
+        const score = result.score;
+        const credit = result.credit;
         const status = result.status;
         if (!map[course_unit]) {
             map[course_unit] = {};
-            coursUnits.push(course_unit);
         }
         map[course_unit][course_module] = { score, credit, status };
         let unit = coursUnits.find((unit) => unit.label === course_unit);
@@ -34,7 +33,7 @@ const buldMatrix = (results) => {
 export default function Bulletin({ results, formation, level, school_year, semester, student }) {
     const { coursUnits, map, totalScore, totalCredit, average } = useMemo(() => buldMatrix(results), [results]);
     return (
-        <div className="mt-5 w-[210mm] h-[297mm] border-2 border-black border-solid overflow-auto">
+        <div className="mt-5 border-2 border-black border-solid">
             <div className="flex flex-col justify-between w-full h-full px-20 py-20">
                 <div>
                     <p>Formation: {formation}</p>
@@ -52,6 +51,8 @@ export default function Bulletin({ results, formation, level, school_year, semes
                                     <tr>
                                         <th className="border border-black px-2 py-1 bg-gray-100" colSpan={8}>{unit.label}</th>
                                     </tr>
+                                </thead>
+                                <tbody>
                                     <tr>
                                         <th className="border border-black px-2 py-1 bg-gray-50">Elements Constitutifs</th>
                                         <th className="border border-black px-2 py-1 bg-gray-50">crédit</th>
@@ -62,14 +63,12 @@ export default function Bulletin({ results, formation, level, school_year, semes
                                         <th className="border border-black px-2 py-1 bg-gray-50" rowSpan={1 + unit.modules.length}>moyenne : {(unit.total_credit ? unit.total_score / unit.total_credit : 0).toFixed(2)}</th>
                                         <th className="border border-black px-2 py-1 bg-gray-50" rowSpan={1 + unit.modules.length}>{unit.validated ? "Validé" : "Non validé"}</th>
                                     </tr>
-                                </thead>
-                                <tbody>
                                     {
                                         unit.modules.map((module) => (
                                             <tr key={module}>
                                                 <td className="border border-black px-2 py-1">{module}</td>
                                                 <td className="border border-black px-2 py-1">{map[unit.label][module].credit}</td>
-                                                <td className="border border-black px-2 py-1">{map[unit.label][module].score}</td>
+                                                <td className="border border-black px-2 py-1">{`${map[unit.label][module].score}`}</td>
                                                 <td className="border border-black px-2 py-1">{map[unit.label][module].score * map[unit.label][module].credit}</td>
                                             </tr>
                                         ))

@@ -207,7 +207,6 @@ class CourseModuleCreateSerializer(serializers.ModelSerializer):
             "is_active": {"required": False},
             "teacher":{"required":False}
         }
-    
 
     
 class CourseUnitSerializer(serializers.ModelSerializer):
@@ -218,6 +217,9 @@ class CourseUnitSerializer(serializers.ModelSerializer):
         model = CourseUnit
         fields = ["id","code","label","formation","semester","is_active","created_at","total_credits"]
         read_only_fields = ["id","created_at"]
+        extra_kwargs = {
+            "is_active":{"required":False}
+        }
     def get_total_credits(self,obj):
         return sum([ credit for credit in obj.modules.filter(is_active=True).values_list('credits', flat=True)])
 

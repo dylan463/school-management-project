@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
 
 import Badge from "./badge"
-
+export function CreateAction(title, color, onClick = (content) => { }, contentCondition = (content) => { return true }, condition = true) {
+  return { title, color, onClick, contentCondition, condition }
+}
 
 
 function RenderTable({

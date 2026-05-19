@@ -12,20 +12,34 @@ from .serializers import AttendantSerializer
 @transaction.atomic
 def create_assessment(data: dict):
     session = data.get("session")
-    course_module = CourseModule.objects.get(data.get("cours_module"))
-    school_year = SchoolYear.objects.get(data.get("school_year"))
+
+    course_module = CourseModule.objects.get(
+        id=data.get("course_module").id
+    )
+
+    school_year = SchoolYear.objects.get(
+        id=data.get("school_year").id
+    )
 
     if session == "RETAKE":
-        if not Assessment.objects.filter(session="NORMAL",course_module=course_module,school_year=school_year,is_published=True):
-            raise ValidationError("veillez publier une session normal avant d'entamer un rattrappage")
-        
+        if not Assessment.objects.filter(
+            session="NORMAL",
+            course_module=course_module,
+            school_year=school_year,
+            is_published=True
+        ).exists():
+
+            raise ValidationError(
+                "veillez publier une session normal avant d'entamer un rattrappage"
+            )
+
     return Assessment.objects.create(**data)
 
 
 def compute_weighted_score(grades):
     weighted = [(g.score, g.assessment.grade_weight) for g in grades]
     total_weight = sum(w for _, w in weighted)
-    return sum(s * w for s, w in weighted) / total_weight, weighted
+    return sum(s * w for s, w in weighted) / total_weight
 
 @transaction.atomic
 def update_results(course_module):

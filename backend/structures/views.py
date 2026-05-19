@@ -1,12 +1,13 @@
 # Django
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Prefetch, Q
+from django.db.models.deletion import ProtectedError
 
 # Django REST Framework
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from assessments.models import Assessment
 
 from .models import (
     Level, Formation, Semester, CourseUnit, CourseModule,
@@ -318,8 +319,26 @@ class SchoolYearViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def perform_destroy(self, instance):
-        if instance.is_locked:
-            raise ValidationError("vous ne pouvez pas supprimer une année scolaire bloquée")
+        try:
+            if instance.is_locked:
+                raise ValidationError("vous ne pouvez pas supprimer une année scolaire bloquée")
+        except ProtectedError as e:
+            protected_object = list(e.protected_objects)[0]
+            if isinstance(protected_object, Assessment):
+                msg = "il y a encore des examens dans cette année scolaire"
+            if isinstance(protected_object, StudentSchoolYear):
+                msg = "il y a encore des inscriptions dans cette année scolaire"
+            return Response(
+                {
+                    "error": f"{msg}",
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+        except ValidationError as e:
+            return Response(
+                {"error":"débloquez l'année avant de supprimer"},
+                status = status.HTTP_400_BAD_REQUEST
+            )
 
         return super().perform_destroy(instance)
     
@@ -522,6 +541,17 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
             queryset = CourseUnit.objects.all()
         return queryset.select_related("semester","formation").prefetch_related("modules")
     
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError as e:
+            return Response(
+                {
+                    "error": "il y a encore des examen dans cette unité d'enseignement",
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
     @action(methods=["post"],detail=True)
     def toggle_active(self, request, pk=None):
         """Bascule l'activation d'une unité d'enseignement"""
@@ -538,6 +568,8 @@ class CourseUnitViewSet(viewsets.ModelViewSet):
             "data": serializer.data,
             "message": f"Unité d'enseignement {'activée' if new_status else 'désactivée'} avec succès. {updated_count} modules mis à jour."
         })
+
+
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
     queryset = CourseModule.objects.all()
@@ -568,6 +600,37 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
             return get_teacher_course_module_queryset(user)
         else:
             return CourseModule.objects.all()
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        return super().create(request, *args, **kwargs)
+
+    @action(methods=["post"],detail=True)
+    def toggle_active(self, request, pk=None):
+        """Bascule l'activation d'une unité d'enseignement"""
+        course_module = self.get_object()
+        new_status = not course_module.is_active
+        course_module.is_active = new_status
+        course_module.save()
+        serializer = self.get_serializer(course_module)
+        return Response(serializer.data)
+    
+    def destroy(self,request,*args,**kwargs):
+        try:
+            return super().destroy(request,*args,**kwargs)
+        except ProtectedError as e:
+            return Response(
+                {
+                    "error": "Il y a encore des examen dans ce cours",
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+        
+    def update(self, request, *args, **kwargs):
+        print(request.data)
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
 # ─────────────────────────────────────────
 # PORTAIL ÉTUDIANT

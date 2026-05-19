@@ -64,3 +64,88 @@ export const BadgeUser = {
         return { content: user.email }
     }
 }
+export const BadgeUE = {
+    label: (ue) => {
+        return { content: ue.label, color: 'stale' }
+    },
+    code: (ue) => {
+        return { content: ue.code, color: 'yellow' }
+    },
+    formation: (ue) => {
+        const formation = ue.formation
+        return { content: formation.code, color: 'blue' }
+    },
+    semester: (ue) => {
+        const semester = ue.semester
+        return { content: semester.code, color: 'blue' }
+    },
+    status: (ue) => {
+        return { content: ue.is_active ? "active" : "inactif", color: ue.is_active ? "green" : "red" }
+    }
+}
+export const BadgeCour = {
+    code: (cour) => {
+        return { content: cour.code }
+    },
+    hours: (cour) => {
+        return { content: cour.volume_hours ? `${cour.volume_hours} h` : '', color: "green" }
+    },
+    credits: (cour) => {
+        return { content: `${cour.credits} cdts`, color: "blue" }
+    },
+    teacher: (cour) => {
+        return { content: cour.teacher ? `enseignant : ${cour.teacher.first_name} ${cour.teacher.last_name}` : '', color: "green" }
+    },
+    status: (cour) => {
+        return { content: cour.is_active ? "actif" : "inactif", color: "green" }
+    },
+}
+export const BadgeExamen = {
+    type: (examen) => {
+        const map = { EXAM: 'Examen', QUIZ: 'Quiz', TP: 'TP', ORAL: 'Oral' }
+        return { content: map[examen.type] || examen.type }
+    },
+    date: (examen) => {
+        return { content: examen.date ? new Date(examen.date).toLocaleDateString('fr-FR') : '', color: 'blue' }
+    },
+    session: (examen) => {
+        return { content: examen.session === 'RETAKE' ? 'Rattrapage' : 'Normale', color: examen.session === 'RETAKE' ? 'red' : 'green' }
+    },
+    weight: (examen) => {
+        return { content: examen.grade_weight ? `poids : ${examen.grade_weight}` : '', color: 'purple' }
+    },
+    published: (examen) => {
+        return { content: examen.is_published ? 'publié' : 'non publié', color: examen.is_published ? 'green' : 'red' }
+    },
+}
+export const BadgeNote = {
+    username: (note) => {
+        return { content: note.username || '' }
+    },
+    grade: (note) => {
+        return { content: note.grade ? `note : ${note.grade.score}` : 'sans note', color: note.grade ? 'blue' : 'red' }
+    },
+    debt: (note) => {
+        return { content: note.debt_year ? `dette : ${note.debt_year}` : '', color: 'orange' }
+    },
+}
+export const BadgeResultat = {
+    full_name: (resultat)=> {
+        return {content:resultat.full_name}
+    },
+    final_score: (resultat)=> {
+        return {content:`note final : ${resultat.final_score}`,color:'blue'}
+    },
+    status: (resultat)=> {
+        return {content:resultat.status}
+    },
+    course_credit: (resultat)=> {
+        return {content:resultat.course_credit,color:'yellow'}
+    },
+    semester: (resultat)=> {
+        return {content:resultat.semester,color:'blue'}
+    },
+    formation: (resultat)=> {
+        return {content:resultat.formation,color:'blue'}
+    }
+}

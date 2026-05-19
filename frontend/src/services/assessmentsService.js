@@ -4,11 +4,11 @@ const assessmentsService = {
   assessmentService: {
     getAssessments: async (filters = {}) => {
       const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/?${params.toString()}`)
+      const response = await api.get(`/assessments/assessments/?${params.toString()}`)
       return response.data
     },
     createAssessment: async (data) => {
-      const response = await api.post('/assessments/', data)
+      const response = await api.post('/assessments/assessments/', data)
       return response.data
     },
     updateAssessment: async (id, data) => {
@@ -59,7 +59,7 @@ const assessmentsService = {
       return response.data
     },
     publish: async (data) => {
-      const response = await api.post(`/assessments/results/pubish/`, data)
+      const response = await api.post(`/assessments/results/publish/`, data)
     }
   },
   bulletinService: {

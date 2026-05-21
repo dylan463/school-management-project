@@ -62,6 +62,11 @@ def update_results(course_module):
 
     def process_session(session, validated_status):
         for enrollment, grades in group_by_enrollment(get_grades(session)).items():
+            # if session == "RETAKE":
+            #     if EnrollmentResult.objects.filter(enrollment=enrollment,status = "VALIDATED").exists():
+            #         for grade in grades:
+            #             grade.delete()
+            #     continue
             score = round(compute_weighted_score(grades), 2)
             status = validated_status if score >= course_module.min_val_score else 'NOT_VALIDATED'
             result, created = EnrollmentResult.objects.get_or_create(

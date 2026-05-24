@@ -1,74 +1,33 @@
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class CustomUserManager(BaseUserManager):
-    def create_user(self, username, email=None, password=None, **extra_fields):
-        if not username:
-            raise ValueError("Le username est requis")
-        email = self.normalize_email(email)
-        user = self.model(username=username, email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
+class Mention(models.Model):
+    text = models.CharField(max_length=40)
+    code = models.CharField(max_length=20)
 
-    def create_superuser(self, username, email=None, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("role", CustomUser.Role.SUPERUSER)
+class Role(models.TextChoices):
+    SYSTEM_ADMIN        = 'system_admin',       'System Admin'
+    DEPARTMENT_HEAD     = 'department_head',    'Department Head'
+    DEPARTMENT_SECRETARY = 'department_secretary', 'Department Secretary'
+    REGISTRAR_OFFICER   = 'registrar_officer',  'Registrar Officer'
+    TEACHER             = 'teacher',            'Teacher'
+    STUDENT             = 'student',            'Student'
 
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser doit avoir is_staff=True")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser doit avoir is_superuser=True")
-
-        return self.create_user(username, email, password, **extra_fields)
-
-
-class CustomUser(AbstractUser):
-    class Role(models.TextChoices):
-        STUDENT = 'STUDENT', 'Étudiant'
-        TEACHER = 'TEACHER', 'Professeur'
-        SUPERUSER = 'SUPERUSER', 'Superutilisateur'
-
-    class Status(models.TextChoices):
-        PASSANT = 'PASSANT', 'Passant'
-        REDOUBLANT = 'REDOUBLANT', 'Redoublant'
-
+class User(AbstractUser):
     role = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=Role.choices,
         default=Role.STUDENT,
     )
-    
-    objects = CustomUserManager()
-
+    mention = models.ForeignKey(Mention,on_delete=models.PROTECT,blank=True,null=True)
     def save(self, *args, **kwargs):
-        # # Un étudiant ne peut JAMAIS être admin ou staff
-        if not (self.role == self.Role.SUPERUSER):
+        if not (self.role == Role.SYSTEM_ADMIN):
             self.is_staff = False
             self.is_superuser = False
         super().save(*args, **kwargs)
 
-    
-
-class StudentManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(role=CustomUser.Role.STUDENT)
-
-class TeacherManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(role=CustomUser.Role.TEACHER)
-
-class StudentUser(CustomUser):
-    objects = StudentManager()
-    class Meta:
-        proxy = True
-
-class TeacherUser(CustomUser):
-    objects = TeacherManager()
-    class Meta:
-        proxy = True
 
 class MatriculeCounter(models.Model):
     role = models.CharField(max_length=20, unique=True)
+    mention = models.ForeignKey(Mention,on_delete=models.CASCADE)
     last_number = models.IntegerField(default=0)

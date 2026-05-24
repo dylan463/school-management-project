@@ -1,85 +1,56 @@
-# serializers.py
 from rest_framework import serializers
-from .models import CustomUser
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .utils import generate_matricule,generate_password
+from .models import User,Role,Mention
 
 #  serializer pour afficher les infos d'un utilisateur
 class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""
+    full_name = serializers.CharField(source ="get_full_name",read_only=True)
     class Meta:
-        model = CustomUser
-        fields = ['id', 'username', 'email',"is_active", 'first_name', 'last_name','role','is_superuser']
-        read_only_fields = ['id','role', 'is_superuser']
-    
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get("request")
+        model = User
+        fields = ['id',
+                  'username',
+                  'email',
+                  "is_active",
+                  'first_name', 
+                  'last_name',
+                  'full_name'
+                  'role',
+                  'mention']
+        read_only_fields = ['id','role','mention','is_active']
 
-        if not request:
-            data.pop("is_superuser", None)
-            return data
 
-        user = request.user
-        # seulement superuser peuvent voir
-        if not user.role == CustomUser.Role.SUPERUSER:
-            data.pop("is_superuser", None)
-
-        return data
+class MentionSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = Mention
+        fields = ["id","text","code"]
+        
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(choices=CustomUser.Role.choices) # on ne peut pas créer un superuser via cette endpoint, il faut le faire via la ligne de commande
-
     class Meta:
-        model = CustomUser
-        fields = ['first_name','last_name','email', 'role']
+        model = User
+        fields = ['last_name','first_name','email','role','mention']
         extra_kwargs = {
-            'email': {'required': True},
-            'first_name': {'required': False},
-            'last_name': {'required': False}
+            "first_name":{"required":False},
+            "last_name":{"required":False},
         }
-
-
     def validate_email(self, value):
-        if CustomUser.objects.filter(email=value).exists():
+        if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("cet email est déjà utilisé")
         return value
     
     def validate_role(self, value):
-        if value == CustomUser.Role.SUPERUSER:
-            raise serializers.ValidationError("veuillez utiliser la ligne de commande pour créer un superuser")
+        creator : User = self.context.get("user")
+        if value == Role.SYSTEM_ADMIN:
+            raise serializers.ValidationError("veillez utiliser le terminal du serveur pour cree un administrateur du système")
+        if creator.role == Role.SYSTEM_ADMIN:
+            if not value == Role.DEPARTMENT_HEAD:
+                raise serializers.ValidationError("vous ne pouver que créer des chefs de départements")
+        elif creator.role == Role.DEPARTMENT_HEAD:
+            if value in [Role.SYSTEM_ADMIN,Role.DEPARTMENT_HEAD]:
+                raise serializers.ValidationError("vous n'avez pas la permission nécessaire")
         return value
-        
-# serializer pour le JWT
-class CustomTokenSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token["role"] = user.role
-        return token
 
-# serializer pour changer le mot de passe
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-    new_password2 = serializers.CharField(required=True)
-
-    # avant de sauvegarder, vérifier que les deux nouveaux mots de passe sont identiques
-    def validate(self, attrs):
-        if attrs["new_password"] != attrs["new_password2"]:
-            raise serializers.ValidationError({
-                "new_password": "Les mots de passe ne correspondent pas"
-            })
-        return attrs
-
-class ChangeForgetSerializer(serializers.Serializer):
-    new_password = serializers.CharField(required=True)
-    new_password2 = serializers.CharField(required=True)
-
-    # avant de sauvegarder, vérifier que les deux nouveaux mots de passe sont identiques
-    def validate(self, attrs):
-        if attrs["new_password"] != attrs["new_password2"]:
-            raise serializers.ValidationError({
-                "new_password": "Les mots de passe ne correspondent pas"
-            })
-        return attrs
+    def validate_mention(self,value):
+        creator : User = self.context.get('user')
+        if not creator.role == Role.SYSTEM_ADMIN and not creator.mention.id == value.id:
+            raise serializers.ValidationError("vous ne pouver pas cree un utilisateur avec une mention différente de la votre")

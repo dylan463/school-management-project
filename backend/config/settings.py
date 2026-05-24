@@ -49,11 +49,7 @@ INSTALLED_APPS = [
     'django_filters',
     # application interne
     'users',
-    'structures',
-    'timetable',
-    'notif',
-    'announcements',
-    'assessments',
+    'users_auth',
     'rest_framework_simplejwt.token_blacklist',
 ]
 
@@ -137,6 +133,8 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 SIMPLE_JWT = {
@@ -148,7 +146,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'users.User'
 
 EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
 EMAIL_FILE_PATH = BASE_DIR / "sent_emails"

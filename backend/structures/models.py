@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils import timezone
-from users.models import TeacherUser, StudentUser
 from django.db.models import Q
 
 
@@ -119,7 +118,7 @@ class StudentSchoolYear(models.Model):
         REPEAT = 'REPEAT', 'Redoublant'
         EXCLUDED = 'EXCLUDED', 'Exclu'
 
-    student = models.ForeignKey(StudentUser, on_delete=models.CASCADE, related_name='school_years')
+    student = models.ForeignKey('users.Users', on_delete=models.CASCADE, related_name='school_years')
     school_year = models.ForeignKey(SchoolYear, on_delete=models.PROTECT, related_name='student_school_years')
     formation = models.ForeignKey(Formation, on_delete=models.PROTECT, related_name='student_school_years')
     level = models.ForeignKey(Level, on_delete=models.PROTECT, related_name='student_school_years')
@@ -234,7 +233,7 @@ class CourseModule(models.Model):
 
     # enseignant responsable (optionnel à la création)
     teacher = models.ForeignKey(
-        TeacherUser,
+        'users.User',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='course_modules'

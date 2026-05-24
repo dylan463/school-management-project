@@ -1,33 +1,78 @@
 # permissions.py
 from rest_framework.permissions import BasePermission
-from .models import CustomUser
+from .models import Role
 
-class IsTeacher(BasePermission):
+
+class IsAuthenticatedAndRole(BasePermission):
+    """
+    Permission de base pour vérifier auth + rôle.
+    """
+    allowed_roles = []
+
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == CustomUser.Role.TEACHER
+        return (
+            request.user.is_authenticated and
+            request.user.role in self.allowed_roles
+        )
 
-class IsStudent(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == CustomUser.Role.STUDENT
 
-class IsSuperUser(BasePermission):
-    def has_permission(self,request,view):
-        return request.user.is_authenticated and request.user.role == CustomUser.Role.SUPERUSER
+# --------- Rôles simples ---------
 
-class IsSuperUserOrTeacher(BasePermission):
-    def has_permission(self,request,view):
-        return request.user.is_authenticated and (request.user.role == CustomUser.Role.SUPERUSER or request.user.role == CustomUser.Role.TEACHER)
+class IsTeacher(IsAuthenticatedAndRole):
+    allowed_roles = [Role.TEACHER]
 
-class NoSuperUserAccess(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated
-    def has_object_permission(self, request, view, obj):
-        if obj.role == CustomUser.Role.SUPERUSER:
-            return False
-        return True
 
-class CannotDeleteAdmin(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if view.action == "destroy" and obj.role == CustomUser.Role.SUPERUSER:
-            return False
-        return True
+class IsStudent(IsAuthenticatedAndRole):
+    allowed_roles = [Role.STUDENT]
+
+
+class IsSystemAdmin(IsAuthenticatedAndRole):
+    allowed_roles = [Role.SYSTEM_ADMIN]
+
+
+# --------- Rôles administratifs ---------
+
+class IsDepartmentHead(IsAuthenticatedAndRole):
+    allowed_roles = [Role.DEPARTMENT_HEAD]
+
+
+class IsDepartmentSecretary(IsAuthenticatedAndRole):
+    allowed_roles = [Role.DEPARTMENT_SECRETARY]
+
+
+class IsRegistrarOfficer(IsAuthenticatedAndRole):
+    allowed_roles = [Role.REGISTRAR_OFFICER]
+
+
+# --------- Groupes métier (très utile pour les vues) ---------
+
+class IsDepartmentStaff(IsAuthenticatedAndRole):
+    """
+    Personnel du département
+    """
+    allowed_roles = [
+        Role.DEPARTMENT_HEAD,
+        Role.DEPARTMENT_SECRETARY
+    ]
+
+
+class IsAcademicStaff(IsAuthenticatedAndRole):
+    """
+    Tout le staff académique
+    """
+    allowed_roles = [
+        Role.TEACHER,
+        Role.DEPARTMENT_HEAD,
+        Role.DEPARTMENT_SECRETARY
+    ]
+
+
+class IsMentionManagement(IsAuthenticatedAndRole):
+    """
+    Gestion de la mention (administration académique élargie)
+    """
+    allowed_roles = [
+        Role.DEPARTMENT_HEAD,
+        Role.DEPARTMENT_SECRETARY,
+        Role.REGISTRAR_OFFICER
+    ]

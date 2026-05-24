@@ -1,16 +1,26 @@
-# utils.py
-from .models import MatriculeCounter,CustomUser
+from .models import MatriculeCounter,User,Role
 from django.db import transaction
 import secrets
 import string
 
 
-def generate_matricule(role):
-    prefix = 'STU' if role == CustomUser.Role.STUDENT else 'TEA'
+def generate_matricule(role,mention):
+    def getPrefix(role):
+        if role == Role.TEACHER:
+            return 'TEACHER'
+        elif role == Role.DEPARTMENT_HEAD:
+            return 'HEAD'
+        elif role == Role.DEPARTMENT_SECRETARY:
+            return 'SECRETARY'
+        elif role == Role.REGISTRAR_OFFICER:
+            return 'REGISTAR'
+        else:
+            return 'STUDENT'
+    
+    prefix = f'{getPrefix(role)}-{mention.code}'
 
     with transaction.atomic():
-        counter, created = MatriculeCounter.objects.select_for_update().get_or_create(role=role)
-
+        counter, created = MatriculeCounter.objects.select_for_update().get_or_create(role=role,mention=mention)
         counter.last_number += 1
         counter.save()
 
@@ -21,12 +31,3 @@ def generate_password(length=10):
     characters = string.ascii_letters + string.digits
     return ''.join(secrets.choice(characters) for _ in range(length))
 
-
-def is_user_student(user):
-    return user.role == CustomUser.Role.STUDENT
-
-def is_user_teacher(user):
-    return user.role == CustomUser.Role.TEACHER
-
-def is_user_superuser(user):
-    return user.role == CustomUser.Role.SUPERUSER

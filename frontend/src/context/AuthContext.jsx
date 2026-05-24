@@ -5,34 +5,37 @@ import { storage } from "../utils/storage";
 import authService from "../services/authService";
 import { authEvents } from "../services/api";
 import { ROLES, ROUTES } from "../utils/constants";
-import extractDRFError from "../utils/extractError";
 
 const AuthContext = React.createContext();
 
 export const useAuth = () => useContext(AuthContext);
-
-const mapRoleApi = (apiUser) => {
-  if (apiUser.is_superuser) return ROLES.SUPERUSER;
-  if (apiUser.is_staff) return ROLES.STAFF;
-  if (apiUser.role === ROLES.ENSEIGNANT) return ROLES.ENSEIGNANT;
-  if (apiUser.role === ROLES.ETUDIANT) return ROLES.ETUDIANT;
-  return null;
-};
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [mention,setMention] = useState(null)
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true); // Initialisation
   const [loginLoading, setLoginLoading] = useState(false); // Connexion
   const [initialized, setInitialized] = useState(false);
 
+  const loadUser = (currentUser) => {
+    setUser(currentUser)
+    setRole(currentUser.role)
+    setMention(currentUser.mention)
+  }
+
+  const clearUser = () => {
+    setUser(null)
+    setRole(null)
+    setMention(null)
+  }
+
   const logout = useCallback(() => {
     storage.clear();
-    setUser(null);
-    setRole(null);
+    clearUser()
     setInitialized(false); // Réinitialiser pour permettre une nouvelle auth
     navigate(ROUTES.LOGIN, { replace: true });
   }, [navigate]);
@@ -50,14 +53,12 @@ export function AuthProvider({ children }) {
 
         // Si le token est expiré, l'interceptor tente le refresh automatiquement.
         const currentUser = await authService.me();
-        const currentRole = mapRoleApi(currentUser);
-        setUser(currentUser);
-        setRole(currentRole);
+        loadUser(currentUser)
+
       } catch {
         // Si le refresh échoue, l'interceptor émet l'événement sessionExpired.
         storage.clear();
-        setUser(null);
-        setRole(null);
+        clearUser()
       } finally {
         setInitialized(true);
         setLoading(false);
@@ -72,8 +73,7 @@ export function AuthProvider({ children }) {
       if (event !== 'sessionExpired') return;
 
       storage.clear();
-      setUser(null);
-      setRole(null);
+      clearUser()
       setError('Session expirée');
 
       if (location.pathname !== ROUTES.LOGIN) {
@@ -93,10 +93,7 @@ export function AuthProvider({ children }) {
       storage.setAccess(access);
       storage.setRefresh(refresh);
       const currentUser = await authService.me();
-      const currentRole = mapRoleApi(currentUser);
-      setUser(currentUser);
-      setRole(currentRole);
-
+      loadUser(currentUser)
     } catch (err) {
       const errorMessage = "Échec de la connexion";
       setError(errorMessage);
@@ -114,6 +111,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     error,
     setError,
+    mention
   };
 
   return (

@@ -24,6 +24,7 @@ import Enseignants          from '../pages/admin/Enseignants'
 import StructuresAcademiques from '../pages/admin/StructuresAcademiques'
 import Enseignement          from '../pages/admin/Enseignement'
 import Inscriptions          from '../pages/admin/Inscriptions'
+import UsersAndMention from '../pages/systemadmin/UsersAndMention'
 
 export default function AppRouter() {
   return (
@@ -32,34 +33,45 @@ export default function AppRouter() {
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
       
-      <Route element={<ProtectedRoute allowedRoles={["STUDENT","TEACHER","SUPERUSER"]}/>}>
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT,ROLES.DEPARTMENT_SECRETARY,ROLES.DEPARTMENT_HEAD,ROLES.REGISTRAR_OFFICER,ROLES.TEACHER,ROLES.SYSTEM_ADMIN]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.INFORMATIONS} element={<InfoPerso />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT,ROLES.TEACHER,ROLES.DEPARTMENT_HEAD]}/>}>
+        <Route element={<AppLayout/>}>
           <Route path={ROUTES.ENSEIGNEMENT}   element={<Enseignement />} />
           <Route path={ROUTES.EMPLOI_DU_TEMPS}   element={<EmploiDuTemps />} />
           <Route path={ROUTES.INSCRIPTIONS}   element={<Inscriptions />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={["STUDENT"]}/>}>
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.DASHBOARD_ETU}         element={<DashboardEtudiant />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={["TEACHER"]}/>}>
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.TEACHER]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.DASHBOARD_ENS}        element={<DashboardEnseignant />} />
         </Route>
       </Route>
 
       {/* ── TEACHER ADMIN ── */}
-      <Route element={<ProtectedRoute allowedRoles={["SUPERUSER"]}/>}>
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD]}/>}>
         <Route element={<AppLayout/>}>
           <Route path={ROUTES.DASHBOARD_ADMIN}      element={<DashboardTeacherAdmin />} />
           <Route path={ROUTES.ETUDIANTS_ADMIN}      element={<Etudiants />} />
           <Route path={ROUTES.ENSEIGNANTS_ADMIN}    element={<Enseignants />} />
           <Route path={ROUTES.STRUCTURES_ADMIN}     element={<StructuresAcademiques />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.SYSTEM_ADMIN]}/>}>
+        <Route element={<AppLayout/>}>
+          <Route path={ROUTES.HEADS_AND_MENTION} element={<UsersAndMention/>} />
         </Route>
       </Route>
 

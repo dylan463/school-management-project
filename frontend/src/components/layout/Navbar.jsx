@@ -1,6 +1,4 @@
 import { useAuth } from '../../context/AuthContext'
-import { ROLES } from '../../utils/constants'
-import Avatar from '../ui/Avatar'
 
 // Map route pathname to page title
 const TITLES = {

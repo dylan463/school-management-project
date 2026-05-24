@@ -18,12 +18,16 @@ export default function LoginPage() {
   // Rediriger vers le dashboard approprié après la connexion
   useEffect(() => {
     if (isAuthenticated && role) {
-      if (role === ROLES.ETUDIANT) {
+      if (role == ROLES.SYSTEM_ADMIN){
+        navigate(ROUTES.HEADS_AND_MENTION,{ replace: true })
+      }else if (role === ROLES.STUDENT) {
         navigate(ROUTES.DASHBOARD_ETU, { replace: true })
-      } else if (role == ROLES.ENSEIGNANT) {
+      } else if (role == ROLES.TEACHER) {
         navigate(ROUTES.DASHBOARD_ENS, { replace: true })
-      } else if (role == ROLES.SUPERUSER){
+      } else if (role == ROLES.DEPARTMENT_HEAD){
         navigate(ROUTES.DASHBOARD_ADMIN,{replace:true})
+      }else{
+        navigate(ROUTES.HOME)
       }
     }
   }, [isAuthenticated, role, navigate])

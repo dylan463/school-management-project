@@ -1,8 +1,10 @@
 export const ROLES = {
-  ETUDIANT:   'STUDENT',
-  ENSEIGNANT: 'TEACHER',
-  STAFF:      'STAFF',
-  SUPERUSER:  'SUPERUSER',
+  SYSTEM_ADMIN        : 'system_admin',
+  DEPARTMENT_HEAD     : 'department_head',
+  DEPARTMENT_SECRETARY : 'department_secretary',
+  REGISTRAR_OFFICER   : 'registrar_officer',
+  TEACHER             : 'teacher',
+  STUDENT             : 'student',
 }
 
 export const TOKEN_KEY = {
@@ -32,6 +34,8 @@ export const ROUTES = {
   ENSEIGNEMENT:    '/enseignement',
   INSCRIPTIONS:    '/inscriptions',
   INFORMATIONS:    '/informations',
+
+  HEADS_AND_MENTION: '/chefs-et-mentions',
 }
 
 export const PILL_COLORS = {

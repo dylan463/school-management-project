@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # application interne
     'users',
     'users_auth',
+    'portal',
     'rest_framework_simplejwt.token_blacklist',
 ]
 
@@ -152,3 +153,6 @@ EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
 EMAIL_FILE_PATH = BASE_DIR / "sent_emails"
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

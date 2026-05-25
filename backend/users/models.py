@@ -28,6 +28,9 @@ class User(AbstractUser):
 
 
 class MatriculeCounter(models.Model):
-    role = models.CharField(max_length=20, unique=True)
+    role = models.CharField(max_length=20)
     mention = models.ForeignKey(Mention,on_delete=models.CASCADE)
     last_number = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('role','mention')

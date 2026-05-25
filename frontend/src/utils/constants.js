@@ -7,6 +7,8 @@ export const ROLES = {
   STUDENT             : 'student',
 }
 
+export const PAGE_SIZE = 10
+
 export const TOKEN_KEY = {
   ACCESS: 'access_token',
   REFRESH: 'refresh_token',

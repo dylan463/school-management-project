@@ -1,5 +1,6 @@
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ModalProvider } from './context/ModalContext'
 import AppRouter from './routes/AppRouter'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -23,13 +24,14 @@ export default function App() {
         pauseOnHover
         theme="colored"
       />
-
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
           <BrowserRouter>
-            <AppRouter />
+            <ModalProvider>
+              <AuthProvider>
+                  <AppRouter />
+              </AuthProvider>
+            </ModalProvider>
           </BrowserRouter>
-        </AuthProvider>
       </QueryClientProvider>
     </>
   )

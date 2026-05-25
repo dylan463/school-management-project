@@ -1,51 +1,31 @@
 # Django REST Framework
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet,GenericViewSet,mixins
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
-
+from rest_framework.filters import SearchFilter
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
 # Local apps
 from .models import User,Role,Mention
 from .serializers import (
     UserSerializer,
-    UserCreateSerializer,
+    ProfileUpdateSerializer,
+    SysAdminUserCreate,
     MentionSerailizer,
 )
 from .permissions import IsSystemAdmin
+from .services import create_user
 # ─────────────────────────────────────────
 # USER MANAGEMENT
 # ─────────────────────────────────────────
 
 class MentionViewSet(ModelViewSet):
     serializer_class = MentionSerailizer
-    queryset = Mention.objects.all()
-    permission_classes = IsSystemAdmin
+    queryset = Mention.objects.all().order_by('-id')
+    permission_classes = [IsSystemAdmin]
+    filter_backends = [SearchFilter]
+    search_fields = ["text","code"]
+ 
 
 
-class UserViewSet(ModelViewSet):
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
-
-    def get_permissions(self):
-        if self.action == "me":
-            return [IsAuthenticated()]
-        else:
-            return [IsSystemAdmin()]
-
-    def get_queryset(self):
-        return User.objects.filter(role=Role.DEPARTMENT_HEAD)
-    
-
-    @action(detail=False, methods=["get", "patch"])
-    def me(self, request):
-        user : User  = request.user
-
-        if request.method == "GET":
-            serializer = UserSerializer(user)
-            return Response(serializer.data)
-
-        serializer =  UserCreateSerializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)

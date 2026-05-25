@@ -18,21 +18,25 @@ const BellIcon    = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill
 const UsersIcon   = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M1 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11 7a2.5 2.5 0 110-5M15 13a4 4 0 00-4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
 const UploadIcon  = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
 const LogoutIcon  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 5l3 3-3 3M13 8H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const GearIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16"><path d="M6.5 1.5h3l.4 1.6a5.5 5.5 0 011.2.7l1.5-.5 1.5 2.6-1.1 1a5.7 5.7 0 010 1.4l1.1 1-1.5 2.6-1.5-.5a5.5 5.5 0 01-1.2.7l-.4 1.6h-3l-.4-1.6a5.5 5.5 0 01-1.2-.7l-1.5.5-1.5-2.6 1.1-1a5.7 5.7 0 010-1.4l-1.1-1 1.5-2.6 1.5.5a5.5 5.5 0 011.2-.7L6.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.3"/></svg>
 
 /* ── Nav items per role ── */
-const ETU_NAV = [
+
+const STUDENT_NAV = [
   { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ETU,         iconComponent: DashIcon},
   { label: 'enseignements',        to: ROUTES.ENSEIGNEMENT,         iconComponent: FileIcon},
   { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
+  {label: "Paramètre", to:ROUTES.INFORMATIONS,  iconComponent: GearIcon}
 ]
 
-const ENS_NAV = [
+const TEACHER_NAV = [
   { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ENS,         iconComponent: DashIcon},
   { label: 'enseignements',        to: ROUTES.ENSEIGNEMENT,         iconComponent: FileIcon},
   { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
+  {label: "Paramètre", to:ROUTES.INFORMATIONS,  iconComponent: GearIcon}
 ]
 
-const ADMIN_NAV = [
+const HEAD_NAV = [
   { label: 'Tableau de bord',  to: ROUTES.DASHBOARD_ADMIN,      iconComponent: DashIcon},
   { label: 'Étudiants',        to: ROUTES.ETUDIANTS_ADMIN,      iconComponent: UsersIcon},
   { label: 'Enseignants',      to: ROUTES.ENSEIGNANTS_ADMIN,    iconComponent: UsersIcon},
@@ -40,8 +44,13 @@ const ADMIN_NAV = [
   { label: 'Enseignement',     to: ROUTES.ENSEIGNEMENT,   iconComponent: NoteIcon},
   { label: 'Emploi du temps',  to: ROUTES.EMPLOI_DU_TEMPS,   iconComponent: CalIcon},
   { label: 'Inscriptions',     to: ROUTES.INSCRIPTIONS,   iconComponent: FileIcon},
+  {label: "Paramètre", to:ROUTES.INFORMATIONS,  iconComponent: GearIcon}
 ]
 
+const SYS_ADMIN_NAV = [
+  { label: 'chef et mention',        to: ROUTES.HEADS_AND_MENTION,      iconComponent: UsersIcon},
+  {label: "Paramètre", to:ROUTES.INFORMATIONS,  iconComponent: GearIcon}
+]
 
 /* ── SidebarItem ── */
 // eslint-disable-next-line no-unused-vars
@@ -76,20 +85,23 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
 /* ── Main Sidebar ── */
 export default function Sidebar({ }) {
   const {user,role,logout} = useAuth()
-  const title = "Plateform de gestion"
-  let roleValue = role
+  const title = `Bonjour ${user.full_name ? user.full_name : role}`
 
   let Nav;
-  if (roleValue == "STUDENT"){
-    Nav = ETU_NAV;
-  }else if (roleValue == "TEACHER"){
-    Nav = ENS_NAV;
+  if (role == ROLES.STUDENT){
+    Nav = STUDENT_NAV;
+  }else if (role == ROLES.TEACHER){
+    Nav = TEACHER_NAV;
+  }else if (role ==  ROLES.DEPARTMENT_HEAD){
+    Nav = HEAD_NAV;
+  }else if (role == ROLES.SYSTEM_ADMIN){
+    Nav = SYS_ADMIN_NAV
   }else{
-    Nav = ADMIN_NAV;
+    Nav = []
   }
 
   return (
-    <aside className="w-52 bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col flex-shrink-0 min-h-screen shadow-lg">
+    <aside className="w-52 bg-gradient-to-b from-black to-black flex flex-col flex-shrink-0 min-h-screen shadow-lg">
       <div className="px-4 py-6 border-b border-white/[0.1]">
         <h1 className="text-lg font-bold text-white">{title}</h1>
       </div>

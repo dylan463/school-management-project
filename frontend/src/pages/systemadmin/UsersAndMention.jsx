@@ -4,12 +4,13 @@ import MentionPanel from '../../components/panel/MentionPanel'
 
 function UsersAndMention() {
   return (
-    <div>
+    <div className='grid grid-cols-1 gap-y-3'>
         <h1>
-            Gestion des mentions et des chefs de mention
+            Mention et chef de département
         </h1>
-        <UserPanel/>
+        <p>un espace de gestion centralisée pour le gestion des mentions et des chefs de départements</p>
         <MentionPanel/>
+        <UserPanel/>
     </div>
   )
 }

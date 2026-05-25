@@ -1,10 +1,17 @@
 from rest_framework import serializers
 from .models import User,Role,Mention
 
+class MentionSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = Mention
+        fields = ["id","text","code"]
+
+
 #  serializer pour afficher les infos d'un utilisateur
 class UserSerializer(serializers.ModelSerializer):
     """Pour afficher les infos d'un utilisateur"""
     full_name = serializers.CharField(source ="get_full_name",read_only=True)
+    mention = MentionSerailizer()
     class Meta:
         model = User
         fields = ['id',
@@ -13,17 +20,13 @@ class UserSerializer(serializers.ModelSerializer):
                   "is_active",
                   'first_name', 
                   'last_name',
-                  'full_name'
+                  'full_name',
                   'role',
                   'mention']
         read_only_fields = ['id','role','mention','is_active']
 
 
-class MentionSerailizer(serializers.ModelSerializer):
-    class Meta:
-        model = Mention
-        fields = ["id","text","code"]
-        
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,19 +41,32 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("cet email est déjà utilisé")
         return value
     
-    def validate_role(self, value):
-        creator : User = self.context.get("user")
-        if value == Role.SYSTEM_ADMIN:
-            raise serializers.ValidationError("veillez utiliser le terminal du serveur pour cree un administrateur du système")
-        if creator.role == Role.SYSTEM_ADMIN:
-            if not value == Role.DEPARTMENT_HEAD:
-                raise serializers.ValidationError("vous ne pouver que créer des chefs de départements")
-        elif creator.role == Role.DEPARTMENT_HEAD:
-            if value in [Role.SYSTEM_ADMIN,Role.DEPARTMENT_HEAD]:
-                raise serializers.ValidationError("vous n'avez pas la permission nécessaire")
-        return value
+class SysAdminUserCreate(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name','first_name','email','mention']
 
-    def validate_mention(self,value):
-        creator : User = self.context.get('user')
-        if not creator.role == Role.SYSTEM_ADMIN and not creator.mention.id == value.id:
-            raise serializers.ValidationError("vous ne pouver pas cree un utilisateur avec une mention différente de la votre")
+class DepartmentUserCreate(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name','first_name','email','role']
+
+class SysAdminUserUpdate(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name','first_name','email','mention']
+
+class DepartmentUserUpdate(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name','first_name','email','role']
+
+
+
+
+class ProfileUpdateSerializer(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name','last_name','email']
+     
+    

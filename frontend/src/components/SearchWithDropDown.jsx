@@ -4,20 +4,21 @@ export default function SearchWithDropDown({
     contents = [],
     search = '',
     setSearch = (value)=>{},
+    debouncedSearch = '',
     searchLoading=false,
-    debouncedSearch,
     setSelectContent = (content) => {},
     contentDisplay = (content) => <div></div>
 }){
     const fiedId = useId()
     const [showDropDown,setShowDropDown] = useState(false)
     useEffect(() => {
-        if (debouncedSearch && !searchLoading){
-            setShowDropDown(true)
+        if (!searchLoading){
+            if (debouncedSearch) {setShowDropDown(true);return}
+            setShowDropDown(false)
         }else{
             setShowDropDown(false)
         }  
-    },[debouncedSearch,searchLoading])
+    },[searchLoading,debouncedSearch])
     useEffect(() => {
         const handleClickOutside = (event) => {
         if (showDropDown && !event.target.closest(`.${fiedId}-container`)) {
@@ -37,7 +38,7 @@ export default function SearchWithDropDown({
             placeholder="Rechercher..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
+            className="w-full px-3 py-2 text-xs min-h-[40px] rounded-lg border border-slate-200 outline-none focus:border-blue-400 bg-white"
         />
         {/* Dropdown des résultats */}
         { !searchLoading && showDropDown && (
@@ -46,17 +47,10 @@ export default function SearchWithDropDown({
                 <button
                 type="button"
                 key={content.id}
-                onClick={() => {setSelectContent(content);setSearch('')}}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
+                onClick={() => {setSelectContent(content);setSearch('');setShowDropDown(false)}}
+                className="w-full h-[40px] text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
                 >
-                    {BadgeContent.map((func,index) =>{
-                        return (
-                        <div key={index}>
-                            {contentDisplay(content)}
-                        </div>
-                        )
-                    }
-                    )}
+                    {contentDisplay(content)}
                 </button>
             )) : (
                 <div className="px-3 py-2 text-xs text-slate-500">

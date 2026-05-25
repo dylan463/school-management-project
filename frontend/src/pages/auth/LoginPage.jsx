@@ -27,7 +27,7 @@ export default function LoginPage() {
       } else if (role == ROLES.DEPARTMENT_HEAD){
         navigate(ROUTES.DASHBOARD_ADMIN,{replace:true})
       }else{
-        navigate(ROUTES.HOME)
+        navigate('notFound',{replace: true})
       }
     }
   }, [isAuthenticated, role, navigate])

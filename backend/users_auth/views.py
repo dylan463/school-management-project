@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from rest_framework.permissions import AllowAny
-from django.core.mail import EmailMultiAlternatives
+from users.services import send_email
 
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
@@ -19,6 +19,32 @@ from .token import token_generator
 from rest_framework import status
 from rest_framework.views import APIView
 from users.models import User
+from rest_framework.viewsets import ViewSet
+from users.serializers import UserSerializer,ProfileUpdateSerializer
+
+class MeViewsSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.request.user
+    
+    def list(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    def partial_update(self, request):
+        instance = request.user
+        serializer = ProfileUpdateSerializer(
+            instance,
+            data=request.data,
+            partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        response_serializer = UserSerializer(instance)
+        return Response(response_serializer.data)
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -83,16 +109,8 @@ class PasswordResetRequestView(APIView):
         Reset Password
         </a>
         """
+        send_email(subject,text_content,[email],html_content)
 
-        msg = EmailMultiAlternatives(
-            subject,
-            text_content,
-            settings.DEFAULT_FROM_EMAIL,
-            [email]
-        )
-
-        msg.attach_alternative(html_content, "text/html")
-        msg.send()
 
         return Response({"message": "email envoyé"})
 

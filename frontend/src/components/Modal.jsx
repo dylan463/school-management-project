@@ -25,11 +25,11 @@ export default function Modal({ isOpen, onClose, children ,noX = false}) {
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-lg p-6 relative max-h-[90vh] overflow-y-auto w-fit max-w-[90vw]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Bouton fermer */}

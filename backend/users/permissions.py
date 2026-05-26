@@ -67,12 +67,14 @@ class IsAcademicStaff(IsAuthenticatedAndRole):
     ]
 
 
-class IsMentionManagement(IsAuthenticatedAndRole):
+class IsInMention(IsAuthenticatedAndRole):
     """
     Gestion de la mention (administration académique élargie)
     """
     allowed_roles = [
         Role.DEPARTMENT_HEAD,
         Role.DEPARTMENT_SECRETARY,
-        Role.REGISTRAR_OFFICER
+        Role.REGISTRAR_OFFICER,
+        Role.TEACHER,
+        Role.STUDENT
     ]

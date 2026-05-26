@@ -1,50 +1,68 @@
 from .models import (
-    Level,Formation,Semester,CourseUnit,CourseModule,SchoolYear,StudentSchoolYear,Enrollment,CourseModule,CourseUnit
+    Formation,Semester,CourseUnit,CourseModule,SchoolYear,Enrollment,CourseModule,CourseUnit
 )
 from users.models import (
-    StudentUser,TeacherUser
+    User,Mention,Role
 )
 
-def get_student_school_year_queryset(student):
-    return SchoolYear.objects.filter(student_school_years__student=student)
-def get_student_formation_queryset(student):
-    return Formation.objects.filter(student_school_years__student=student)
-def get_student_level_queryset(student):
-    return Level.objects.filter(student_school_years__student=student)
-def get_student_semester_queryset(student):
-    return Semester.objects.filter(enrollments__student_school_year__student=student)
-def get_student_student_school_year_queryset(student):
-    return StudentSchoolYear.objects.filter(student=student)
-def get_student_enrollment_queryset(student):
-    return Enrollment.objects.filter(student_school_year__student=student)
-def get_student_course_unit_queryset(student):
-    return CourseUnit.objects.filter(semester__enrollments__student_school_year__student=student)
-def get_student_course_module_queryset(student):
-    return CourseModule.objects.filter(course_unit__semester__enrollments__student_school_year__student=student)
-def get_student_teacher_queryset(student):
-    return TeacherUser.objects.filter(course_modules__course_unit__semester__enrollments__student_school_year__student=student)
-def get_student_student_queryset(student):
-    school_year = get_student_school_year_queryset(student)
-    return StudentUser.objects.filter(student_school_years__school_year=school_year)
+MANAGEMENT = [Role.DEPARTMENT_HEAD, Role.DEPARTMENT_SECRETARY, Role.REGISTRAR_OFFICER]
 
+def get_formation_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Formation.objects.filter(mention=mention)
+    elif user.role == Role.TEACHER:
+        return Formation.objects.filter(mention=mention, course_unit__course_modules__teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return Formation.objects.filter(mention=mention, enrollments__student=user).distinct()
+    return Formation.objects.none()
 
-def get_teacher_formation_queryset(teacher):
-    return Formation.objects.filter(student_school_years__enrollments__semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_level_queryset(teacher):
-    return Level.objects.filter(student_school_years__enrollments__semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_semester_queryset(teacher):
-    return Semester.objects.filter(course_unit__course_modules__teacher=teacher)
-def get_teacher_student_school_year_queryset(teacher):
-    return StudentSchoolYear.objects.filter(enrollments__semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_enrollment_queryset(teacher):
-    return Enrollment.objects.filter(semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_school_year_queryset(teacher):
-    return SchoolYear.objects.filter(student_school_years__enrollments__semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_student_queryset(teacher):
-    return StudentUser.objects.filter(school_years__enrollments__semester__course_unit__course_modules__teacher=teacher)
-def get_teacher_teacher_queryset(teacher):
-    return TeacherUser.objects.all()
-def get_teacher_course_unit_queryset(teacher):
-    return CourseUnit.objects.filter(course_modules__teacher=teacher)
-def get_teacher_course_module_queryset(teacher):
-    return CourseModule.objects.filter(teacher=teacher)
+def get_semester_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Semester.objects.filter(mention=mention)
+    elif user.role == Role.TEACHER:
+        return Semester.objects.filter(mention=mention, course_modules__teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return Semester.objects.filter(mention=mention, enrollments__student=user).distinct()
+    return Semester.objects.none()
+
+def get_school_year_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return SchoolYear.objects.filter(mention=mention)
+    elif user.role == Role.TEACHER:
+        return SchoolYear.objects.filter(mention=mention, enrollments__formation__course_units__course_modules__teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return SchoolYear.objects.filter(mention=mention, enrollments__student=user).distinct()
+    return SchoolYear.objects.none()
+
+def get_course_unit_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return CourseUnit.objects.filter(formation__mention=mention)
+    elif user.role == Role.TEACHER:
+        return CourseUnit.objects.filter(formation__mention=mention, course_modules__teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return CourseUnit.objects.filter(formation__mention=mention, course_modules__semester__enrollments__student=user).distinct()
+    return CourseUnit.objects.none()
+
+def get_course_module_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return CourseModule.objects.filter(semester__mention=mention)
+    elif user.role == Role.TEACHER:
+        return CourseModule.objects.filter(semester__mention=mention, teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return CourseModule.objects.filter(semester__mention=mention, semester__enrollments__student=user).distinct()
+    return CourseModule.objects.none()
+
+def get_enrollment_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Enrollment.objects.filter(formation_mention=mention)
+    elif user.role == Role.TEACHER:
+        return Enrollment.objects.filter(formation__mention=mention, semester__course_modules__teacher=user).distinct()
+    elif user.role == Role.STUDENT:
+        return Enrollment.objects.filter(formation__mention=mention, student=user).distinct()
+    return Enrollment.objects.none()

@@ -54,18 +54,8 @@ def generate_password(length=10):
 
 
 @transaction.atomic
-def create_user(data: dict):
-    role = data.get('role',None)
-    mentionId = data.get('mention',None) 
-
-    if role is None:
-        raise ValidationError('vous devez fournir un role')
-    if mentionId is None:
-        raise ValidationError('vous devez fournir une mention')
+def create_user(data: dict,role,mention):
     
-    mention = Mention.objects.get(pk=mentionId)
-    data["mention"] = mention
-
     username = generate_matricule(role, mention)
     password = generate_password(8)
 

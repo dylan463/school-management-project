@@ -41,25 +41,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("cet email est déjà utilisé")
         return value
     
-class SysAdminUserCreate(UserCreateSerializer):
-    class Meta:
-        model = User
-        fields = ['last_name','first_name','email','mention']
-
-class DepartmentUserCreate(UserCreateSerializer):
-    class Meta:
-        model = User
-        fields = ['last_name','first_name','email','role']
-
-class SysAdminUserUpdate(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['last_name','first_name','email','mention']
-
-class DepartmentUserUpdate(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['last_name','first_name','email','role']
+    def validate_role(self, value):
+        if value not in Role.values:
+            raise serializers.ValidationError("role invalide")
+        return value
+    
+    def validate_mention(self, value):
+        if not Mention.objects.filter(id=value).exists():
+            raise serializers.ValidationError("mention invalide")
+        return value
+    
 
 
 

@@ -9,9 +9,6 @@ from rest_framework.exceptions import ValidationError
 # Local apps
 from .models import User,Role,Mention
 from .serializers import (
-    UserSerializer,
-    ProfileUpdateSerializer,
-    SysAdminUserCreate,
     MentionSerailizer,
 )
 from .permissions import IsSystemAdmin

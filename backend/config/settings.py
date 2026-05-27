@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'portal',
     'structures',
     'assessments',
+    'notifications',
     'rest_framework_simplejwt.token_blacklist',
 ]
 

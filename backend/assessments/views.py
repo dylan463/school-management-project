@@ -36,7 +36,7 @@ from .services import (
     toggle_assessment_publication,
 )
 
-from queryset import (
+from .queryset import (
     get_assessment_queryset,
     get_grade_queryset,
     get_enrollment_queryset,

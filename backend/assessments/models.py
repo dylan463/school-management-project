@@ -113,5 +113,3 @@ class Debt(models.Model):
     cleared = models.BooleanField(default=False)
     original_score = models.FloatField()
     original_status = models.CharField(choices=EnrollmentResult.Status.choices)
-    class Meta:
-        unique_together = ("enrollment","course_module")

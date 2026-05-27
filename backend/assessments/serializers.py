@@ -1,9 +1,10 @@
 from rest_framework import serializers
 
 from .models import Assessment, Grade, EnrollmentResult,Debt
-from structures.models import CourseModule,SchoolYear
+from structures.models import CourseModule,SchoolYear,Formation
 from rest_framework.exceptions import ValidationError
 from .models import Enrollment
+from collections import defaultdict
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
@@ -65,107 +66,107 @@ class AttendantGradeSerializer(serializers.ModelSerializer):
 
 class AttendantSerializer(serializers.ModelSerializer):
     grade = serializers.SerializerMethodField()
-    debt_year = serializers.SerializerMethodField()
-    full_name = serializers.SerializerMethodField()
-    username = serializers.SerializerMethodField()
+    debt = serializers.SerializerMethodField()
 
     class Meta:
         model = Enrollment
-        fields = ["id", "full_name","username", "grade", "debt_year"]
+        fields = ["id", "student", "grade", "debt"]
 
-    def get_grade(self, obj):
-        grades_map = self.context.get("grades_map", {})
-        grade = grades_map.get(obj.id)
-        if grade:
-            return AttendantGradeSerializer(grade).data
-        return None
+    def get_grade(self, enrollment):
+        grades = getattr(enrollment, "assessment_grades", [])
+        return grades[0].score if grades else None
 
-    def get_debt_year(self, obj):
-        debts_map = self.context.get("debts_map", {})
-        debt = debts_map.get(obj.id)
-        if debt:
-            return obj.student_school_year.school_year.label
-        return None
-    
-    def get_full_name(self,obj):
-        student = obj.student_school_year.student
-        return f"{student.first_name} {student.last_name}"
-
-    def get_username(self,obj): 
-        student = obj.student_school_year.student
-        return f"{student.username}"
+    def get_debt(self, enrollment):
+        result = enrollment.enrollment_results.all().first()
+        if not result:
+            return None
+        debts = getattr(result, "module_debts", [])
+        if not debts:
+            return None
+        school_year = debts[0].result.enrollment.school_year
+        return {"text":school_year.text}
 
 
 class BulletinSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
-    results = serializers.SerializerMethodField()
-    formation = serializers.CharField(source="student_school_year.formation.code")
-    level = serializers.CharField(source="student_school_year.level.code")
-    school_year = serializers.CharField(source="student_school_year.school_year.label")
+    bulletin = serializers.SerializerMethodField()
+    formation = serializers.CharField(source="formation.code")
+    school_year = serializers.CharField(source="school_year.label")
     semester = serializers.CharField(source="semester.code")
 
-    class Meta :
+    class Meta:
         model = Enrollment
-        fields = ["id","student","formation","level","school_year","results","semester"]
-        read_only_fields = ["id","student","formation","level","school_year","results","semester"]
+        fields = ["id", "student", "formation", "school_year", "semester", "bulletin"]
+        read_only_fields = fields
 
     def get_student(self, obj):
-        student = obj.student_school_year.student
-        return {"id": student.id,"username": student.username,"full_name": f"{student.first_name} {student.last_name}"}
-    
-    def get_results(self, obj):
+        student = obj.student
+        return {
+            "id": student.id,
+            "username": student.username,
+            "full_name": student.get_full_name(),  # utilise la méthode Django
+        }
+
+    def get_bulletin(self, obj):
+        # Utilise le prefetch fait en amont — aucune query supplémentaire
         results = obj.enrollment_results.all()
-        response_result = []
+        bulletin = defaultdict(dict)
         for result in results:
-            response_result.append({
-                "course_unit": result.course_module.course_unit.label,
-                "course_module": result.course_module.label,
+            unit = result.course_module.course_unit.text
+            module = result.course_module.text
+            bulletin[unit][module] = {
                 "score": result.final_score,
                 "credit": result.course_module.credits,
-                "status": result.status
-            })
-        return response_result
+                "status": result.status,
+            }
+        return bulletin
     
-
 class GradeGridSerializer(serializers.Serializer):
-    level = serializers.IntegerField(write_only=True)
     formation = serializers.IntegerField(write_only=True)
     semester = serializers.IntegerField(write_only=True)
     school_year = serializers.IntegerField(write_only=True)
-    
-    def get_results(self,obj):
 
-        enrollment_results = EnrollmentResult.objects.filter(
-            enrollment__student_school_year__level=self.initial_data["level"],
-            enrollment__student_school_year__formation=self.initial_data["formation"],
-            enrollment__semester=self.initial_data["semester"],
-            enrollment__student_school_year__school_year=self.initial_data["school_year"]
-        ).select_related(
-            "enrollment",
-            "enrollment__student_school_year",
-            "enrollment__student_school_year__student",
-            "course_module",
-            "course_module__course_unit"
+    def validate(self, attrs):
+        # Confirm the formation/semester/school_year combo actually exists
+        if not Formation.objects.filter(pk=attrs["formation"]).exists():
+            raise serializers.ValidationError({"formation": "Formation not found."})
+        return attrs
+
+    def get_results(self):
+        """
+        Call after .is_valid() so validated_data is guaranteed to be populated.
+        """
+        data = self.validated_data  # safe — already validated
+
+        enrollment_results = (
+            EnrollmentResult.objects.filter(
+                enrollment__formation=data["formation"],
+                enrollment__semester=data["semester"],
+                enrollment__school_year=data["school_year"],
             )
-        response_result = []
-        for result in enrollment_results:
-            student_full_name = result.enrollment.student_school_year.student.get_full_name()
-            course_unit = result.course_module.course_unit.label
-            course_module = result.course_module.label
-            score = result.final_score
-            credit = result.course_module.credit
-            status = result.status
-            response_result.append({
-                "student_full_name": student_full_name,
-                "course_unit": course_unit,
-                "course_module": course_module,
-                "score": score,
-                "credit": credit,
-                "status": status
-            })
-        return response_result
+            .select_related(
+                "enrollment",
+                "enrollment__student",
+                "course_module",
+                "course_module__course_unit",
+            )
+            .order_by(
+                "enrollment__student__last_name",
+                "course_module__course_unit__text",
+            )
+        )
 
-
+        return [
+            {
+                "student_full_name": result.enrollment.student.get_full_name(),
+                "course_unit": result.course_module.course_unit.text,
+                "course_module": result.course_module.text,
+                "score": result.final_score,
+                "credit": result.course_module.credits,
+                "status": result.status,
+            }
+            for result in enrollment_results
+        ]
 class EnrollmentResultSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     course_credit = serializers.CharField(source="course_module.credits")

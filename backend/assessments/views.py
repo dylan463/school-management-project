@@ -1,4 +1,4 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet,generics,views,mixins,GenericViewSet
 from structures.permissions import (
     IsInMention,
     IsDepartmentStaff
@@ -9,36 +9,39 @@ from .filter import EnrollmentFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q, Prefetch
+
+from .models import Assessment, Grade,Enrollment,EnrollmentResult,Debt
+from .serializers import (
+    EnrollmentSerializer,
+    ChangeEnrolStatusSerializer,
+    AttendantSerializer,
+    Assessment,
+    GradeSerializer,
+    BulletinSerializer,
+    GradeGridSerializer,
+    EnrollmentResultSerializer,
+    AssessmentSerializer
+)
+from .query import attend_to_assessment,people_with_course_debt
+
+from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
+
 from .services import (
     create_enrollment,
     change_enrollment_status,
     delete_enrollment,
+    create_assessment,
+    delete_assessment,
+    toggle_assessment_publication,
 )
-from .queryset import (
-    get_enrollment_queryset
-)
-# from rest_framework.exceptions import ValidationError
 
-# from .models import Assessment, Grade
-# from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer,EnrollmentResultSerializer
-# from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
-
-# from rest_framework.permissions import IsAuthenticated
-# from users.utils import (
-#     is_user_teacher,
-#     is_user_student,
-#     is_user_superuser
-# )
-# from structures.models import CourseModule,SchoolYear,Enrollment
-# from .services import publish_assessment_result,unpublish_assessment_result,create_assessment,get_attendant_data
-# from .services import update_results as update_all_result
-
-# from structures.queryset import get_teacher_enrollment_queryset,get_student_enrollment_queryset
-# from .query import attend_to_assessment,people_with_course_debt
-
-from .serializers import (
-    EnrollmentSerializer,
-    ChangeEnrolStatusSerializer
+from queryset import (
+    get_assessment_queryset,
+    get_grade_queryset,
+    get_enrollment_queryset,
+    get_debt_queryset,
+    get_result_queryset
 )
 
 class EnrollmentViewSet(ModelViewSet):
@@ -71,7 +74,6 @@ class EnrollmentViewSet(ModelViewSet):
         return Response(response_serializer.data)
 
     def create(self, request, *args, **kwargs):
-        user = request.user
         serializer = EnrollmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
@@ -85,164 +87,144 @@ class EnrollmentViewSet(ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class AssessmentViewSet(ModelViewSet):
+    serializer_class = AssessmentSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = AssessmentFilter
+    search_fields = ["name"]
 
-# class AssessmentViewSet(viewsets.ModelViewSet):
-#     queryset = Assessment.objects.all()
-#     serializer_class = AssessmentSerializer
-#     filter_backends = [DjangoFilterBackend,SearchFilter]
-#     filterset_class = AssessmentFilter
-#     search_fields = ["name"]
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         if is_user_student(user):
-#             return get_student_assessment_queryset(user)
-#         elif is_user_teacher(user):
-#             return get_teacher_assessment_queryset(user)
-#         else:
-#             return Assessment.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        return get_assessment_queryset(user)
     
-#     def get_permissions(self):
-#         if self.action == "list":
-#             return [IsAuthenticated()]
-#         else:
-#             return [IsSuperUserOrTeacher()]
+    def get_permissions(self):
+        if self.action == "list":
+            return [IsInMention()]
+        else:
+            return [IsDepartmentStaff()]
     
-#     def create(self, request, *args, **kwargs):
-#         serializer = AssessmentSerializer(data=request.data)
-#         try:
-#             serializer.is_valid(raise_exception=True)
-#             data = serializer.validated_data.copy()
-#             response_serializer = AssessmentSerializer(create_assessment(data))
-#             return Response(response_serializer.data,status=status.HTTP_201_CREATED)
-#         except Exception as e:
-#             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
+    def create(self, request, *args, **kwargs):
+        serializer = AssessmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data.copy()
+        assessment = create_assessment(data)
+        response_serializer = AssessmentSerializer(assessment)
+        return Response(response_serializer.data,status=status.HTTP_201_CREATED)
+    
+    def destroy(self, request, *args, **kwargs):
+        assessment = self.get_object()
+        delete_assessment(assessment)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     
-#     @action(detail=True, methods=["post"])
-#     def publish(self, request, pk=None):
-#         assessment = self.get_object()
-#         try:
-#             publish_assessment_result(assessment)
-#             return Response({"detail": "Assessment published successfully"},status=status.HTTP_200_OK)
-#         except ValidationError as e:
-#             return Response({"error": str(e.detail[0])},status=status.HTTP_400_BAD_REQUEST)
-    
-#     @action(detail=True,methods=["post"])
-#     def unpublish(self,request,pk=None):
-#         assessment = self.get_object()
-#         try:
-#             unpublish_assessment_result(assessment)
-#             return Response({"detail": "Assessment unpublished successfully"},status=status.HTTP_200_OK)
-#         except ValidationError as e:
-#             return Response({"error": str(e.detail[0])},status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=True, methods=["post"])
+    def toggle_publication(self, request, pk=None):
+        instance = self.get_object()
+        assessment = toggle_assessment_publication(instance)
+        response_serializer = AssessmentSerializer(assessment)
+        return Response(response_serializer.data)
+
+    @action(detail=True,methods=["get"])
+    def attendant_student(self,request,pk):
+        assessment :Assessment = self.get_object()
+        has_grade = request.query_params.get("has_grade")
+        has_debt = request.query_params.get("has_debt")
+        search = request.query_params.get("search")
+
+        query = Q()
+        if search:
+            search_query = (
+                Q(student__last_name__icontains=search)|
+                Q(student__first_name__icontains=search)|
+                Q(student__usernname__icontains=search)|
+                Q(student__email__icontains=search)
+                )
+            query = query & search_query
+
+        if not has_grade is None:
+            grade_query = Q(grades__assessment=assessment)
+            query = query & grade_query if has_grade  == "true" else query & ~grade_query
         
-#     @action(detail=True,methods=["get"])
-#     def attendant_student(self,request,pk):
-#         assessment :Assessment = self.get_object()
-#         has_grade = request.query_params.get("has_grade")
-#         has_debt = request.query_params.get("has_debt")
-#         search = request.query_params.get("search")
+        if not has_debt is None:
+            debt_query = people_with_course_debt(assessment.course_module)
+            query = query  & debt_query if has_debt  == 'true' else query & ~debt_query
 
-#         user = request.user
-#         if user.role == "TEACHER":
-#             queryset = get_teacher_enrollment_queryset(user)
-#         else:
-#             queryset = Enrollment.objects.all()
+        query = query & attend_to_assessment(assessment)
 
-#         attendant = queryset.filter(attend_to_assessment(assessment))
+        attendants = Enrollment.objects.filter(query).prefetch_related(
+            Prefetch(
+                "grades",
+                queryset=Grade.objects.filter(assessment=assessment),
+                to_attr="assessment_grades"
+                )
+        ).prefetch_related(
+            Prefetch(
+                "enrollment_results__debts",
+                queryset=Debt.objects.filter(course_module=assessment.course_module,cleared=False).select_related("result__enrollment__school_year"),
+                to_attr="module_debts"
+            )
+        )
 
-#         if search:
-#             attendant = attendant.filter(
-#                 Q(student_school_year__student__last_name=search)|
-#                 Q(student_school_year__student__first_name=search)
-#             )
-
-#         if not has_grade is None:
-#             query = Q(grades__assessment=assessment)
-#             query = query if has_grade == 'true' else ~query
-#             attendant = attendant.filter(query)
-        
-#         if not has_debt is None:
-#             query = people_with_course_debt(assessment.course_module)
-#             query = query if has_debt  == 'true' else ~query
-#             attendant = attendant.filter(query)
-
-#         data = get_attendant_data(attendant,assessment)
-#         return Response(data)
+        serializer = AttendantSerializer(attendants,many=True)
+        return Response(serializer.data)
         
         
-# class GradeViewSet(viewsets.ModelViewSet):
-#     queryset = Grade.objects.all()
-#     serializer_class = GradeSerializer
-#     filter_backends = [DjangoFilterBackend,SearchFilter]
-#     filterset_class = GradeFilter
-#     search_fields = ["enrollment__student_school_year__student__first_name","enrollment__student_school_year__student__last_name"]
+class GradeViewSet(ModelViewSet):
+    serializer_class = GradeSerializer
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = GradeFilter
+    search_fields = ["enrollment__student__first_name","enrollment__student__last_name"]
 
-#     def get_queryset(self):
-#         user = self.request.user
-#         if is_user_student(user):
-#             return get_student_grade_queryset(user)
-#         elif is_user_teacher(user):
-#             return get_teacher_grade_queryset(user)
-#         else:
-#             return Grade.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        return get_grade_queryset(user)
     
-#     def get_permissions(self):
-#         if self.action == "list":
-#             return [IsAuthenticated()]
-#         else:
-#             return [IsSuperUserOrTeacher()]
+    def get_permissions(self):
+        if self.action == "list":
+            return [IsInMention()]
+        else:
+            return [IsDepartmentStaff()]
 
 
-# class ResultViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
-#     queryset = EnrollmentResult.objects.all()
-#     filter_backends = [DjangoFilterBackend,SearchFilter]
-#     filterset_class = EnrollmentResultFilter
-#     serializer_class = EnrollmentResultSerializer
-#     search_fields = ["enrollment__student_school_year__student__first_name","enrollment__student_school_year__student__last_name"]
+class ResultViewSet(GenericViewSet,mixins.ListModelMixin):
+    queryset = EnrollmentResult.objects.all()
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_class = EnrollmentResultFilter
+    serializer_class = EnrollmentResultSerializer
+    search_fields = ["enrollment__student__first_name","enrollment__student__last_name"]
 
-#     def get_queryset(self):
-#         user = self.request.user
-#         if is_user_student(user):
-#             return get_student_result_queryset(user)
-#         elif is_user_teacher(user):
-#             return get_teacher_result_queryset(user)
-#         else:
-#             return EnrollmentResult.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        return get_result_queryset(user)
     
-#     def get_permissions(self):
-#         if self.action == "list":
-#             return [IsAuthenticated()]
-#         else:
-#             return [IsSuperUserOrTeacher()]
+    def get_permissions(self):
+        if self.action == "list":
+            return [IsInMention()]
+        else:
+            return [IsDepartmentStaff()]
 
-#     @action(methods=["post"],detail=False)
-#     def publish(self,request):
-#         try:
-#             course_module = CourseModule.objects.get(id=request.data.get("course_module"))
-#             update_all_result(course_module)
-#             return Response({"detail":"result updated"},status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
-# class BulletinViewSet(viewsets.GenericViewSet,viewsets.mixins.ListModelMixin):
-#     queryset = Enrollment.objects.all()
-#     serializer_class = BulletinSerializer
-#     filter_backends = [DjangoFilterBackend]
-#     filterset_class = BulletinFilter
+class BulletinView(generics.RetrieveAPIView):
+    serializer_class = BulletinSerializer
 
-#     def get_queryset(self):
-#         user = self.request.user
-#         if is_user_student(user):
-#             return get_student_enrollment_queryset(user)
-#         elif is_user_teacher(user):
-#             return get_teacher_enrollment_queryset(user)
-#         else:
-#             return Enrollment.objects.all()
-    
-#     def get_permissions(self):
-#         if self.action == "list":
-#             return [IsAuthenticated()]
-#         else:
-#             return [IsSuperUserOrTeacher()]
+    def get_queryset(self):
+        return (
+            Enrollment.objects.select_related(
+                "student", "formation", "school_year", "semester"
+            )
+            .prefetch_related(
+                Prefetch(
+                    "enrollment_results",
+                    queryset=EnrollmentResult.objects.select_related(
+                        "course_module",
+                        "course_module__course_unit",
+                    ),
+                )
+            )
+        )
+
+class GradeGridView(generics.GenericAPIView):
+    def get(self, request):
+        serializer = GradeGridSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.get_results())

@@ -1,31 +1,76 @@
 from structures.models import (
-    CourseUnit,User,Role
+    User,Role
 )
 from .models import (
-    Assessment,Grade,EnrollmentResult,Enrollment
+    Assessment,Grade,EnrollmentResult,Enrollment,Debt
 )
-from django.db.models import Q
 
 MANAGEMENT = [Role.DEPARTMENT_HEAD, Role.DEPARTMENT_SECRETARY, Role.REGISTRAR_OFFICER]
 
 
-def get_student_assessment_queryset(student):
-    return Assessment.objects.filter(Q(course_module__course_unit__semester__enrollments__student_school_year__student=student) | Q(course_module__debts__enrollment__student_school_year__student=student)).distinct()
+def get_assessment_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Assessment.objects.filter(course_module__semester__mention=mention)
+    if user.role == Role.TEACHER:
+        return Assessment.objects.filter(
+            course_module__semester__mention=mention,
+            course_module__teacher=user
+        )
+    if user.role == Role.STUDENT:
+        return Assessment.objects.filter(
+            course_module__semester__mention=mention,
+            course_module__semester__enrollments__student=user
+        )
+    return Assessment.objects.none()
 
-def get_student_grade_queryset(student):
-    return Grade.objects.filter(enrollment__student_school_year__student=student)
+def get_grade_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Grade.objects.filter(assessment__course_module__semester__mention=mention)
+    if user.role == Role.TEACHER:
+        return Grade.objects.filter(
+            assessment__course_module__semester__mention=mention,
+            assessment__course_module__teacher=user
+        )
+    if user.role == Role.STUDENT:
+        return Grade.objects.filter(
+            assessment__course_module__semester__mention=mention,
+            enrollment__student=user
+        )
+    return Grade.objects.none()
 
-def get_student_result_queryset(student):
-    return EnrollmentResult.objects.filter(enrollment__student_school_year__student=student)
+def get_result_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return EnrollmentResult.objects.filter(course_module__semester__mention=mention)
+    if user.role == Role.TEACHER:
+        return EnrollmentResult.objects.filter(
+            course_module__semester__mention=mention,
+            course_module__teacher=user
+        )
+    if user.role == Role.STUDENT:
+        return EnrollmentResult.objects.filter(
+            course_module__semester__mention=mention,
+            enrollment__student=user
+        )
+    return EnrollmentResult.objects.none()
 
-def get_teacher_assessment_queryset(teacher):
-    return Assessment.objects.filter(course_modul__teacher=teacher)
-
-def get_teacher_grade_queryset(teacher):
-    return Grade.objects.filter(assessment__course_modul__teacher=teacher)
-
-def get_teacher_result_queryset(teacher):
-    return EnrollmentResult.objects.filter(course_modul__teacher=teacher)
+def get_debt_queryset(user : User):
+    mention = user.mention
+    if user.role in MANAGEMENT:
+        return Debt.objects.filter(result__course_module__semester__mention=mention)
+    if user.role == Role.TEACHER:
+        return Debt.objects.filter(
+            result__course_module__semester__mention=mention,
+            result__course_module__teacher=user
+        )
+    if user.role == Role.STUDENT:
+        return Debt.objects.filter(
+            result__course_module__semester__mention=mention,
+            result__enrollment__student=user
+        )
+    return Debt.objects.none()
 
 def get_enrollment_queryset(user : User):
     mention = user.mention

@@ -7,7 +7,7 @@ urlpatterns = [
     path('api/auth/', include('authentification.urls')),
     path('api/portal/',include('portal.urls')),
     # path('api/timetable/', include('timetable.urls')),
-    # path('api/notifications/', include('notif.urls')),
+    path('api/notifications/', include('notifications.urls')),
     # path('api/announcements/',include('announcements.urls')),
     path("api/assessments/",include("assessments.urls"))
 ]

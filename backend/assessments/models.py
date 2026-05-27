@@ -66,7 +66,7 @@ class Assessment(models.Model):
     )
     location = models.CharField(max_length=255)
 
-    grade_weight = models.PositiveIntegerField(
+    grade_weight = models.FloatField(
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
     )
@@ -105,18 +105,13 @@ class Grade(models.Model):
         unique_together = ("enrollment","assessment")
 
 class Debt(models.Model):
-    enrollment = models.ForeignKey(
-        Enrollment,
+    result = models.ForeignKey(
+        EnrollmentResult,
         on_delete=models.CASCADE,
-        related_name="debts",
-    )
-    course_module = models.ForeignKey(
-        CourseModule,
-        on_delete=models.PROTECT,
-        related_name="debts",
+        related_name="debts"
     )
     cleared = models.BooleanField(default=False)
-    original_score = models.PositiveIntegerField()
+    original_score = models.FloatField()
     original_status = models.CharField(choices=EnrollmentResult.Status.choices)
     class Meta:
         unique_together = ("enrollment","course_module")

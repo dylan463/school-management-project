@@ -1,5 +1,5 @@
 from .models import (
-    Formation,Semester,CourseUnit,CourseModule,SchoolYear,Enrollment,CourseModule,CourseUnit,
+    Formation,Semester,CourseUnit,CourseModule,SchoolYear,CourseModule,CourseUnit,
     User,Mention,Role
 )
 
@@ -60,12 +60,3 @@ def get_course_module_queryset(user : User):
         return CourseModule.objects.filter(semester__mention=mention, semester__enrollments__student=user).distinct()
     return CourseModule.objects.none()
 
-def get_enrollment_queryset(user : User):
-    mention = user.mention
-    if user.role in MANAGEMENT:
-        return Enrollment.objects.filter(formation_mention=mention)
-    elif user.role == Role.TEACHER:
-        return Enrollment.objects.filter(formation__mention=mention, semester__course_modules__teacher=user).distinct()
-    elif user.role == Role.STUDENT:
-        return Enrollment.objects.filter(formation__mention=mention, student=user).distinct()
-    return Enrollment.objects.none()

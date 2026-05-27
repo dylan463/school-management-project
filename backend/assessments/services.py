@@ -1,13 +1,68 @@
 from .models import (
-    Assessment,Grade,EnrollmentResult,Debt
+    Assessment,Grade,EnrollmentResult,Debt,Enrollment
 )
-from structures.models import Enrollment,SchoolYear,CourseModule
+from structures.models import SchoolYear,CourseModule
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Prefetch
 from collections import defaultdict
 from .query import attend_to_assessment,has_no_grade_in_assessment,promoted_people,people_with_course_debt
 from .serializers import AttendantSerializer
+
+
+
+# ----------------- enrollment -----------------
+
+@transaction.atomic
+def create_enrollment(data: dict):
+    if Enrollment.objects.filter(
+        student=data["student"],
+        school_year=data["school_year"]
+    ).exists():
+        raise ValidationError({
+            "student": "Cet étudiant est déjà inscrit pour cette année scolaire."
+        })
+
+    return Enrollment.objects.create(**data)
+
+
+@transaction.atomic
+def change_enrollment_status(enrollment: Enrollment, status: str):
+    if status not in Enrollment.Status.values:
+        raise ValidationError({
+            "status": "Décision invalide."
+        })
+    active_sy = SchoolYear.objects.filter(status=SchoolYear.Status.ACTIVE).first()
+
+    if not active_sy:
+        raise ValidationError({
+            "detail":"Modification Impossible : aucune année scolaire active"
+        })
+
+    # if active_sy.id == enrollment.school_year.id:
+    #     if status == Enrollment.Status.ACTIVE:
+    #         Debt.objects.filter(enrollment=enrollment).delete()
+    #     else:
+    #         resutls = EnrollmentResult.objects.filter(enrollment=enrollment)
+    #         debts = []
+    #         for result in resutls:
+    #             debts.append({})
+    # else:
+    #     pass
+
+    enrollment.status = status
+    enrollment.save()
+    return enrollment
+
+
+@transaction.atomic
+def delete_enrollment(enrollment : Enrollment):
+    if EnrollmentResult.objects.filter(enrollment=enrollment).exists():
+        raise ValidationError({
+            'detail':'suppression impossible : des résultat y sont encore référencés'
+        })
+    enrollment.delete()
+
 
 @transaction.atomic
 def create_assessment(data: dict):

@@ -1,16 +1,28 @@
-# from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet
+from structures.permissions import (
+    IsInMention,
+    IsDepartmentStaff
+)
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from .filter import EnrollmentFilter
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from .services import (
+    create_enrollment,
+    change_enrollment_status,
+    delete_enrollment,
+)
+from .queryset import (
+    get_enrollment_queryset
+)
 # from rest_framework.exceptions import ValidationError
 
 # from .models import Assessment, Grade
 # from .serializers import AssessmentSerializer, GradeSerializer,BulletinSerializer,GradeGridSerializer,EnrollmentResultSerializer
 # from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
 
-# from users.permissions import (
-#     IsStudent,
-#     IsSuperUser,
-#     IsSuperUserOrTeacher,
-#     IsTeacher
-# )
 # from rest_framework.permissions import IsAuthenticated
 # from users.utils import (
 #     is_user_teacher,
@@ -18,17 +30,61 @@
 #     is_user_superuser
 # )
 # from structures.models import CourseModule,SchoolYear,Enrollment
-# from .queryset import *
-# from rest_framework.decorators import action
-# from rest_framework.response import Response
-# from rest_framework import status
 # from .services import publish_assessment_result,unpublish_assessment_result,create_assessment,get_attendant_data
 # from .services import update_results as update_all_result
 
-# from django_filters.rest_framework import DjangoFilterBackend
-# from rest_framework.filters import SearchFilter
 # from structures.queryset import get_teacher_enrollment_queryset,get_student_enrollment_queryset
 # from .query import attend_to_assessment,people_with_course_debt
+
+from .serializers import (
+    EnrollmentSerializer,
+    ChangeEnrolStatusSerializer
+)
+
+class EnrollmentViewSet(ModelViewSet):
+    serializer_class = EnrollmentSerializer
+    permission_classes = [IsDepartmentStaff]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
+    filterset_class = EnrollmentFilter
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permissions = [IsInMention]
+        else:
+            permissions = [IsDepartmentStaff]
+        return [permission() for permission in permissions]
+        
+    def get_queryset(self):
+        user = self.request.user
+        return get_enrollment_queryset(user).select_related('student','school_year','formation','semester')
+
+    @action(detail=True, methods=['POST'])
+    def change_status(self, request, pk=None):
+        """Modifie la status d'une inscription"""
+        serializer = ChangeEnrolStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        status = serializer.validated_data.get('status')
+        enrollment = self.get_object()
+        changed_enrollment = change_enrollment_status(enrollment,status)
+        response_serializer = EnrollmentSerializer(changed_enrollment)
+        return Response(response_serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        serializer = EnrollmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data.copy()
+        enrollment = create_enrollment(data)
+        response_serializer = EnrollmentSerializer(enrollment)
+        return Response(response_serializer.data,status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        enrollment = self.get_object()
+        delete_enrollment(enrollment)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 
 # class AssessmentViewSet(viewsets.ModelViewSet):
 #     queryset = Assessment.objects.all()

@@ -1,5 +1,5 @@
 from django.db.models import Q
-from structures.models import Enrollment
+from .models import Enrollment
 
 # enrollments
 def promoted_people(course_module, school_year):

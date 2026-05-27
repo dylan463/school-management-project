@@ -1,6 +1,6 @@
 import django_filters
 from structures.models import (
-    Semester,SchoolYear,Enrollment,CourseModule,CourseUnit,Formation
+    Semester,SchoolYear,CourseModule,CourseUnit,Formation
 )
 
 class FormationFilter(django_filters.FilterSet):
@@ -24,12 +24,6 @@ class SchoolYearFilter(django_filters.FilterSet):
         elif value == "OPEN":
             return queryset.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING])
         return queryset
-
-class EnrollmentFilter(django_filters.FilterSet):
-    class Meta:
-        model = Enrollment
-        fields = ["semester","formation","school_year","student","status"]
-
 
 class CourseUnitFilter(django_filters.FilterSet):
     class Meta:

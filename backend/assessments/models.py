@@ -1,7 +1,33 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import date
-from structures.models import CourseModule, SchoolYear, Enrollment
+from structures.models import CourseModule, SchoolYear,User,Formation,Semester
+
+
+class Enrollment(models.Model):
+    
+    """
+    Inscription d'un étudiant à un semestre, une formation et une année scolaire précis.
+
+    """
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE',  'En cours'
+        VALIDATED = 'VALIDATED',  'Validé'
+        NOT_VALIDATED = 'NOT_VALIDATED',  'Échoué'
+
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='enrollments')
+    formation = models.ForeignKey(Formation,on_delete=models.CASCADE, related_name='enrollments')
+    student = models.ForeignKey(User,on_delete=models.CASCADE, related_name='enrollments')
+    school_year = models.ForeignKey(SchoolYear,on_delete=models.PROTECT, related_name='enrollments')
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    opened_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student','school_year')
+        ordering = ['semester__order','opened_at']
+
+
 
 
 class EnrollmentResult(models.Model):

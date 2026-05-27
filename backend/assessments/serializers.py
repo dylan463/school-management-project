@@ -3,7 +3,35 @@ from rest_framework import serializers
 from .models import Assessment, Grade, EnrollmentResult,Debt
 from structures.models import CourseModule,SchoolYear
 from rest_framework.exceptions import ValidationError
-from structures.models import Enrollment
+from .models import Enrollment
+
+
+class EnrollmentSerializer(serializers.ModelSerializer):
+    student = serializers.CharField(source='student.get_full_name', read_only=True)
+    school_year = serializers.CharField(source='school_year.text', read_only=True)
+    formation = serializers.CharField(source='formation.text', read_only=True)
+    semester = serializers.CharField(source='semester.code', read_only=True)
+    class Meta:
+        model = Enrollment
+        fields = [
+            "id","student", "school_year", "formation",
+            "semester", "status", "opened_at"
+        ]
+        read_only_fields = ["id", "opened_at","status"]
+
+class ChangeEnrolStatusSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    def validate_status(self,value):
+        if not value in Enrollment.Status.values:
+            raise serializers.ValidationError("ce status est invalide")
+        return value
+
+class EnrollmentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Enrollment
+        fields = ["student", "school_year", "formation", "semester"]
+
+
 
 class AssessmentSerializer(serializers.ModelSerializer):
     class Meta:

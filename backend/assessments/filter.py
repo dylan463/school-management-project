@@ -1,6 +1,13 @@
 import django_filters
 from .models import Assessment,EnrollmentResult,Grade
-from structures.models import Enrollment
+from .models import Enrollment
+
+
+class EnrollmentFilter(django_filters.FilterSet):
+    class Meta:
+        model = Enrollment
+        fields = ["semester","formation","school_year","student","status"]
+
 
 class AssessmentFilter(django_filters.FilterSet):
     class Meta:

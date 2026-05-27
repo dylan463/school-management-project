@@ -2,7 +2,7 @@ from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from .models import (
     Formation, Semester, SchoolYear,
-    Enrollment, CourseUnit, CourseModule,User
+    CourseUnit, CourseModule,User
 )
 from django.apps import apps
 # ----------------- helper -----------------
@@ -67,6 +67,7 @@ def create_school_year(user: User, data: dict):
 
     return SchoolYear.objects.create(**data)
 
+Enrollment = apps.get_model('assessments','Enrollment')
 @transaction.atomic
 def delete_school_year(school_year :SchoolYear):
     if Enrollment.objects.filter(school_year=school_year).exists():
@@ -128,60 +129,6 @@ def toggle_school_year_lock(school_year: SchoolYear):
     school_year.save()
     return school_year
 
-
-# ----------------- enrollment -----------------
-
-@transaction.atomic
-def create_enrollment(data: dict):
-    if Enrollment.objects.filter(
-        student=data["student"],
-        school_year=data["school_year"]
-    ).exists():
-        raise ValidationError({
-            "student": "Cet étudiant est déjà inscrit pour cette année scolaire."
-        })
-
-    return Enrollment.objects.create(**data)
-
-
-EnrollmentResult = apps.get_model('assessments','EnrollmentResult')
-Debt = apps.get_model("assessments",'Debt')
-@transaction.atomic
-def change_enrollment_status(enrollment: Enrollment, status: str):
-    if status not in Enrollment.Status.values:
-        raise ValidationError({
-            "status": "Décision invalide."
-        })
-    active_sy = SchoolYear.objects.filter(status=SchoolYear.Status.ACTIVE).first()
-
-    if not active_sy:
-        raise ValidationError({
-            "detail":"Modification Impossible : aucune année scolaire active"
-        })
-
-    # if active_sy.id == enrollment.school_year.id:
-    #     if status == Enrollment.Status.ACTIVE:
-    #         Debt.objects.filter(enrollment=enrollment).delete()
-    #     else:
-    #         resutls = EnrollmentResult.objects.filter(enrollment=enrollment)
-    #         debts = []
-    #         for result in resutls:
-    #             debts.append({})
-    # else:
-    #     pass
-
-    enrollment.status = status
-    enrollment.save()
-    return enrollment
-
-
-@transaction.atomic
-def delete_enrollment(enrollment : Enrollment):
-    if EnrollmentResult.objects.filter(enrollment=enrollment).exists():
-        raise ValidationError({
-            'detail':'suppression impossible : des résultat y sont encore référencés'
-        })
-    enrollment.delete()
 
 # ----------------- course unit -----------------
 

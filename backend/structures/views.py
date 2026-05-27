@@ -11,17 +11,13 @@ from .serializers import (
     CourseModuleSerializer, 
     SchoolYearSerializer,
     ChangeSYStatusSerializer,
-    EnrollmentSerializer,
     CourseUnitCreateSerializer,
     CourseModuleCreateSerializer,
-    ChangeEnrolStatusSerializer
 )
 from .services import (
-    create_enrollment,
     create_formation,
     create_school_year,
     create_semester,
-    change_enrollment_status,
     change_school_year_status,
     toggle_school_year_lock,
     toggle_course_module_activation,
@@ -31,7 +27,6 @@ from .services import (
     delete_formation,
     delete_school_year,
     delete_semester,
-    delete_enrollment,
     delete_course_unit
 )
 
@@ -44,7 +39,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 
 from .filter import (
-    EnrollmentFilter,
     CourseModuleFilter,
     SchoolYearFilter,
     SemesterFilter,
@@ -55,7 +49,6 @@ from .filter import (
 from .queryset import (
     get_course_module_queryset,
     get_course_unit_queryset,
-    get_enrollment_queryset,
     get_formation_queryset,
     get_school_year_queryset,
     get_semester_queryset,
@@ -214,50 +207,6 @@ class SchoolYearViewSet(ModelViewSet):
         school_year = self.get_object()
         delete_school_year(school_year)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-class EnrollmentViewSet(ModelViewSet):
-    serializer_class = EnrollmentSerializer
-    permission_classes = [IsDepartmentStaff]
-    filter_backends = [DjangoFilterBackend,SearchFilter]
-    search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
-    filterset_class = EnrollmentFilter
-
-    def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
-        else:
-            permissions = [IsDepartmentStaff]
-        return [permission() for permission in permissions]
-        
-    def get_queryset(self):
-        user = self.request.user
-        return get_enrollment_queryset(user).select_related('student','school_year','formation','semester')
-
-    @action(detail=True, methods=['POST'])
-    def change_status(self, request, pk=None):
-        """Modifie la status d'une inscription"""
-        serializer = ChangeEnrolStatusSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        status = serializer.validated_data.get('status')
-        enrollment = self.get_object()
-        changed_enrollment = change_enrollment_status(enrollment,status)
-        response_serializer = EnrollmentSerializer(changed_enrollment)
-        return Response(response_serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        serializer = EnrollmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data.copy()
-        enrollment = create_enrollment(data)
-        response_serializer = EnrollmentSerializer(enrollment)
-        return Response(response_serializer.data,status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, *args, **kwargs):
-        enrollment = self.get_object()
-        delete_enrollment(enrollment)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class CourseUnitViewSet(ModelViewSet):
     serializer_class = CourseUnitSerializer

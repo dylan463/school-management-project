@@ -1,11 +1,14 @@
 from .models import (
-    Formation,Semester,CourseUnit,CourseModule,SchoolYear,Enrollment,CourseModule,CourseUnit
-)
-from users.models import (
+    Formation,Semester,CourseUnit,CourseModule,SchoolYear,Enrollment,CourseModule,CourseUnit,
     User,Mention,Role
 )
 
 MANAGEMENT = [Role.DEPARTMENT_HEAD, Role.DEPARTMENT_SECRETARY, Role.REGISTRAR_OFFICER]
+
+def get_mention_queryset(user : User):
+    if user.role == Role.SYSTEM_ADMIN:
+        return Mention.objects.all()
+    return Mention.objects.none()
 
 def get_formation_queryset(user : User):
     mention = user.mention

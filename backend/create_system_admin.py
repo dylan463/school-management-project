@@ -5,7 +5,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 
-from users.models import User, Role
+from structures.models import User, Role
 import getpass
 
 if User.objects.filter(role=Role.SYSTEM_ADMIN).exists():

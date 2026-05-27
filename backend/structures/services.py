@@ -1,12 +1,10 @@
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-
-from users.models import User
 from .models import (
     Formation, Semester, SchoolYear,
-    Enrollment, CourseUnit, CourseModule
+    Enrollment, CourseUnit, CourseModule,User
 )
-
+from django.apps import apps
 # ----------------- helper -----------------
 
 def getMention(user: User):
@@ -25,10 +23,15 @@ def create_formation(user: User, data: dict):
     return Formation.objects.create(**data)
 
 @transaction.atomic
-def delete_formation(user : User,formation :Formation):
-    mention = getMention(user)
-    formation.delete()
+def delete_formation(formation :Formation):
+    if CourseUnit.objects.filter(formation=formation).exists():
+        raise ValidationError({'detail':'suppression impossible : formation référencé.'})
 
+@transaction.atomic
+def toggle_formation_activation(formation: Formation):
+    formation.is_active = not formation.is_active
+    formation.save()
+    return formation
 # ----------------- semester -----------------
 
 @transaction.atomic
@@ -36,6 +39,16 @@ def create_semester(user: User, data: dict):
     data["mention"] = getMention(user)
     return Semester.objects.create(**data)
 
+@transaction.atomic
+def delete_semester(semester :Semester):
+    if CourseModule.objects.filter(semester=semester).exists():
+        raise ValidationError({'detail':'suppression impossible : semestre référencé.'})
+
+@transaction.atomic
+def toggle_semester_activation(semester: Semester):
+    semester.is_active = not semester.is_active
+    semester.save()
+    return semester
 
 # ----------------- school year -----------------
 
@@ -53,6 +66,11 @@ def create_school_year(user: User, data: dict):
         })
 
     return SchoolYear.objects.create(**data)
+
+@transaction.atomic
+def delete_school_year(school_year :SchoolYear):
+    if Enrollment.objects.filter(school_year=school_year).exists():
+        raise ValidationError({'detail':'suppression impossible : inscritption référencé.'})
 
 
 @transaction.atomic
@@ -80,7 +98,7 @@ def change_school_year_status(user: User, school_year: SchoolYear, new_status: s
             status="ACTIVE"
         ).exists():
             raise ValidationError({
-                "mention": "Il existe déjà une année scolaire active pour cette mention."
+                "mention": "Il existe déjà une année scolaire active pour votre mention."
             })
 
     if new_status == "CLOSED":
@@ -126,32 +144,69 @@ def create_enrollment(data: dict):
     return Enrollment.objects.create(**data)
 
 
+EnrollmentResult = apps.get_model('assessments','EnrollmentResult')
+Debt = apps.get_model("assessments",'Debt')
 @transaction.atomic
-def change_enrollment_decision(enrollment: Enrollment, new_decision: str):
-    if new_decision not in Enrollment.Status.values:
+def change_enrollment_status(enrollment: Enrollment, status: str):
+    if status not in Enrollment.Status.values:
         raise ValidationError({
             "status": "Décision invalide."
         })
+    active_sy = SchoolYear.objects.filter(status=SchoolYear.Status.ACTIVE).first()
 
-    enrollment.status = new_decision
+    if not active_sy:
+        raise ValidationError({
+            "detail":"Modification Impossible : aucune année scolaire active"
+        })
+
+    # if active_sy.id == enrollment.school_year.id:
+    #     if status == Enrollment.Status.ACTIVE:
+    #         Debt.objects.filter(enrollment=enrollment).delete()
+    #     else:
+    #         resutls = EnrollmentResult.objects.filter(enrollment=enrollment)
+    #         debts = []
+    #         for result in resutls:
+    #             debts.append({})
+    # else:
+    #     pass
+
+    enrollment.status = status
     enrollment.save()
     return enrollment
 
+
+@transaction.atomic
+def delete_enrollment(enrollment : Enrollment):
+    if EnrollmentResult.objects.filter(enrollment=enrollment).exists():
+        raise ValidationError({
+            'detail':'suppression impossible : des résultat y sont encore référencés'
+        })
+    enrollment.delete()
 
 # ----------------- course unit -----------------
 
 @transaction.atomic
 def toggle_course_unit_activation(course_unit: CourseUnit):
-    course_unit.is_active = not course_unit.is_active
+    is_active = not course_unit.is_active
+    course_unit.is_active = is_active
+    modules = CourseModule.objects.filter(course_unit=course_unit)
+    modules.update(is_active=is_active)
     course_unit.save()
     return course_unit
+
+@transaction.atomic
+def delete_course_unit(course_unit : CourseModule):
+    if CourseModule.objects.filter(course_unit=course_unit).exists():
+        raise ValidationError({
+             'detail':'suppression impossible : des cours y sont encore référencés'
+        })
+    course_unit.delete()
 
 
 # ----------------- course module -----------------
 
 @transaction.atomic
 def toggle_course_module_activation(course_module: CourseModule):
-    course_module.is_active = not course_module.is_active
     course_module.is_active = not course_module.is_active
     course_module.save()
     return course_module

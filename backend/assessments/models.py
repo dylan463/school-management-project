@@ -12,12 +12,12 @@ class EnrollmentResult(models.Model):
 
     enrollment = models.ForeignKey(
         Enrollment,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="enrollment_results",
     )
     course_module = models.ForeignKey(
         CourseModule,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="enrollment_results",
     )
     is_repeated = models.BooleanField(default=False)
@@ -39,7 +39,7 @@ class Assessment(models.Model):
         max_length=10,
     )
     location = models.CharField(max_length=255)
-    # pendant un semestre l'etudiant peut avoir plusieurs examens et le grade_weight définit la proportion de la note de cet examen dans le résultat final
+
     grade_weight = models.PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
@@ -48,12 +48,12 @@ class Assessment(models.Model):
 
     course_module = models.ForeignKey(
         CourseModule,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="assessments",
     )
     school_year = models.ForeignKey(
         SchoolYear,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="assessments",
     )
     is_published = models.BooleanField(default=False)
@@ -90,7 +90,7 @@ class Debt(models.Model):
         related_name="debts",
     )
     cleared = models.BooleanField(default=False)
-    original_score = models.PositiveIntegerField(null=True, blank=True)
-    original_status = models.CharField(choices=EnrollmentResult.Status.choices,default=EnrollmentResult.Status.NOT_VALIDATED)
+    original_score = models.PositiveIntegerField()
+    original_status = models.CharField(choices=EnrollmentResult.Status.choices)
     class Meta:
         unique_together = ("enrollment","course_module")

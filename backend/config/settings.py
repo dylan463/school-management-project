@@ -48,9 +48,10 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     # application interne
-    'users',
-    'users_auth',
+    'authentification',
     'portal',
+    'structures',
+    'assessments',
     'rest_framework_simplejwt.token_blacklist',
 ]
 
@@ -147,7 +148,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'structures.User'
 
 EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
 EMAIL_FILE_PATH = BASE_DIR / "sent_emails"

@@ -5,7 +5,7 @@ import string
 from rest_framework.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-
+from django.apps import apps
 GROUP1 = [Role.STUDENT,Role.TEACHER,Role.REGISTRAR_OFFICER]
 
 def send_email(
@@ -76,3 +76,18 @@ def create_user(data: dict,role,mention):
 
 
     return user
+
+Formation = apps.get_model('structures','Formation')
+Semeter = apps.get_model('structures','Semester')
+SchoolYear = apps.get_model('structures','SchoolYear')
+
+@transaction.atomic
+def delete_mention(mention:Mention):
+    if Formation.objects.filter(mention=mention).exists():
+        raise ValidationError({"detail":'suppression imposible : des formation y sont référencées.'})
+    if Semeter.objects.filter(mention=mention).exists():
+        raise ValidationError({"detail":'suppression imposible : des semestre y sont référencés.'})
+    if SchoolYear.objects.filter(mention=mention).exists():
+        raise ValidationError({"detail":'suppression imposible : des années scolaire y sont référencées.'})
+    mention.delete()
+        

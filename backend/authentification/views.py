@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from rest_framework.permissions import AllowAny
-from users.services import send_email
+from structures.user_services import send_email
 
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
@@ -18,9 +18,9 @@ from rest_framework.permissions import IsAuthenticated
 from .token import token_generator
 from rest_framework import status
 from rest_framework.views import APIView
-from users.models import User
+from structures.models import User
 from rest_framework.viewsets import ViewSet
-from users.serializers import UserSerializer,ProfileUpdateSerializer
+from structures.serializers import UserSerializer,ProfileUpdateSerializer
 
 class MeViewsSet(ViewSet):
     permission_classes = [IsAuthenticated]

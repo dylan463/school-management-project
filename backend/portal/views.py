@@ -4,13 +4,13 @@ from rest_framework.filters import SearchFilter
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 # Local apps
-from users.models import User,Role,Mention
-from users.serializers import (
+from structures.models import User,Role,Mention
+from structures.serializers import (
     UserSerializer,
     UserCreateSerializer
 )
-from users.permissions import IsSystemAdmin
-from users.services import create_user
+from structures.permissions import IsSystemAdmin
+from structures.user_services import create_user
 
 class HeadsViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -27,19 +27,15 @@ class HeadsViewSet(ModelViewSet):
         return UserCreateSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = UserCreateSerializer(
-            data={**request.data}
-        )
+        serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        data = serializer.data.copy()
+        data = serializer.validated_data.copy()
         data.pop('role')
-        mentionId = data.pop('mention')
         role = Role.DEPARTMENT_HEAD
-        mention = Mention.objects.get(pk=mentionId)
+        mention = data.pop('mention')
 
         try:
-            user = create_user(data, role, mention)
+            user = create_user(data,role,mention)
             return Response(
                 UserSerializer(user).data,
                 status=status.HTTP_201_CREATED

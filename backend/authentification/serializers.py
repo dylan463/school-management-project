@@ -1,6 +1,13 @@
 from rest_framework import serializers
+from structures.models import User
+from structures.serializers import UserCreateSerializer
 
-
+class ProfileUpdateSerializer(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name','last_name','email']
+     
+    
 # serializer pour changer le mot de passe
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)

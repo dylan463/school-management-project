@@ -1,22 +1,62 @@
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MinValueValidator,MaxValueValidator
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+
+class Mention(models.Model):
+    text = models.CharField(max_length=40)
+    code = models.CharField(max_length=20)
+
+class Role(models.TextChoices):
+    SYSTEM_ADMIN        = 'system_admin',       'System Admin'
+    DEPARTMENT_HEAD     = 'department_head',    'Department Head'
+    DEPARTMENT_SECRETARY = 'department_secretary', 'Department Secretary'
+    REGISTRAR_OFFICER   = 'registrar_officer',  'Registrar Officer'
+    TEACHER             = 'teacher',            'Teacher'
+    STUDENT             = 'student',            'Student'
+
+class User(AbstractUser):
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.STUDENT,
+    )
+    mention = models.ForeignKey(Mention,on_delete=models.PROTECT,blank=True,null=True)
+    def save(self, *args, **kwargs):
+        if not (self.role == Role.SYSTEM_ADMIN):
+            self.is_staff = False
+            self.is_superuser = False
+        super().save(*args, **kwargs)
+
+
+class MatriculeCounter(models.Model):
+    role = models.CharField(max_length=20)
+    mention = models.ForeignKey(Mention,on_delete=models.CASCADE)
+    last_number = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('role','mention')
+
 
 class Formation(models.Model):
     """Filière / programme : Académique, Luban, etc."""
-    mention = models.ForeignKey('users.Mention',on_delete=models.PROTECT)
+    mention = models.ForeignKey(Mention,on_delete=models.PROTECT)
     text = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
     description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
 
-    def __str__(self):
-        return self.code
+    class Meta:
+        ordering = ['text']
 
 class Semester(models.Model):
     """Semestre : S1, S2, S3..."""
-    mention = models.ForeignKey('users.Mention',on_delete=models.PROTECT)
+    mention = models.ForeignKey(Mention,on_delete=models.PROTECT)
     code = models.CharField(max_length=50)           # "S1"
     order = models.PositiveIntegerField(unique=True)  # pour savoir lequel suit lequel
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['order']
@@ -31,7 +71,7 @@ class SchoolYear(models.Model):
         ACTIVE = "ACTIVE", "Active"             # en cours
         CLOSED = "CLOSED", "Closed"             # terminée proprement
 
-    mention = models.ForeignKey('users.Mention',on_delete=models.PROTECT)
+    mention = models.ForeignKey(Mention,on_delete=models.PROTECT)
     text = models.CharField(max_length=20, unique=True)
     status = models.CharField(
         max_length=10,
@@ -55,12 +95,13 @@ class SchoolYear(models.Model):
                 name='unique_upcoming_school_year'
             ),
         ]
+        ordering = ['text']
 
 
 class Enrollment(models.Model):
     
     """
-    Inscription d'un étudiant à un semestre précis.
+    Inscription d'un étudiant à un semestre, une formation et une année scolaire précis.
 
     """
     class Status(models.TextChoices):
@@ -70,7 +111,7 @@ class Enrollment(models.Model):
 
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='enrollments')
     formation = models.ForeignKey(Formation,on_delete=models.CASCADE, related_name='enrollments')
-    student = models.ForeignKey('users.Users',on_delete=models.CASCADE, related_name='enrollments')
+    student = models.ForeignKey(User,on_delete=models.CASCADE, related_name='enrollments')
     school_year = models.ForeignKey(SchoolYear,on_delete=models.PROTECT, related_name='enrollments')
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
@@ -78,17 +119,17 @@ class Enrollment(models.Model):
 
     class Meta:
         unique_together = ('student','school_year')
-        ordering = ['semester__order']
+        ordering = ['semester__order','opened_at']
 
 
 
 class CourseUnit(models.Model):
     """
-    Unité d'Enseignement (UE) liée à un semestre et une formation précis.
-    Ex : "Mathématiques Fondamentales" en L1 / S1 / Académique
+    Unité d'Enseignement (UE) liée une formation précis.
+    Ex : "Mathématiques" 
     """
-    code = models.CharField(max_length=20, unique=True)  # "UE-MATH-L1S1"
-    text = models.CharField(max_length=200)              # "Mathématiques Fondamentales"
+    code = models.CharField(max_length=20, unique=True)  # "UE1"
+    text = models.CharField(max_length=200)              # "Mathématiques"
 
     formation = models.ForeignKey(Formation, on_delete=models.PROTECT, related_name='course_units')
 
@@ -96,7 +137,7 @@ class CourseUnit(models.Model):
 
     class Meta:
         unique_together = ('formation','code')
-        ordering = ['semester__order', 'code']
+        ordering = ['formation__text', 'code']
 
     def get_total_credits(self):
         """Somme des crédits de tous les modules actifs de cette UE."""
@@ -107,8 +148,8 @@ class CourseUnit(models.Model):
 class CourseModule(models.Model):
     """
     Élément Constitutif (EC) d'une UE.
-    Représente une matière/module : Maths, Algo, POO...
-    Appartient toujours à une seule UE.
+    Représente une matière/module : math appliqué, math théorique...
+    Appartient toujours à une seule UE et un semestre.
     """
     code = models.CharField(max_length=20)   # "EC-ALGO"
     text = models.CharField(max_length=200)  # "Algorithmique"
@@ -120,19 +161,18 @@ class CourseModule(models.Model):
 
     course_unit = models.ForeignKey(
         CourseUnit,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='course_modules'
     )
 
     semester = models.ForeignKey(
         Semester,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='course_modules'
     )
 
-    # enseignant responsable (optionnel à la création)
     teacher = models.ForeignKey(
-        'users.User',
+        User,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='course_modules'

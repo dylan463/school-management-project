@@ -3,15 +3,65 @@ from rest_framework.exceptions import ValidationError
 from .models import (
     Formation, Semester,
     SchoolYear, Enrollment,
-    CourseUnit, CourseModule
+    CourseUnit, CourseModule,User,Role,Mention
 )
 
+class MentionSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = Mention
+        fields = ["id","text","code"]
+
+
+#  serializer pour afficher les infos d'un utilisateur
+class UserSerializer(serializers.ModelSerializer):
+    """Pour afficher les infos d'un utilisateur"""
+    full_name = serializers.CharField(source ="get_full_name",read_only=True)
+    mention = MentionSerailizer()
+    class Meta:
+        model = User
+        fields = ['id',
+                  'username',
+                  'email',
+                  "is_active",
+                  'first_name', 
+                  'last_name',
+                  'full_name',
+                  'role',
+                  'mention']
+        read_only_fields = ['id','role','mention','is_active']
+
+
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name','first_name','email','role','mention']
+        extra_kwargs = {
+            "first_name":{"required":False},
+            "last_name":{"required":False},
+        }
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("cet email est déjà utilisé")
+        return value
+    
+    def validate_role(self, value):
+        if value not in Role.values:
+            raise serializers.ValidationError("role invalide")
+        return value
+
+class ProfileUpdateSerializer(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name','last_name','email']
+     
 
 class FormationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Formation
-        fields = ["id","code",'text',"description"]
-        read_only_fields = ["id"]
+        fields = ["id","code",'text',"description","is_active"]
+        read_only_fields = ["id","is_active"]
         extra_kwargs = {
             "label": {"required": True},
             "code": {"required": True},
@@ -21,8 +71,8 @@ class FormationSerializer(serializers.ModelSerializer):
 class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
-        fields = ["id", "code", "order"]
-        read_only_fields = ["id"]
+        fields = ["id", "code", "order","is_active"]
+        read_only_fields = ["id","is_active"]
 
     def validate_order(self, value):
         request = self.context.get("request")
@@ -76,16 +126,17 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "opened_at","status"]
 
+class ChangeEnrolStatusSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    def validate_status(self,value):
+        if not value in Enrollment.Status.values:
+            raise serializers.ValidationError("ce status est invalide")
+        return value
+
 class EnrollmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enrollment
         fields = ["student", "school_year", "formation", "semester"]
-        extra_kwargs = {
-            "student": {"required": True},
-            "school_year": {"required": True},
-            "formation": {"required": True},
-            "semester": {"required": True},
-        }
 
 
 class CourseModuleSerializer(serializers.ModelSerializer):
@@ -101,11 +152,16 @@ class CourseModuleSerializer(serializers.ModelSerializer):
 class CourseModuleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseModule
-        fields = ["code","text","credits",'semester',"teacher","min_val_score","course_unit","volume_hours","teacher"]
+        fields = ["code","text","credits",'semester',"teacher","min_val_score","course_unit","volume_hours"]
         extra_kwargs = {
             "volume_hours": {"required": False},
             "teacher":{"required":False},
         }
+    
+    def validate_min_val_score(self,value):
+        if not (value > 0 and value < 20):
+            raise serializers.ValidationError("la note minimale de validation doit être compris entre [1,19]")
+        return value
 
     
 class CourseUnitSerializer(serializers.ModelSerializer):
@@ -124,4 +180,4 @@ class CourseUnitSerializer(serializers.ModelSerializer):
 class CourseUnitCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseUnit
-        fields = ["code","text","formation"]         
+        fields = ["code","text","formation"]        

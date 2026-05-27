@@ -1,75 +1,46 @@
 import django_filters
 from structures.models import (
-    Level,Semester,SchoolYear,Enrollment,CourseModule,CourseUnit,StudentSchoolYear
+    Semester,SchoolYear,Enrollment,CourseModule,CourseUnit,Formation
 )
-from django.db.models import Q
 
-class LevelFilter(django_filters.FilterSet):
-    formation = django_filters.NumberFilter(
-        field_name="formation_levels__formation__id"
-    )
+class FormationFilter(django_filters.FilterSet):
     class Meta:
-        model = Level
-        fields = []
+        model = Formation
+        fields = ["is_active"]
 
-class EnrollmentFilter(django_filters.FilterSet):
-    level = "semester__level__id"
-    formation = "student_school_year__formation__id"
-    school_year = "student_school_year__school_year__id"
+class SemesterFilter(django_filters.FilterSet):
     class Meta:
-        model = Enrollment
-        fields = ["semester"]
-
-class CourseModuleFilter(django_filters.FilterSet):
-    formation = django_filters.NumberFilter(field_name="course_unit__formation__id")
-    semester = django_filters.NumberFilter(field_name="course_unit__semester__id")
-
-    class Meta:
-        model = CourseModule
-        fields = ["is_active","course_unit","formation","semester"]
+        model = Semester
+        fields = ["is_active"]
 
 class SchoolYearFilter(django_filters.FilterSet):
     status = django_filters.CharFilter(method="filter_status")
-    limit = django_filters.NumberFilter(method="filter_limit")
     class Meta:
         model = SchoolYear
-        fields = ["is_locked"]
+        fields = ["is_locked","status"]
     def filter_status(self, queryset, name, value):
-        if value == "active":
-            return queryset.filter(status=SchoolYear.Status.ACTIVE)
-        elif value == "closed":
-            return queryset.filter(status=SchoolYear.Status.CLOSED)
-        elif value == "upcoming":
-            return queryset.filter(status=SchoolYear.Status.UPCOMING)
-        elif value == "open":
+        if value in SchoolYear.Status.values:
+            return queryset.filter(status=value)
+        elif value == "OPEN":
             return queryset.filter(status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING])
         return queryset
-    def filter_limit(self,queryset,name,value):
-        return queryset[:value]
-    
-class SemesterFilter(django_filters.FilterSet):
-    formation = django_filters.NumberFilter(
-        field_name="level__formation_levels__formation__id"
-    )
-    limit = django_filters.NumberFilter(method="filter_limit")
-    class Meta:
-        model = Semester
-        fields = ["level"]
-    def filter_limit(self,queryset,name,value):
-        return queryset[:value]
 
-class SSYFilter(django_filters.FilterSet):
-    completed = django_filters.BooleanFilter(method="filter_completed")
-    not_in_year = django_filters.NumberFilter(method="filter_not_in_year")
-    school_year = django_filters.NumberFilter(field_name="school_year__id")
-
+class EnrollmentFilter(django_filters.FilterSet):
     class Meta:
-        model = StudentSchoolYear
-        fields = ["formation","level","status","completed","student"]
-    def filter_completed(self,queryset,name,value):
-        query = Q(status__in=["ACTIVE"])
-        return queryset.filter(query) if (not value) else queryset.filter(~query)
-    def filter_not_in_year(self,queryset,name,value):
-        # inscription that dont have a student who have a ssy in this year
-        return queryset.exclude(student__school_years__school_year=value)
+        model = Enrollment
+        fields = ["semester","formation","school_year","student","status"]
+
+
+class CourseUnitFilter(django_filters.FilterSet):
+    class Meta:
+        model = CourseUnit
+        fields = ["formation",'is_active']
+
+
+class CourseModuleFilter(django_filters.FilterSet):
+    class Meta:
+        model = CourseModule
+        fields = ["is_active","course_unit","semester"]
+
+
     

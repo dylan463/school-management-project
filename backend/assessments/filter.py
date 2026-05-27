@@ -3,9 +3,6 @@ from .models import Assessment,EnrollmentResult,Grade
 from structures.models import Enrollment
 
 class AssessmentFilter(django_filters.FilterSet):
-    course_module = django_filters.NumberFilter(field_name="course_module__id")
-    school_year = django_filters.NumberFilter(field_name="school_year__id")
-    
     class Meta:
         model = Assessment
         fields = ["school_year","course_module"]

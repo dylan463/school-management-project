@@ -1,111 +1,90 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
+from rest_framework.viewsets import ModelViewSet,GenericViewSet,mixins
+from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Schedule, ScheduleEntry
 from .serializers import ScheduleSerializer, ScheduleEntrySerializer
 
-from users.permissions import IsStudent, IsTeacher, IsSuperUser
-from structures.models import Enrollment, Semester,SchoolYear
+from structures.permissions import (
+    IsInMention,
+    IsDepartmentStaff,
+)
+from .services import create_schedule_entry
+from .queryset import get_schedule_queryset, get_schedule_entry_queryset, get_teacher_availability_queryset
+from .serializers import (
+    ScheduleEntrySerializer,
+    ScheduleEntryCreateSerializer,
+    ScheduleCreateSerializer,
+    ScheduleSerializer,
+    TeacherAvailabilityCreateSerializer,
+    TeacherAvailabilitySerializer
+)
 
-
-# 🔹 ADMIN VIEWSET
-class AdminScheduleViewSet(viewsets.ModelViewSet):
-    queryset = Schedule.objects.all()
+class ScheduleViewSet(ModelViewSet):
     serializer_class = ScheduleSerializer
-    permission_classes = [IsSuperUser]
-
-    # 🔸 Publier
-    @action(detail=True, methods=["post"])
-    def publish(self, request, pk=None):
-        schedule = self.get_object()
-        schedule.is_published = True
-        schedule.save()
-        return Response({"status": "published"})
-
-    # 🔸 Annuler la Publication
-    @action(detail=True, methods=["post"])
-    def unpublish(self, request, pk=None):
-        schedule = self.get_object()
-        schedule.is_published = False
-        schedule.save()
-        return Response({"status": "unpublished"})
-
-
-# 🔹 ADMIN SCHEDULE ENTRY VIEWSET
-class AdminScheduleEntryViewSet(viewsets.ModelViewSet):
-    queryset = ScheduleEntry.objects.all()
-    serializer_class = ScheduleEntrySerializer
-    permission_classes = [IsSuperUser]
+    filters_backend = [DjangoFilterBackend]
+    filterset_fields = ['formation','semester']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        schedule_id = self.request.query_params.get("schedule")
-        if schedule_id:
-            queryset = queryset.filter(schedule_id=schedule_id)
-        return queryset
+        user = self.request.user
+        return get_schedule_queryset(user)
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsInMention]
+        else:
+            permission_classes = [IsDepartmentStaff]
+        return [permission() for permission in permission_classes]
+    
+    def get_serializer_class(self):
+        if self.action == "create":
+            return ScheduleCreateSerializer
+        return ScheduleSerializer
+    
 
-    def perform_create(self, serializer):
-        schedule = serializer.validated_data["schedule"]
-        if schedule.is_published:
-            raise ValidationError("Impossible de modifier un emploi du temps publié")
-        serializer.save()
+class ScheduleEntryViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.DestroyModelMixin,mixins.ListModelMixin):
+    serializer_class = ScheduleEntrySerializer
+    filters_backend = [DjangoFilterBackend]
+    filterset_fields = ['schedule']
 
-    def perform_update(self, serializer):
-        schedule = serializer.validated_data.get("schedule") or serializer.instance.schedule
-        if schedule.is_published:
-            raise ValidationError("Impossible de modifier un emploi du temps publié")
-        serializer.save()
+    def get_queryset(self):
+        user = self.request.user
+        return get_schedule_entry_queryset(user)
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsInMention]
+        else:
+            permission_classes = [IsDepartmentStaff]
+        return [permission() for permission in permission_classes]
 
-    def perform_destroy(self, instance):
-        if instance.schedule.is_published:
-            raise ValidationError("Suppression interdite après publication")
-        instance.delete()
+    def get_serializer_class(self):
+        if self.action == "create":
+            return ScheduleEntryCreateSerializer
+        return ScheduleEntrySerializer
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        schedule_entry = create_schedule_entry(serializer.validated_data)
+        output_serializer = ScheduleEntrySerializer(schedule_entry)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
+class TeacherAvailabilityViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.DestroyModelMixin,mixins.ListModelMixin):
+    serializer_class = TeacherAvailabilitySerializer
+    filters_backend = [DjangoFilterBackend]
+    filterset_fields = ['teacher']
 
-# 🔹 ETUDIANT
-class StudentScheduleViewSet(viewsets.ViewSet):
-    permission_classes = [IsStudent]
+    def get_queryset(self):
+        user = self.request.user
+        return get_teacher_availability_queryset(user)
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsInMention]
+        else:
+            permission_classes = [IsDepartmentStaff]
+        return [permission() for permission in permission_classes]
 
-    @action(detail=False, methods=["get"])
-    def my_schedule(self, request):
-
-        enrollment = Enrollment.objects.filter(
-            student=request.user,
-            is_current=True,
-            student_school_year__school_year__status = SchoolYear.Status.ACTIVE
-        ).select_related("semester").first()
-
-        if not enrollment:
-            return Response({"detail": "No active semester"}, status=404)
-
-        try:
-            schedule = Schedule.objects.get(
-                semester=enrollment.semester,
-                is_published=True
-            )
-        except Schedule.DoesNotExist:
-            return Response({"detail": "Schedule not available"}, status=404)
-
-        return Response(ScheduleSerializer(schedule).data)
-
-
-# 🔹 PROF
-class TeacherScheduleViewSet(viewsets.ViewSet):
-    permission_classes = [IsTeacher]
-
-    @action(detail=False, methods=["get"])
-    def my_schedules(self, request):
-
-        semesters = Semester.objects.filter(
-            course_units__modules__teacher=request.user,
-        ).distinct()
-
-        schedules = Schedule.objects.filter(
-            semester__in=semesters,
-            is_published=True
-        )
-
-        return Response(ScheduleSerializer(schedules, many=True).data)
+    def get_serializer_class(self):
+        if self.action == "create":
+            return TeacherAvailabilityCreateSerializer
+        return TeacherAvailabilitySerializer

@@ -30,6 +30,9 @@ class User(AbstractUser):
             self.is_superuser = False
         super().save(*args, **kwargs)
 
+    class Meta:
+        ordering = ["id"]
+
 
 class MatriculeCounter(models.Model):
     role = models.CharField(max_length=20)

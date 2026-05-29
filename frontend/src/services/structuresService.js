@@ -1,7 +1,7 @@
 import api from './api'
 
 export const mentionService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/mentions/?${params.toString()}`)
     return response.data
@@ -21,7 +21,7 @@ export const mentionService = {
 }
 
 export const formationService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/formations/?${params.toString()}`)
     return response.data
@@ -45,7 +45,7 @@ export const formationService = {
 }
 
 export const semesterService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/semesters/?${params.toString()}`)
     return response.data
@@ -69,7 +69,7 @@ export const semesterService = {
 }
 
 export const schoolyearService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/schoolyears/?${params.toString()}`)
     return response.data
@@ -94,7 +94,7 @@ export const schoolyearService = {
 
 
 export const coursemoduleService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/coursemodules/?${params.toString()}`)
     return response.data
@@ -118,7 +118,7 @@ export const coursemoduleService = {
 }
 
 export const courseunitService = {
-  list: async (filters) => {
+  list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/courseunits/?${params.toString()}`)
     return response.data

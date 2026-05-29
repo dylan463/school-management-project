@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { headsSevices } from '../../services/usersService'
+import { headSevices } from '../../services/portalService'
 
 export const useDeleteHead = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: headsSevices.delete,
+    mutationFn: headSevices.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['heads'],

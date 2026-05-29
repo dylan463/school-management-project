@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { headSevices } from '../../services/portalService'
+import { scheduleEntryService } from '../../services/timetableService'
 
-export const useUpdateHead = () => {
+export const useDeleteScheduleEntry = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: headSevices.update,
+    mutationFn: scheduleEntryService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['heads'],
+        queryKey: ['scheduleEntries'],
       })
     },
   })

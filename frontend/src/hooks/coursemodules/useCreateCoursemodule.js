@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { headSevices } from '../../services/portalService'
+import { coursemoduleService } from '../../services/structuresService'
 
-export const useUpdateHead = () => {
+export const useCreateCoursemodule = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: headSevices.update,
+    mutationFn: coursemoduleService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['heads'],
+        queryKey: ['coursemodules'],
       })
     },
   })

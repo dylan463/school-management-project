@@ -1,6 +1,7 @@
 from django.db import models
 from structures.models import Semester, CourseModule,Formation
-from users.models import TeacherUser
+from structures.models import User
+
 
 # 🔹 emploi du temps global
 class Schedule(models.Model):
@@ -10,11 +11,9 @@ class Schedule(models.Model):
         related_name="schedule"
     )
     formation = models.ForeignKey(Formation, on_delete=models.CASCADE, related_name="schedules")
-    is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Schedule - {self.semester.name}"
+
 
 
 # 🔹 ligne d'emploi du temps
@@ -31,25 +30,23 @@ class ScheduleEntry(models.Model):
     schedule = models.ForeignKey(
         Schedule,
         on_delete=models.CASCADE,
-        related_name="entries"
+        related_name="schedule_entries"
     )
     course_module  = models.ForeignKey(
         CourseModule,
         on_delete=models.CASCADE,
-        related_name='timeslots'
-    )
-
-    teacher = models.ForeignKey(
-        TeacherUser,
-        on_delete=models.SET_NULL,
-        null=True
+        related_name='schedule_entries'
     )
 
     day = models.CharField(max_length=10, choices=Day.choices)
     start_time = models.TimeField()
     end_time = models.TimeField()
 
-    classroom = models.CharField(max_length=50)
+    classroom = models.CharField(blank=True, null=True, max_length=50)
 
-    def __str__(self):
-        return f"{self.course_module.label} — {self.day} {self.start_time}"
+
+class TeacherAvailability(models.Model):
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="teacher_availabilities")
+    day = models.CharField(max_length=10, choices=ScheduleEntry.Day.choices)
+    start_time = models.TimeField()
+    end_time = models.TimeField()

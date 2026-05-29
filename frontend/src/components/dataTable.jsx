@@ -18,38 +18,35 @@
  * - "single"   : une seule ligne sélectionnable à la fois (radio)
  * - "multiple" : plusieurs lignes sélectionnables (checkbox + tout cocher)
  * - false      : pas de sélection (défaut)
- *
- * @example
- * // Sélection multiple avec callback
- * <DataTable
- *   data={data}
- *   columns={columns}
- *   selectionMode="multiple"
- *   onSelectionChange={(selectedRows) => console.log(selectedRows)}
- * />
- *
- * // Sélection simple avec callback
- * <DataTable
- *   data={data}
- *   columns={columns}
- *   selectionMode="single"
- *   onSelectionChange={([row]) => console.log(row)}
- * />
  */
+
+const dummy_data = [
+  { name: "rakoto", age: 24 }
+];
+const dummy_columns = [
+  { header: "Nom", key: "name" },
+  { header: "age", key: "age" }
+];
 
 import { useState, useEffect, useRef } from "react";
 
 export default function DataTable({
-  data,
-  columns,
+  dummy = false,
+  data = [],
+  columns = [],
   actions = [],
-  selectionMode = false,
+  selectionMode = true,
   onSelectionChange,
+  maxHeight = "400px", // ← hauteur max du tableau scrollable (prop optionnelle)
 }) {
+  if (dummy) {
+    data = dummy_data;
+    columns = dummy_columns;
+  }
+
   const [openRowId, setOpenRowId] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  // Notifie le parent à chaque changement de sélection
   useEffect(() => {
     if (!onSelectionChange) return;
     const selectedRows = data.filter((row) => selectedIds.has(row.id));
@@ -75,8 +72,12 @@ export default function DataTable({
   const someSelected = selectedIds.size > 0 && !allSelected;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse border border-gray-200">
+    // ↓ Ce div contrôle le scroll vertical ; overflow-x gère le scroll horizontal
+    <div
+      className="overflow-auto border border-gray-200 rounded"
+      style={{ maxHeight }}
+    >
+      <table className="min-w-full border-collapse">
         <TableHeader
           columns={columns}
           hasActions={actions.length > 0}
@@ -115,7 +116,6 @@ function TableHeader({
 }) {
   const checkboxRef = useRef(null);
 
-  // État indeterminate sur la checkbox "tout cocher"
   useEffect(() => {
     if (checkboxRef.current) {
       checkboxRef.current.indeterminate = someSelected;
@@ -124,9 +124,10 @@ function TableHeader({
 
   return (
     <thead>
-      <tr className="bg-gray-100">
+      {/* ↓ sticky top-0 + z-10 : l'en-tête reste visible pendant le scroll */}
+      <tr className="bg-[#f5f3f4] sticky top-0 z-10">
         {selectionMode === "multiple" && (
-          <th className="border p-2 w-10">
+          <th className="p-2 w-10 text-left">
             <input
               ref={checkboxRef}
               type="checkbox"
@@ -135,13 +136,13 @@ function TableHeader({
             />
           </th>
         )}
-        {selectionMode === "single" && <th className="border p-2 w-10" />}
+        {selectionMode === "single" && <th className="p-2 w-10" />}
         {columns.map((column) => (
-          <th key={String(column.key)} className="border p-2">
+          <th key={String(column.key)} className="p-2 text-left">
             {column.header}
           </th>
         ))}
-        {hasActions && <th className="border p-2 w-16">Actions</th>}
+        {hasActions && <th className="p-2 w-16">Actions</th>}
       </tr>
     </thead>
   );
@@ -182,20 +183,12 @@ function TableRow({
     >
       {selectionMode === "multiple" && (
         <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggle}
-          />
+          <input type="checkbox" checked={selected} onChange={onToggle} />
         </td>
       )}
       {selectionMode === "single" && (
         <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="radio"
-            checked={selected}
-            onChange={onToggle}
-          />
+          <input type="radio" checked={selected} onChange={onToggle} />
         </td>
       )}
       {columns.map((column) => (
@@ -206,7 +199,7 @@ function TableRow({
         />
       ))}
       {actions.length > 0 && (
-        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
+        <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
           {availableActions.length > 0 && (
             <ActionMenu
               actions={availableActions}
@@ -223,18 +216,37 @@ function TableRow({
 
 function TableCell({ value, render }) {
   return (
-    <td className="border p-2">{render ? render(value) : String(value)}</td>
+    <td className="p-2">{render ? render(value) : String(value)}</td>
   );
 }
+import { createPortal } from "react-dom";
+
+
 
 function ActionMenu({ actions, row, openRowId, setOpenRowId }) {
   const isOpen = openRowId === row.id;
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  // Calculer la position du menu par rapport au bouton
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.right + window.scrollX,
+      });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        buttonRef.current && !buttonRef.current.contains(e.target)
+      ) {
         setOpenRowId(null);
       }
     }
@@ -243,15 +255,27 @@ function ActionMenu({ actions, row, openRowId, setOpenRowId }) {
   }, [isOpen, setOpenRowId]);
 
   return (
-    <div className="relative inline-block" ref={menuRef}>
+    <div className="relative inline-block">
       <button
+        ref={buttonRef}
         onClick={() => setOpenRowId(isOpen ? null : row.id)}
         className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-sm"
       >
         ⋯
       </button>
-      {isOpen && (
-        <div className="absolute right-0 z-50 mt-1 min-w-max rounded border border-gray-200 bg-white shadow-lg">
+
+      {isOpen && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: "absolute",
+            top: menuPos.top,
+            left: menuPos.left,
+            transform: "translateX(-100%)", // aligner à droite du bouton
+            zIndex: 9999,
+          }}
+          className="min-w-max rounded border border-gray-200 bg-white shadow-lg"
+        >
           {actions.map((action, i) => (
             <button
               key={i}
@@ -264,7 +288,8 @@ function ActionMenu({ actions, row, openRowId, setOpenRowId }) {
               {action.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

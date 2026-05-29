@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'structures',
     'assessments',
     'notifications',
+    "timetable",
     'rest_framework_simplejwt.token_blacklist',
 ]
 

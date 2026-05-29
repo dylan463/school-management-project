@@ -4,7 +4,7 @@ import { ModalProvider } from './context/ModalContext'
 import AppRouter from './routes/AppRouter'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-
+import { NuqsAdapter } from 'nuqs/adapters/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const queryClient = new QueryClient()
@@ -27,9 +27,11 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <ModalProvider>
-              <AuthProvider>
-                  <AppRouter />
-              </AuthProvider>
+              <NuqsAdapter>
+                <AuthProvider>
+                    <AppRouter />
+                </AuthProvider>
+              </NuqsAdapter>
             </ModalProvider>
           </BrowserRouter>
       </QueryClientProvider>

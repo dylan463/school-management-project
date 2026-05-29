@@ -18,13 +18,13 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && role) {
       if (role == ROLES.SYSTEM_ADMIN) {
-        navigate(ROUTES.HEADS_AND_MENTION, { replace: true })
+        navigate(ROUTES.MENTIONS_AND_HEADS, { replace: true })
       } else if (role === ROLES.STUDENT) {
-        navigate(ROUTES.DASHBOARD_ETU, { replace: true })
+        navigate(ROUTES.DASHBOARDSTUDENT, { replace: true })
       } else if (role == ROLES.TEACHER) {
-        navigate(ROUTES.DASHBOARD_ENS, { replace: true })
+        navigate(ROUTES.DASHBOARDTEACHER, { replace: true })
       } else if (role == ROLES.DEPARTMENT_HEAD) {
-        navigate(ROUTES.DASHBOARD_ADMIN, { replace: true })
+        navigate(ROUTES.DASHBOARDMANAGEMENT, { replace: true })
       } else {
         navigate('notFound', { replace: true })
       }

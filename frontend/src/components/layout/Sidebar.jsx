@@ -127,10 +127,10 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-2.5 px-4 py-2 text-[13px] transition-all duration-100 border-l-2
+        `flex items-center gap-2.5 px-4 py-2 text-[13px] transition-all duration-100 rounded mb-[4px]
          ${isActive
-           ? 'text-white bg-white/[0.15] border-white'
-           : 'text-blue-100 hover:text-white hover:bg-white/[0.1] border-transparent'
+           ? 'text-white bg-[#e42f24] border-white'
+           : 'text-slate-500 hover:bg-slate-100 border-transparent'
          }`
       }
     >
@@ -144,27 +144,27 @@ function SidebarItem({ label, to, iconComponent: IconComponent, badge }) {
 /* ── Main Sidebar ── */
 export default function Sidebar({ }) {
   const {user,role,logout} = useAuth()
-  const title = `Bonjour ${user?.full_name ? user.full_name : role}`
+  const title = `Gestion administratif`
   const Nav = getNavForRole(role)
 
   return (
-    <aside className="w-52 bg-gradient-to-b from-black to-black flex flex-col flex-shrink-0 min-h-screen shadow-lg">
-      <div className="px-4 py-6 border-b border-white/[0.1]">
-        <h1 className="text-lg font-bold text-white">{title}</h1>
+    <aside className="w-52 bg-gradient-to-b from-white to-white flex flex-col flex-shrink-0 min-h-screen shadow-lg shadow-black/10 z-10 relative">
+      <div className="px-4 py-4 border-b border-black/[0.1]">
+        <h1 className="text-lg font-bold text-slate-500">{title}</h1>
       </div>
       {/* Nav */}
-      <nav className="flex-1 py-3 overflow-y-auto">
+      <nav className="flex-1 py-3 overflow-y-auto ml-1 mr-1">
         {Nav.map(item => (
           <SidebarItem key={item.to} {...item} />
         ))}
       </nav>
 
       {/* Footer / logout */}
-      <div className="p-3 border-t border-white/[0.1]">
+      <div className="p-3 border-t border-black-100">
         <div className="flex items-center gap-2 px-1 mb-2">
-          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+          <div className="w-6 h-6 bg-black/20 rounded-full flex items-center justify-center">
           </div>
-          <div className='text-[10px] font-semibold text-white'>
+          <div className='text-[10px] font-semibold text-slate-500'>
             {user ? `${user.first_name} ${user.last_name}`: "Non authentifiée"}
           </div>
           <div className="flex-1 min-w-0">
@@ -173,7 +173,7 @@ export default function Sidebar({ }) {
         </div>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-100 hover:text-white hover:bg-white/[0.1] rounded-lg transition-all"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-black hover:bg-slate-100 rounded-lg transition-all"
         >
           <LogoutIcon />
           Déconnexion

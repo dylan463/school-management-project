@@ -1,8 +1,8 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { ROUTES, ROLES } from '../../utils/constants'
+import { useAuth } from '../context/AuthContext'
+import { ROUTES, ROLES } from '../utils/constants'
 import { useEffect } from 'react'
-import bgImage from '../../assets/Departement.jpeg'
+import bgImage from '../assets/Departement.jpeg'
 
 
 export default function LandingPage() {

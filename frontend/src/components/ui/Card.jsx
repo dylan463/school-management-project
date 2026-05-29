@@ -1,7 +1,7 @@
 export default function Card({ title, children, action, className = '', onClick, ...props }) {
   return (
     <div
-      className={`bg-white rounded-xl border border-slate-100 ${className}`}
+      className={`bg-white rounded-[10px] border border-slate-100 shadow-lg ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

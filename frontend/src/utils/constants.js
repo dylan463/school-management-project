@@ -14,6 +14,8 @@ export const TOKEN_KEY = {
   REFRESH: 'refresh_token',
 }
 
+export const PAGINATION_SIZE = 10
+
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",

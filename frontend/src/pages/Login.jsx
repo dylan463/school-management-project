@@ -1,33 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { ROUTES, ROLES } from '../../utils/constants'
-import Input  from '../../components/ui/Input'
-import Button from '../../components/ui/Button'
-import '../../index.css' // Assure-toi que la police Poppins est importée dans ton CSS global
+import { useAuth } from '../context/AuthContext'
+import { ROUTES, ROLES } from '../utils/constants'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 import { toast } from 'react-toastify'
 
 export default function LoginPage() {
   const { login, loading, isAuthenticated, role, error, setError } = useAuth()
   const navigate = useNavigate()
 
-  const [matricule,   setMatricule]   = useState('')
-  const [motDePasse,  setMotDePasse]  = useState('')
+  const [matricule, setMatricule] = useState('')
+  const [motDePasse, setMotDePasse] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   // Rediriger vers le dashboard approprié après la connexion
   useEffect(() => {
     if (isAuthenticated && role) {
-      if (role == ROLES.SYSTEM_ADMIN){
-        navigate(ROUTES.HEADS_AND_MENTION,{ replace: true })
-      }else if (role === ROLES.STUDENT) {
+      if (role == ROLES.SYSTEM_ADMIN) {
+        navigate(ROUTES.HEADS_AND_MENTION, { replace: true })
+      } else if (role === ROLES.STUDENT) {
         navigate(ROUTES.DASHBOARD_ETU, { replace: true })
       } else if (role == ROLES.TEACHER) {
         navigate(ROUTES.DASHBOARD_ENS, { replace: true })
-      } else if (role == ROLES.DEPARTMENT_HEAD){
-        navigate(ROUTES.DASHBOARD_ADMIN,{replace:true})
-      }else{
-        navigate('notFound',{replace: true})
+      } else if (role == ROLES.DEPARTMENT_HEAD) {
+        navigate(ROUTES.DASHBOARD_ADMIN, { replace: true })
+      } else {
+        navigate('notFound', { replace: true })
       }
     }
   }, [isAuthenticated, role, navigate])
@@ -71,7 +70,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-black/40"></div>
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center">
-        
+
         {/* Logo + phrase de bienvenue */}
         <div className="flex flex-col items-center mb-6">
           <img
@@ -147,8 +146,8 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
-                    <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                   Connexion en cours…
                 </span>
@@ -157,7 +156,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-[12px] text-slate-500 mt-6">
-            <span 
+            <span
               className="text-blue-600 cursor-pointer hover:underline"
               onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
             >

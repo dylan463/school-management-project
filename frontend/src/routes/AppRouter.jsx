@@ -2,81 +2,128 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ROLES, ROUTES } from '../utils/constants'
 
 import ProtectedRoute from './ProtectedRoute'
-import InfoPerso from '../pages/auth/InfoPerso'
-// Public
-import LandingPage    from '../pages/auth/LandingPage'
-import LoginPage      from '../pages/auth/LoginPage'
-import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage'
 
 // Layouts
-import AppLayout      from '../components/layout/AppLayout'
+import AppLayout from '../components/layout/AppLayout'
 
-// === ÉTUDIANT ===
-import DashboardEtudiant   from '../pages/etudiant/DashboardEtudiant'
-import EmploiDuTemps       from '../pages/commun/EmploiDuTemps'
+// ── Public ──
+import Home from '../pages/Home'
+import Login from '../pages/Login'
+import ForgotPassword from '../pages/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword'
 
-// === ENSEIGNANT ===
-import DashboardEnseignant from '../pages/enseignant/DashboardEnseignant'
-// === TEACHER ADMIN ===
-import DashboardTeacherAdmin from '../pages/admin/DashboardTeacherAdmin'
-import Etudiants            from '../pages/admin/Etudiants'
-import Enseignants          from '../pages/admin/Enseignants'
-import StructuresAcademiques from '../pages/admin/StructuresAcademiques'
-import Enseignement          from '../pages/admin/Enseignement'
-import Inscriptions          from '../pages/admin/Inscriptions'
-import UsersAndMention from '../pages/systemadmin/UsersAndMention'
+// ── Commun (tous les utilisateurs connectés) ──
+import Profile from '../pages/Profile'
+
+// ── Étudiant ──
+import DashboardStudent from '../pages/DashboardStudent'
+
+// ── Enseignant ──
+import DashboardTeacher from '../pages/DashboardTeacher'
+
+// ── Management (head, secretary, officer) ──
+import DashboardManagement from '../pages/DashboardManagement'
+import MentionsAndHeads from '../pages/MentionsAndHeads'
+import Secretaries from '../pages/Secretaries'
+import Officers from '../pages/Officers'
+import Teachers from '../pages/Teachers'
+import Students from '../pages/Students'
+import Schoolyears from '../pages/Schoolyears'
+import Formations from '../pages/Formations'
+import Semesters from '../pages/Semesters'
+import Levels from '../pages/Levels'
+import CourseUnits from '../pages/CourseUnits'
+import CourseModules from '../pages/CourseModules'
+import Assessments from '../pages/Assessments'
+import Grades from '../pages/Grades'
+import Results from '../pages/Results'
+import History from '../pages/History'
+import Deliberations from '../pages/Deliberations'
+import Reenrollment from '../pages/Reenrollment'
+
+import NotFound from '../pages/NotFound'
 
 export default function AppRouter() {
   return (
     <Routes>
-      <Route path={ROUTES.HOME}  element={<LandingPage />} />
-      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-      
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT,ROLES.DEPARTMENT_SECRETARY,ROLES.DEPARTMENT_HEAD,ROLES.REGISTRAR_OFFICER,ROLES.TEACHER,ROLES.SYSTEM_ADMIN]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.INFORMATIONS} element={<InfoPerso />} />
+      {/* public routes */}
+      <Route path={ROUTES.HOME} element={<Home />} />
+      <Route path={ROUTES.LOGIN} element={<Login />} />
+      <Route path={ROUTES.FORGOTPASSWORD} element={<ForgotPassword />} />
+      <Route path={ROUTES.RESETPASSWORD} element={<ResetPassword />} />
+
+      {/* all connected users */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.TEACHER, ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.REGISTRAR_OFFICER, ROLES.SYSTEM_ADMIN]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.PROFIL} element={<Profile />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT,ROLES.TEACHER,ROLES.DEPARTMENT_HEAD]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.ENSEIGNEMENT}   element={<Enseignement />} />
-          <Route path={ROUTES.EMPLOI_DU_TEMPS}   element={<EmploiDuTemps />} />
-          <Route path={ROUTES.INSCRIPTIONS}   element={<Inscriptions />} />
+      {/* students */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.DASHBOARDSTUDENT} element={<DashboardStudent />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.DASHBOARD_ETU}         element={<DashboardEtudiant />} />
+      {/* teachers */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.TEACHER]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.DASHBOARDTEACHER} element={<DashboardTeacher />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.TEACHER]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.DASHBOARD_ENS}        element={<DashboardEnseignant />} />
+      {/* heads,secretaries and officers */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.REGISTRAR_OFFICER]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.DASHBOARDMANAGEMENT} element={<DashboardManagement />} />
         </Route>
       </Route>
 
-      {/* ── TEACHER ADMIN ── */}
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.DASHBOARD_ADMIN}      element={<DashboardTeacherAdmin />} />
-          <Route path={ROUTES.ETUDIANTS_ADMIN}      element={<Etudiants />} />
-          <Route path={ROUTES.ENSEIGNANTS_ADMIN}    element={<Enseignants />} />
-          <Route path={ROUTES.STRUCTURES_ADMIN}     element={<StructuresAcademiques />} />
+      {/* heads,secretaries,officers and students */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.REGISTRAR_OFFICER, ROLES.STUDENT]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.HISTORY} element={<History />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={[ROLES.SYSTEM_ADMIN]}/>}>
-        <Route element={<AppLayout/>}>
-          <Route path={ROUTES.HEADS_AND_MENTION} element={<UsersAndMention/>} />
+      {/* heads,secretaries,teachers and students */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.TEACHER, ROLES.STUDENT]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.COURSEUNITS} element={<CourseUnits />} />
+          <Route path={ROUTES.COURSEMODULES} element={<CourseModules />} />
+          <Route path={ROUTES.ASSESSMENTS} element={<Assessments />} />
+          <Route path={ROUTES.GRADES} element={<Grades />} />
+          <Route path={ROUTES.RESULTS} element={<Results />} />
+        </Route>
+      </Route>
+
+
+      {/*  department staff */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.SECRETARIES} element={<Secretaries />} />
+          <Route path={ROUTES.OFFICERS} element={<Officers />} />
+          <Route path={ROUTES.STUDENTS} element={<Students />} />
+          <Route path={ROUTES.TEACHERS} element={<Teachers />} />
+          <Route path={ROUTES.SCHOOLYEARS} element={<Schoolyears />} />
+          <Route path={ROUTES.FORMATIONS} element={<Formations />} />
+          <Route path={ROUTES.SEMESTERS} element={<Semesters />} />
+          <Route path={ROUTES.LEVELS} element={<Levels />} />
+          <Route path={ROUTES.DELIBERATIONS} element={<Deliberations />} />
+          <Route path={ROUTES.REENROLLMENT} element={<Reenrollment />} />
+        </Route>
+      </Route>
+
+      {/* ── System Admin ── */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.SYSTEM_ADMIN]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.MENTIONS_AND_HEADS} element={<MentionsAndHeads />} />
         </Route>
       </Route>
 
       {/* ── Catch-all ── */}
-      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

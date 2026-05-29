@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../utils/constants'
-import Input from '../../components/ui/Input'
-import Button from '../../components/ui/Button'
+import { ROUTES } from '../utils/constants'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
       <div className="absolute inset-0 bg-black/40"></div>
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center">
-        
+
         <div className="flex flex-col items-center mb-6">
           <img
             src="src/assets/telecom.png"
@@ -67,8 +67,8 @@ export default function ForgotPasswordPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
-                    <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                   Envoi en cours…
                 </span>

@@ -6,7 +6,8 @@ from .views import (
     GradeViewSet,
     ResultViewSet,
     BulletinView,
-    GradeGridView
+    GradeGridView,
+    DebtViewSet
     )
 
 router = DefaultRouter()
@@ -14,6 +15,7 @@ router.register(r"enrollments", EnrollmentViewSet, basename="enrollments")
 router.register(r"assessments", AssessmentViewSet, basename="assessments")
 router.register(r"grades", GradeViewSet, basename="grades")
 router.register(r"results", ResultViewSet, basename="results")
+router.register(r"debts", DebtViewSet, basename="debts")
 
 urlpatterns = router.urls + [
     path("enrollments/<int:pk>/bulletin/", BulletinView.as_view()),

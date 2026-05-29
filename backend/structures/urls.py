@@ -7,9 +7,9 @@ from .views import (
 router = DefaultRouter()
 router.register(r"formations", FormationViewSet,basename='formations')
 router.register(r"semesters", SemesterViewSet,basename='semesters')
-router.register(r"school_years", SchoolYearViewSet,basename='school_years')
-router.register(r"course_units", CourseUnitViewSet,basename="courseunit")
-router.register(r"course_modules", CourseModuleViewSet,basename="coursemodule")
+router.register(r"schoolyears", SchoolYearViewSet,basename='schoolyears')
+router.register(r"courseunits", CourseUnitViewSet,basename="courseunit")
+router.register(r"coursemodules", CourseModuleViewSet,basename="coursemodule")
 router.register(r'mentions',MentionViewSet,basename='mentions')
 
 urlpatterns = router.urls

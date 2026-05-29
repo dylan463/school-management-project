@@ -1,74 +1,104 @@
 import api from './api'
 
-const assessmentsService = {
-  assessmentService: {
-    getAssessments: async (filters = {}) => {
-      const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/assessments/?${params.toString()}`)
-      return response.data
-    },
-    createAssessment: async (data) => {
-      const response = await api.post('/assessments/assessments/', data)
-      return response.data
-    },
-    updateAssessment: async (id, data) => {
-      const response = await api.patch(`/assessments/assessments/${id}/`, data)
-      return response.data
-    },
-    deleteAssessment: async (id) => {
-      const response = await api.delete(`/assessments/assessments/${id}/`)
-      return response.data
-    },
-    publishAssessment: async (id) => {
-      const response = await api.post(`/assessments/assessments/${id}/publish/`)
-      return response.data
-    },
-    unpublishAssessment: async (id) => {
-      const response = await api.post(`/assessments/assessments/${id}/unpublish/`)
-      return response.data
-    },
-    getAsessementAttendant: async (id, filters = {}) => {
-      const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/assessments/${id}/attendant_student/?${params.toString()}`)
-      return response.data
-    }
+export const enrollmentService = {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/enrollment/?${params.toString()}`)
+    return response.data
   },
-  gradeService: {
-    getGrades: async (filters = {}) => {
-      const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/grades/?${params.toString()}`)
-      return response.data
-    },
-    createGrade: async (data) => {
-      const response = await api.post('/assessments/grades/', data)
-      return response.data
-    },
-    updateGrade: async (id, data) => {
-      const response = await api.patch(`/assessments/grades/${id}/`, data)
-      return response.data
-    },
-    deleteGrade: async (id) => {
-      const response = await api.delete(`/assessments/grades/${id}/`)
-      return response.data
-    }
+  create: async (data) => {
+    const response = await api.post('/assessments/enrollment/', data)
+    return response.data
   },
-  resultService: {
-    getResults: async (filters = {}) => {
-      const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/results/?${params.toString()}`)
-      return response.data
-    },
-    publish: async (data) => {
-      const response = await api.post(`/assessments/results/publish/`, data)
-    }
+  update: async ({id, data}) => {
+    const response = await api.patch(`/assessments/enrollment/${id}/`, data)
+    return response.data
   },
-  bulletinService: {
-    getBulletins: async (filters = {}) => {
-      const params = new URLSearchParams(filters)
-      const response = await api.get(`/assessments/bulletins/?${params.toString()}`)
-      return response.data
-    }
+  delete: async (id) => {
+    const response = await api.delete(`/assessments/enrollment/${id}/`)
+    return response.data
+  },
+  changeStatus: async ({id,data}) => {
+    const response = await api.post(`/assessments/enrollment/${id}/change_status`, data)
+  } 
+}
+
+export const assessmentService = {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/assessments/?${params.toString()}`)
+    return response.data
+  },
+  create: async (data) => {
+    const response = await api.post('/assessments/assessments/', data)
+    return response.data
+  },
+  update: async ({id, data}) => {
+    const response = await api.patch(`/assessments/assessments/${id}/`, data)
+    return response.data
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/assessments/assessments/${id}/`)
+    return response.data
+  },
+  togglePublication: async (id) => {
+    const response = await api.post(`/assessments/assessments/${id}/toggle_publication`)
+    return response.data  
+  },
+  attendants: async (filters) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/assessments/attendant_student/?${params.toString()}`)
+    return response.data
   }
 }
 
-export default assessmentsService
+export const gradeService= {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/grades/?${params.toString()}`)
+    return response.data
+  },
+  create: async (data) => {
+    const response = await api.post('/assessments/grades/', data)
+    return response.data
+  },
+  update: async ({id, data}) => {
+    const response = await api.patch(`/assessments/grades/${id}/`, data)
+    return response.data
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/assessments/grades/${id}/`)
+    return response.data
+  }
+}
+
+export const resultService= {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/results/?${params.toString()}`)
+    return response.data
+  },
+}
+
+export const debtService= {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/assessments/debts/?${params.toString()}`)
+    return response.data
+  },
+}
+
+export const BulletinService = {
+  retrive: async (id) => {
+    const response = await api.get(`/assessments/enrollments/${id}/bulletin/`)
+    return response.data
+  }
+}
+
+export const gridService = {
+  retrieve: async (data) => {
+    const params = new URLSearchParams(data)
+    const response = await api.get(`/assessments/grade-grid/?${params.toString()}`)
+    return response.data
+  }
+}

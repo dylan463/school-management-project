@@ -21,7 +21,8 @@ from .serializers import (
     BulletinSerializer,
     GradeGridSerializer,
     EnrollmentResultSerializer,
-    AssessmentSerializer
+    AssessmentSerializer,
+    DebtSerializer
 )
 from .query import attend_to_assessment,people_with_course_debt
 
@@ -124,8 +125,8 @@ class AssessmentViewSet(ModelViewSet):
         response_serializer = AssessmentSerializer(assessment)
         return Response(response_serializer.data)
 
-    @action(detail=True,methods=["get"])
-    def attendant_student(self,request,pk):
+    @action(detail=False,methods=["get"])
+    def attendant_student(self,request):
         assessment :Assessment = self.get_object()
         has_grade = request.query_params.get("has_grade")
         has_debt = request.query_params.get("has_debt")
@@ -195,7 +196,33 @@ class ResultViewSet(GenericViewSet,mixins.ListModelMixin):
 
     def get_queryset(self):
         user = self.request.user
-        return get_result_queryset(user)
+        return get_result_queryset(user).select_related(
+            "course_module",
+            "course_module__course_unit",
+            "enrollment__student",
+            "enrollment__school_year"
+            )
+    
+    def get_permissions(self):
+        if self.action == "list":
+            return [IsInMention()]
+        else:
+            return [IsDepartmentStaff()]
+        
+class DebtViewSet(GenericViewSet,mixins.ListModelMixin):
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    filterset_fields = ["cleared"]
+    serializer_class = DebtSerializer
+    search_fields = ["result__enrollment__student__first_name","result__enrollment__student__last_name"]
+
+    def get_queryset(self):
+        user = self.request.user
+        return get_result_queryset(user).select_related(
+            "result__course_module",
+            "result__course_module__course_unit",
+            "result__enrollment__student",
+            "result__enrollment__school_year"
+            )
     
     def get_permissions(self):
         if self.action == "list":

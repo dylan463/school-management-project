@@ -168,14 +168,20 @@ class GradeGridSerializer(serializers.Serializer):
             for result in enrollment_results
         ]
 class EnrollmentResultSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
+    full_name = serializers.CharField(source="enrollment.student.get_full_name")
     course_credit = serializers.CharField(source="course_module.credits")
     semester = serializers.CharField(source='course_module.course_unit.semester.code')
     formation = serializers.CharField(source='course_module.course_unit.formation.code')
+    school_year = serializers.CharField(source='enrollment.school_year.text')
+    course_module = serializers.CharField(source="course_module.text")
+    course_unit = serializers.CharField(source="course_module.course_unit.text")
     
     class Meta:
         model=EnrollmentResult
-        fields = ['full_name','final_score','status','course_credit','semester','formation']
-    def get_full_name(self,obj):
-        student = obj.enrollment.student_school_year.student
-        return f'{student.first_name} {student.last_name}'
+        fields = ['full_name',"course_unit",'final_score','course_module','status','course_credit','semester','formation']
+
+class DebtSerializer(serializers.ModelSerializer):
+    result = EnrollmentResultSerializer()
+    class Meta:
+        model = Debt
+        fields = ["results","cleared"]

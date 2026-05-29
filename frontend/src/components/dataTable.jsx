@@ -1,129 +1,271 @@
-import { useEffect, useState,useId } from "react"
+/**
+ * @typedef {Object} Column
+ * @property {string} key          - Clé correspondant à une propriété de l'objet data
+ * @property {string} header       - Titre affiché dans l'en-tête de la colonne
+ * @property {function} [render]   - (optionnel) Fonction custom pour afficher la cellule : (value) => ReactNode
+ */
 
-export function CreateAction(text, color, onClick = (content) => { }, contentCondition = (content) => { return true }, condition = true) {
-  return { text, color, onClick, contentCondition, condition }
+/**
+ * @typedef {Object} Action
+ * @property {string} label                       - Texte affiché dans le menu
+ * @property {function} handler                   - Fonction appelée au clic : (row) => void
+ * @property {function} [conditionRow]            - (optionnel) Condition basée sur la ligne : (row) => boolean
+ * @property {boolean|function} [conditionGlobal] - (optionnel) Condition globale : boolean ou () => boolean
+ */
+
+/**
+ * @typedef {"single" | "multiple" | false} SelectionMode
+ * - "single"   : une seule ligne sélectionnable à la fois (radio)
+ * - "multiple" : plusieurs lignes sélectionnables (checkbox + tout cocher)
+ * - false      : pas de sélection (défaut)
+ *
+ * @example
+ * // Sélection multiple avec callback
+ * <DataTable
+ *   data={data}
+ *   columns={columns}
+ *   selectionMode="multiple"
+ *   onSelectionChange={(selectedRows) => console.log(selectedRows)}
+ * />
+ *
+ * // Sélection simple avec callback
+ * <DataTable
+ *   data={data}
+ *   columns={columns}
+ *   selectionMode="single"
+ *   onSelectionChange={([row]) => console.log(row)}
+ * />
+ */
+
+import { useState, useEffect, useRef } from "react";
+
+export default function DataTable({
+  data,
+  columns,
+  actions = [],
+  selectionMode = false,
+  onSelectionChange,
+}) {
+  const [openRowId, setOpenRowId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // Notifie le parent à chaque changement de sélection
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    const selectedRows = data.filter((row) => selectedIds.has(row.id));
+    onSelectionChange(selectedRows);
+  }, [selectedIds]);
+
+  function handleToggleRow(id) {
+    setSelectedIds((prev) => {
+      if (selectionMode === "single") {
+        return prev.has(id) ? new Set() : new Set([id]);
+      }
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function handleToggleAll(checked) {
+    setSelectedIds(checked ? new Set(data.map((r) => r.id)) : new Set());
+  }
+
+  const allSelected = data.length > 0 && selectedIds.size === data.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse border border-gray-200">
+        <TableHeader
+          columns={columns}
+          hasActions={actions.length > 0}
+          selectionMode={selectionMode}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onToggleAll={handleToggleAll}
+        />
+        <tbody>
+          {data.map((row) => (
+            <TableRow
+              key={row.id}
+              row={row}
+              columns={columns}
+              actions={actions}
+              openRowId={openRowId}
+              setOpenRowId={setOpenRowId}
+              selectionMode={selectionMode}
+              selected={selectedIds.has(row.id)}
+              onToggle={() => handleToggleRow(row.id)}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-
-function DataTable({
-    renderCondition = true,
-    renderFailText = "",
-    noContentText = "Aucun élément trouvé",
-    contents = null,
-    tableheadNames = [],
-    headActions = 'Actions',
-    actions = [],
-    Row = (content) => <><td></td></>,
-    hasSelection = false,
-    selectedItem = null,
-    setSelectedItem = () => { },
-    headClassName = ''
+function TableHeader({
+  columns,
+  hasActions,
+  selectionMode,
+  allSelected,
+  someSelected,
+  onToggleAll,
 }) {
-    if (!contents){
-        return <></>
+  const checkboxRef = useRef(null);
+
+  // État indeterminate sur la checkbox "tout cocher"
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = someSelected;
     }
-    const tableHead = [...tableheadNames,headActions]
-    const [openMenuId, setOpenMenuId] = useState(null)
-    const clickoutside = useId()
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-        if (
-            openMenuId &&
-            !event.target.closest(`.${clickoutside}-menu-container`)
-        ) {
-            setOpenMenuId(null)
-        }
-        }
-        document.addEventListener("mousedown", handleClickOutside)
-        return () => {
-        document.removeEventListener("mousedown", handleClickOutside)
-        }
-    }, [openMenuId])
-    return (
-        <>
-            <div className="min-h-[200px]  w-full">
-            {!renderCondition ? (
-                <p className="min-h-[200px] grid grid-cols-1 items-center justify-items-center text-xs text-slate-500">
-                {renderFailText}
-                </p>
-            ) : contents.length === 0 ? (
-                <p className="min-h-[200px] grid grid-cols-1 items-center justify-items-center text-xs text-slate-500">
-                {noContentText}
-                </p>
-            ) : (
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-tb border-['#f5e6d8] bg-[#fdf6f0] h-[40px]">
-                            {tableHead.map((value,index) =>{return <th className={headClassName} key={index}>{value}</th>})}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {contents.map((content)=>{
-                            const contentConditions = actions.map(ac => {
-                                return (!!ac.contentCondition ? ac.contentCondition(content) : true) && ac.condition
-                            }) 
-                            return (
-                                <tr 
-                                key={content.id} 
-                                className={`relative ${clickoutside}-menu-container border-b h-[40px] border-slate-200 w-full text-left px-3 py-2 transition-colors mb-1 ${
-                                    hasSelection
-                                    ? `${
-                                        selectedItem?.id === content.id
-                                            ? "bg-slate-200 text-blue-800 font-medium"
-                                            : "hover:bg-slate-100 text-slate-700"}`
-                                    : "hover:bg-slate-100 text-slate-700 "
-                                }`}
-                                onClick={()=> {
-                                    if (!hasSelection) return
-                                    if (content.id = selectedItem?.id){
-                                        setSelectedItem(null)
-                                        return
-                                    }
-                                    setSelectedItem(content)
-                                }}
-                                >
-                                    {Row(content)}
-                                    {/* bouton action et menu flottant */}
-                                    <td className="w-[40px]">
-                                        {contentConditions.includes(true) ? (
-                                            <>
-                                                <button
-                                                    onClick={(e)=>{
-                                                        e.stopPropagation()
-                                                        setOpenMenuId(openMenuId === content.id? null : content.id)
-                                                    }}
-                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                                >
-                                                    ⋮
-                                                </button>
-                                                {openMenuId == content.id && (
-                                                    <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-lg shadow-lg z-10 w-[100px]">
-                                                        {actions.map(({text,onClick,color='blue'},index)=>{
-                                                            return contentConditions[index] && (
-                                                                <button 
-                                                                key={index} 
-                                                                onClick={()=>{onClick(content);setOpenMenuId(null)}}
-                                                                className={`w-full text-left px-3 py-2 text-${color}-600 hover:bg-${color}-50`}
-                                                                >
-                                                                    {text}
-                                                                </button>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : ' '}
-                                    </td>
-                                </tr>
-                            )
-                        })}                    
-                    </tbody>
-                </table>
-                )}
-            </div>
-        </>)
+  }, [someSelected]);
+
+  return (
+    <thead>
+      <tr className="bg-gray-100">
+        {selectionMode === "multiple" && (
+          <th className="border p-2 w-10">
+            <input
+              ref={checkboxRef}
+              type="checkbox"
+              checked={allSelected}
+              onChange={(e) => onToggleAll(e.target.checked)}
+            />
+          </th>
+        )}
+        {selectionMode === "single" && <th className="border p-2 w-10" />}
+        {columns.map((column) => (
+          <th key={String(column.key)} className="border p-2">
+            {column.header}
+          </th>
+        ))}
+        {hasActions && <th className="border p-2 w-16">Actions</th>}
+      </tr>
+    </thead>
+  );
+}
+
+function getAvailableActions(actions, row) {
+  return actions.filter((action) => {
+    const rowOk =
+      typeof action.conditionRow === "function"
+        ? action.conditionRow(row)
+        : true;
+    const globalValue =
+      typeof action.conditionGlobal === "function"
+        ? action.conditionGlobal()
+        : action.conditionGlobal;
+    const globalOk = globalValue === undefined ? true : Boolean(globalValue);
+    return rowOk && globalOk;
+  });
+}
+
+function TableRow({
+  row,
+  columns,
+  actions,
+  openRowId,
+  setOpenRowId,
+  selectionMode,
+  selected,
+  onToggle,
+}) {
+  const availableActions = getAvailableActions(actions, row);
+
+  return (
+    <tr
+      className={`hover:bg-gray-50 ${selected ? "bg-blue-50" : ""}`}
+      onClick={selectionMode ? onToggle : undefined}
+      style={selectionMode ? { cursor: "pointer" } : undefined}
+    >
+      {selectionMode === "multiple" && (
+        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
+      {selectionMode === "single" && (
+        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="radio"
+            checked={selected}
+            onChange={onToggle}
+          />
+        </td>
+      )}
+      {columns.map((column) => (
+        <TableCell
+          key={String(column.key)}
+          value={row[column.key]}
+          render={column.render}
+        />
+      ))}
+      {actions.length > 0 && (
+        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
+          {availableActions.length > 0 && (
+            <ActionMenu
+              actions={availableActions}
+              row={row}
+              openRowId={openRowId}
+              setOpenRowId={setOpenRowId}
+            />
+          )}
+        </td>
+      )}
+    </tr>
+  );
+}
+
+function TableCell({ value, render }) {
+  return (
+    <td className="border p-2">{render ? render(value) : String(value)}</td>
+  );
+}
+
+function ActionMenu({ actions, row, openRowId, setOpenRowId }) {
+  const isOpen = openRowId === row.id;
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenRowId(null);
+      }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, setOpenRowId]);
 
-
-
-export default DataTable
+  return (
+    <div className="relative inline-block" ref={menuRef}>
+      <button
+        onClick={() => setOpenRowId(isOpen ? null : row.id)}
+        className="px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-sm"
+      >
+        ⋯
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 z-50 mt-1 min-w-max rounded border border-gray-200 bg-white shadow-lg">
+          {actions.map((action, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                action.handler(row);
+                setOpenRowId(null);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 first:rounded-t last:rounded-b"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

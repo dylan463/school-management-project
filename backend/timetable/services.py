@@ -1,5 +1,6 @@
-from .models import Schedule, ScheduleEntry, TeacherAvalability
+from .models import Schedule, ScheduleEntry, TeacherAvailability
 from rest_framework.exceptions import ValidationError
+from django.db.models import Q
 
 
 def create_schedule_entry(data: dict) -> ScheduleEntry:
@@ -10,7 +11,7 @@ def create_schedule_entry(data: dict) -> ScheduleEntry:
     start_time = data.get("start_time")
     end_time = data.get("end_time")
 
-    teacher_availabilities = TeacherAvalability.objects.filter(
+    teacher_availabilities = TeacherAvailability.objects.filter(
         teacher=data["course_module"].teacher,
         day=day,
         start_time__lte=start_time,
@@ -38,4 +39,26 @@ def create_schedule_entry(data: dict) -> ScheduleEntry:
 
     entry = ScheduleEntry.objects.create(**data)
     return entry
+
+
+
+def create_teacher_availability(data: dict) -> ScheduleEntry:
+    day = data.get("day")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+
+    teacher_availabilities = TeacherAvailability.objects.filter(
+        teacher=data["course_module"].teacher,
+        day=day,
+    ).exclude(
+        Q(end_time__lte=start_time) | Q(start_time__gte=end_time)
+    )
+
+    if teacher_availabilities.exists():
+        raise ValidationError({
+            "detail": "cette plage horaire est déjà prise"
+        })
+
+    ta = TeacherAvailability.objects.create(**data)
+    return ta
 

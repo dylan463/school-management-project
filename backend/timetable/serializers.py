@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Schedule, ScheduleEntry, TeacherAvalability
+from .models import Schedule, ScheduleEntry, TeacherAvailability
 from collections import defaultdict
 from structures.serializers import CourseModuleSerializer
 from structures.models import CourseModule
@@ -37,10 +37,21 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
 class TeacherAvailabilitySerializer(serializers.ModelSerializer):
     teacher = serializers.CharField(source="teacher.get_full_name", read_only=True)
     class Meta:
-        model = TeacherAvalability
+        model = TeacherAvailability
         fields = ["teacher", "day", "start_time", "end_time"]
 
 class TeacherAvailabilityCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TeacherAvalability
+        model = TeacherAvailability
         fields = ["teacher", "day", "start_time", "end_time"]
+
+    def validate(self,attrs):
+        start_time = attrs.get("start_time")
+        end_time = attrs.get("end_time")
+
+        if not start_time < end_time:
+            raise serializers.ValidationError({
+                "detail":"le debut doit être avant la fin"
+            })
+
+        return attrs

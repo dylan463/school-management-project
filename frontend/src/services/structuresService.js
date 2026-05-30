@@ -6,6 +6,10 @@ export const mentionService = {
     const response = await api.get(`/structures/mentions/?${params.toString()}`)
     return response.data
   },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/mentions/${id}/`)
+    return response.data
+  },
   create: async (data) => {
     const response = await api.post('/structures/mentions/', data)
     return response.data
@@ -24,6 +28,10 @@ export const formationService = {
   list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/formations/?${params.toString()}`)
+    return response.data
+  },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/formations/${id}/`)
     return response.data
   },
   create: async (data) => {
@@ -50,6 +58,10 @@ export const semesterService = {
     const response = await api.get(`/structures/semesters/?${params.toString()}`)
     return response.data
   },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/semesters/${id}/`)
+    return response.data
+  },
   create: async (data) => {
     const response = await api.post('/structures/semesters/', data)
     return response.data
@@ -72,6 +84,10 @@ export const schoolyearService = {
   list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/schoolyears/?${params.toString()}`)
+    return response.data
+  },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/schoolyears/${id}/`)
     return response.data
   },
   create: async (data) => {
@@ -99,6 +115,10 @@ export const coursemoduleService = {
     const response = await api.get(`/structures/coursemodules/?${params.toString()}`)
     return response.data
   },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/coursemodules/${id}/`)
+    return response.data
+  },
   create: async (data) => {
     const response = await api.post('/structures/coursemodules/', data)
     return response.data
@@ -121,6 +141,10 @@ export const courseunitService = {
   list: async (filters= {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/courseunits/?${params.toString()}`)
+    return response.data
+  },
+  retrieve: async (id) => {
+    const response = await api.get(`/structures/courseunits/${id}/`)
     return response.data
   },
   create: async (data) => {

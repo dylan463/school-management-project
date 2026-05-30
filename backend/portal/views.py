@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 # Local apps
@@ -15,7 +16,8 @@ from structures.user_services import create_user
 class HeadsViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.filter(role=Role.DEPARTMENT_HEAD).order_by('id')
-    filter_backends = [SearchFilter]
+    filter_backends = [SearchFilter,DjangoFilterBackend]
+    filterset_fields = ['mention']
     search_fields = ["last_name","first_name",'email','username']
     permission_classes = [IsSystemAdmin]
     
@@ -30,7 +32,8 @@ class HeadsViewSet(ModelViewSet):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        data.pop('role')
+        if data.get('role'):
+            data.pop('role')
         role = Role.DEPARTMENT_HEAD
         mention = data.pop('mention')
         user = create_user(data,role,mention)

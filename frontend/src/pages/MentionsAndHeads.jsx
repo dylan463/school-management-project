@@ -1,265 +1,45 @@
-import Card from "../components/ui/Card"
-import SearchInput from "../components/SearchInput"
-import Button from "../components/ui/Button"
-import DataTable from '../components/DataTable'
-import { useMentions } from '../hooks/mentions/useMentions'
-import { useMemo } from "react"
-import useDebounced from '../hooks/useDebounced'
-import { useQueryState } from 'nuqs'
-import Paginator from '../components/Paginator'
-import { PAGINATION_SIZE } from "../utils/constants"
-import { useModal } from '../context/ModalContext'
-import { useState, useEffect } from "react";
-import { useCreateMention } from "../hooks/mentions/useCreateMention";
-import { useUpdateMention } from "../hooks/mentions/useUpdateMention";
-import { useDeleteMention } from "../hooks/mentions/useDeleteMention";
-import useDRFErrors from "../hooks/useDRFError";
-import { toast } from 'react-toastify'
-
-function AddOrEditForm({ initialData = {}, onSuccess }) {
-  const isEdit = Boolean(initialData?.id);
-
-  const [form, setForm] = useState({
-    text: "",
-    code: "",
-  });
-
-  const create = useCreateMention();
-  const update = useUpdateMention();
-
-  const { handleErrors, getError, clearErrors } = useDRFErrors();
-
-  const [loading, setLoading] = useState(false);
-
-  // remplir form si edit
-  useEffect(() => {
-    if (initialData) {
-      setForm({
-        text: initialData.text || "",
-        code: initialData.code || "",
-      });
-    }
-  }, [initialData?.id, initialData?.text, initialData?.code]); // ✅ primitives, stable
-
-  const handleChange = (e) => {
-    clearErrors();
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form.text || !form.code) return;
-
-    setLoading(true);
-
-    try {
-      if (isEdit) {
-        await update.mutateAsync(
-          { id: initialData.id, data: form },
-          {
-            onSuccess: () => {
-              onSuccess?.();
-            },
-          }
-        );
-      } else {
-
-        await create.mutateAsync(form, {
-          onSuccess: () => {
-            setForm({ text: "", code: "" });
-            onSuccess?.();
-          },
-        });
-      }
-    } catch (error) {
-      handleErrors(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
-
-      {/* TEXT */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Nom</label>
-        <input
-          name="text"
-          value={form.text}
-          onChange={handleChange}
-          className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
-          placeholder="Ex: Informatique"
-        />
-        {getError("text") && (
-          <span className="text-xs text-red-500">
-            {getError("text")}
-          </span>
-        )}
-      </div>
-
-      {/* CODE */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Code</label>
-        <input
-          name="code"
-          value={form.code}
-          onChange={handleChange}
-          className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
-          placeholder="Ex: INF"
-        />
-        {getError("code") && (
-          <span className="text-xs text-red-500">
-            {getError("code")}
-          </span>
-        )}
-      </div>
-
-      {/* GLOBAL ERROR */}
-      {getError("non_field_errors") && (
-        <div className="text-sm text-red-500">
-          {getError("non_field_errors")}
-        </div>
-      )}
-
-      {/* SUBMIT */}
-      <div className="flex justify-end">
-        <Button type="submit" variant="primary" disabled={loading}>
-          {loading
-            ? "Enregistrement..."
-            : isEdit
-              ? "Modifier"
-              : "Créer"}
-        </Button>
-      </div>
-
-    </form>
-  );
-}
-
-function DeleteConfirm({ Data, onSuccess }) {
-  const destroy = useDeleteMention()
-  const [loading, setLoading] = useState(true)
-  const { handleErrors, getError, clearErrors } = useDRFErrors()
-
-  const handleConfirm = async () => {
-    setLoading(true)
-    try {
-      await destroy.mutateAsync(Data.id)
-    } catch (error) {
-      handleErrors(error)
-      msg = getError('detail')
-      toast.error(msg)
-    } finally {
-      setLoading(false)
-      onSuccess?.()
-    }
-  }
-
-  return (<div>
-    <p> vouler vous supprimer la mention {Data.text} ?</p>
-    <div className="mt-4 flex justify-end">
-      <Button
-        onClick={() => handleConfirm()}
-      >
-        Supprimer
-      </Button>
-    </div>
-  </div>)
-}
-
-const MentionPanel = () => {
-  const [search, setSearch] = useQueryState("search", {
-    defaultValue: "",
-  });
-  const debouncedSearch = useDebounced(search)
-  const [page, setPage] = useQueryState("page", {
-    defaultValue: 1,
-    parse: (v) => Number(v),
-    serialize: (v) => String(v),
-  });
-  const { openModal, closeModal } = useModal()
-
-  const filters = useMemo(() => {
-    return {
-      ...(debouncedSearch && { search: debouncedSearch }),
-      ...(page && { page })
-    }
-  }, [debouncedSearch, page])
-
-  const { data, isLoading } = useMentions(filters);
-  const results = data?.results || [];
-  const totalPages = Math.max(
-    1,
-    Math.ceil((data?.count || 0) / PAGINATION_SIZE)
-  );
-  const columns = [
-    { header: "Id", key: "id" },
-    { header: "Nom", key: "text" },
-    { header: "Code", key: "code" }
-  ]
-
-  const actions = [
-    {
-      label: "Modifier",
-      handler: (row) => openModal({ title: "Modifier la mention", content: <AddOrEditForm initialData={row} onSuccess={closeModal} /> })
-    },
-    {
-      label: "Supprimer",
-      handler: (row) => openModal({ title: `Supprimer ${row.text}`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> })
-    }
-  ]
-
-  console.log(data)
-
-  return (
-    <Card>
-      <div className="px-2 py-2 flex justify-between">
-        <SearchInput
-          placeholder="rechercher une mention"
-          className="w-[200px]"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
-        ></SearchInput>
-        <Button
-          variant="primary"
-          onClick={() => {
-            openModal({ title: "ajouter une mention", content: <AddOrEditForm onSuccess={closeModal} /> })
-          }}
-        >
-          + ajouter
-        </Button>
-      </div>
-      {results.length != 0 ? <DataTable
-        data={results}
-        columns={columns}
-        actions={actions}
-        selectionMode={false}
-      /> : <div className="flex justify-center text-slate-500 text-[13px] items-center h-[100px]">Aucun resultats</div>
-      }
-      <Paginator
-        totalPages={totalPages}
-        page={page}
-        setPage={setPage}
-      />
-    </Card>
-  )
-}
-
+import MentionPanel from "../components/panel/MentionPanel"
+import HeadsPanel from "../components/panel/HeadsPanel"
 
 const MentionsAndHeads = () => {
   return (
-    <div>
-      <h1 className="font-bold">Mentions</h1>
-      <p>page pour gerer les mentions et les chef de départements</p>
-      {/* panneau de gestion de mentions */}
-      <MentionPanel />
+    <div className="max-w-7xl mx-auto space-y-10">
+      <header>
+        <h1 className="text-2xl font-bold text-slate-800">
+          Gestion des mentions
+        </h1>
+        <p className="mt-2 text-slate-500">
+          Gérez les mentions et attribuez les chefs de département.
+        </p>
+      </header>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">
+            Mentions
+          </h2>
+          <p className="text-sm text-slate-500">
+            Créez, modifiez et consultez les mentions existantes.
+          </p>
+        </div>
+
+        <MentionPanel />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">
+            Chefs de département
+          </h2>
+          <p className="text-sm text-slate-500">
+            Associez un responsable à chaque mention.
+          </p>
+        </div>
+
+        <HeadsPanel />
+      </section>
     </div>
-  )
-}
+  );
+};
 
 export default MentionsAndHeads

@@ -24,6 +24,7 @@ class User(AbstractUser):
         default=Role.STUDENT,
     )
     mention = models.ForeignKey(Mention,on_delete=models.PROTECT,blank=True,null=True)
+
     def save(self, *args, **kwargs):
         if not (self.role == Role.SYSTEM_ADMIN):
             self.is_staff = False

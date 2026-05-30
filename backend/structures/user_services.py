@@ -59,10 +59,12 @@ def create_user(data: dict,role,mention):
     username = generate_matricule(role, mention)
     password = generate_password(8)
 
-    data['username'] = username
-    data['password'] = password
+    email = data.pop('email')
+    data["username"] = username
+    data["role"] = role
+    data["mention"] = mention
 
-    user = User.objects.create_user(**data)
+    user = User.objects.create_user(email=email,password=password,**data)
 
     text_content = f"""
     Voici votre matricule et votre mot de passe.Veillez songer a changer votre mot de passe en arrivant sur la plateforme.

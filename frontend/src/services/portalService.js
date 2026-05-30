@@ -66,6 +66,10 @@ export const teacherSevices = {
     const r = await api.get(`/portal/teachers/?${params.toString()}`)
     return r.data
   },
+  retrieve: async (id) => {
+    const r = await api.get(`/portal/teachers/${id}/`)
+    return r.data
+  },
   create: async (data) => {
     const r  =  await api.post('/portal/teachers/',data)
     return r.data
@@ -84,6 +88,10 @@ export const studentSevices = {
   list : async (filters = {})=> {
     const params = new URLSearchParams(filters)
     const r = await api.get(`/portal/students/?${params.toString()}`)
+    return r.data
+  },
+  retrieve: async (id) => {
+    const r = await api.get(`/portal/students/${id}/`)
     return r.data
   },
   create: async (data) => {

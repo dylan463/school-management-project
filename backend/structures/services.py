@@ -26,6 +26,7 @@ def create_formation(user: User, data: dict):
 def delete_formation(formation :Formation):
     if CourseUnit.objects.filter(formation=formation).exists():
         raise ValidationError({'detail':'suppression impossible : formation référencé.'})
+    formation.delete()
 
 @transaction.atomic
 def toggle_formation_activation(formation: Formation):
@@ -43,6 +44,7 @@ def create_semester(user: User, data: dict):
 def delete_semester(semester :Semester):
     if CourseModule.objects.filter(semester=semester).exists():
         raise ValidationError({'detail':'suppression impossible : semestre référencé.'})
+    semester.delete()
 
 @transaction.atomic
 def toggle_semester_activation(semester: Semester):
@@ -72,6 +74,9 @@ Enrollment = apps.get_model('assessments','Enrollment')
 def delete_school_year(school_year :SchoolYear):
     if Enrollment.objects.filter(school_year=school_year).exists():
         raise ValidationError({'detail':'suppression impossible : inscritption référencé.'})
+    if school_year.is_locked:
+        raise ValidationError({'detail':'suppression impossible : année scolaire vérouillé.'})
+    school_year.delete()
 
 
 @transaction.atomic

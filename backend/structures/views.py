@@ -60,7 +60,13 @@ from .serializers import (
 )
 from .permissions import IsSystemAdmin
 from .user_services import delete_mention
-
+from .models import (
+    SchoolYear,
+    Formation,
+    Semester,
+    CourseUnit,
+    CourseModule,
+)
 
 class MentionViewSet(ModelViewSet):
     serializer_class = MentionSerailizer
@@ -137,7 +143,7 @@ class SemesterViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        serializer = SemesterSerializer(data=request.data)
+        serializer = SemesterSerializer(data=request.data,context={"request":request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
         semester = create_semester(user,data)

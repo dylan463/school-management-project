@@ -6,6 +6,10 @@ export const scheduleService= {
     const response = await api.get(`/timetable/schedules/?${params.toString()}`)
     return response.data
   },
+  retrieve: async (id) => {
+    const response = await api.get(`/timetable/schedules/${id}/`)
+    return response.data
+  },
   create: async (formation,semester) => {
     const data = { formation, semester }
     const response = await api.post('/timetable/schedules/', data)

@@ -38,7 +38,7 @@ export function ModalProvider({ children }) {
           onClick={closeModal}
         >
           <div
-            className="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden"
+            className="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -56,7 +56,8 @@ export function ModalProvider({ children }) {
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5">{modal.content}</div>
+            {/* Body */}
+            <div className="px-6 py-5 overflow-visible">{modal.content}</div>
           </div>
         </div>
       )}

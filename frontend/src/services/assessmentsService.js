@@ -6,6 +6,10 @@ export const enrollmentService = {
     const response = await api.get(`/assessments/enrollment/?${params.toString()}`)
     return response.data
   },
+  retrieve: async (id) => {
+    const response = await api.get(`/assessments/enrollment/${id}/`)
+    return response.data
+  },
   create: async (data) => {
     const response = await api.post('/assessments/enrollment/', data)
     return response.data
@@ -27,6 +31,10 @@ export const assessmentService = {
   list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/assessments/assessments/?${params.toString()}`)
+    return response.data
+  },
+  retrieve: async (id) => {
+    const response = await api.get(`/assessments/assessments/${id}/`)
     return response.data
   },
   create: async (data) => {

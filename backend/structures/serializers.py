@@ -63,7 +63,7 @@ class FormationSerializer(serializers.ModelSerializer):
         fields = ["id","code",'text',"description","is_active"]
         read_only_fields = ["id","is_active"]
         extra_kwargs = {
-            "label": {"required": True},
+
             "code": {"required": True},
             "description": {"required": False},
         }

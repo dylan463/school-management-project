@@ -44,3 +44,9 @@ class StudentUploadValidationSerializer(serializers.Serializer):
             )
         return value
     
+from .models import ImportJob
+
+class ImportJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportJob
+        fields = '__all__'

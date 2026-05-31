@@ -1,0 +1,23 @@
+from django.db import models
+
+class ImportJob(models.Model):
+    IMPORT_TYPE_CHOICES = (
+        ('STUDENT_CREATION', 'Création d\'étudiants'),
+        ('ENROLLMENT', 'Inscription'),
+    )
+    task_id = models.CharField(max_length=255)
+    import_type = models.CharField(max_length=50, choices=IMPORT_TYPE_CHOICES, default='STUDENT_CREATION')
+    total_rows = models.IntegerField(default=0)
+    processed_rows = models.IntegerField(default=0)
+    status = models.CharField(max_length=50)
+    success_count = models.IntegerField(default=0)
+    error_count = models.IntegerField(default=0)
+    input_file = models.FileField(upload_to='imports/', null=True, blank=True)
+    report_file = models.FileField(upload_to='import_reports/', null=True, blank=True)
+
+    def delete(self, *args, **kwargs):
+        if self.input_file:
+            self.input_file.delete(save=False)
+        if self.report_file:
+            self.report_file.delete(save=False)
+        super().delete(*args, **kwargs)

@@ -21,6 +21,7 @@ const BookIcon    = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill
 const CheckIcon   = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M2 8.5l4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 const RepeatIcon  = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M12 2l2 2-2 2M4 14l-2-2 2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 4H6a4 4 0 00-4 4M2 12h8a4 4 0 004-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
 const LayerIcon   = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M8 1L1 5l7 4 7-4-7-4zM1 8l7 4 7-4M1 11l7 4 7-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const ImportIcon  = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M8 1v10M5 8l3 3 3-3M2 14h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
 
 /* ── Nav items per role ── */
 
@@ -63,6 +64,7 @@ const HEAD_NAV = [
   { label: 'Historiques',        to: ROUTES.HISTORY,           iconComponent: ClockIcon },
   { label: 'Délibérations',      to: ROUTES.DELIBERATIONS,     iconComponent: CheckIcon },
   { label: 'Réinscriptions',     to: ROUTES.REENROLLMENT,      iconComponent: RepeatIcon },
+  { label: 'Importations',        to: ROUTES.IMPORTJOBS,       iconComponent: ImportIcon },
   { label: 'Profil',             to: ROUTES.PROFIL,            iconComponent: GearIcon },
 ]
 

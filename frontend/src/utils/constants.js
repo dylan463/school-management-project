@@ -43,6 +43,7 @@ export const ROUTES = {
   HISTORY: "/historiques",
   DELIBERATIONS: "/deliberations",
   REENROLLMENT: "/reinscriptions",
+  IMPORTJOBS: "/imports",
 }
 
 export const PILL_COLORS = {

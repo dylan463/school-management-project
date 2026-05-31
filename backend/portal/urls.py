@@ -1,4 +1,4 @@
-from .views import HeadsViewSet,SecretaryViewSet,TeacherViewSet,StudentViewSet,OfficerViewSet,TaskStatusView,EnrollmentUploadViewSet
+from .views import HeadsViewSet,SecretaryViewSet,TeacherViewSet,StudentViewSet,OfficerViewSet,EnrollmentUploadViewSet,ImportJobViewSet
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 
@@ -9,9 +9,7 @@ router.register('secretaries',SecretaryViewSet,basename='secretary')
 router.register('officers',OfficerViewSet,basename='officer')
 router.register('teachers',TeacherViewSet,basename='teacher')
 router.register('students',StudentViewSet,basename='student')
+router.register('tasks',ImportJobViewSet,basename='task')
+router.register("enrollments",EnrollmentUploadViewSet,basename='enrollment-upload')
 
-
-urlpatterns = router.urls + [
-    path("tasks/", TaskStatusView.as_view(), name="task-status"),
-    path("enrollments/upload/", EnrollmentUploadViewSet.as_view(), name="enrollment-upload"),
-]
+urlpatterns = router.urls

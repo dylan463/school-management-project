@@ -40,6 +40,7 @@ import Results from '../pages/Results'
 import History from '../pages/History'
 import Deliberations from '../pages/Deliberations'
 import Reenrollment from '../pages/Reenrollment'
+import ImportJobs from '../pages/ImportJobs'
 
 import NotFound from '../pages/NotFound'
 
@@ -112,6 +113,13 @@ export default function AppRouter() {
           <Route path={ROUTES.LEVELS} element={<Levels />} />
           <Route path={ROUTES.DELIBERATIONS} element={<Deliberations />} />
           <Route path={ROUTES.REENROLLMENT} element={<Reenrollment />} />
+        </Route>
+      </Route>
+
+      {/* department head only */}
+      <Route element={<ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_HEAD]} />}>
+        <Route element={<AppLayout />}>
+          <Route path={ROUTES.IMPORTJOBS} element={<ImportJobs />} />
         </Route>
       </Route>
 

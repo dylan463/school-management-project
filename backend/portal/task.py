@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.core.files.base import ContentFile
 import pandas as pd
 from structures.user_services import create_user,send_email,registration_email_template
 from pathlib import Path
@@ -8,6 +9,7 @@ from assessments.services import create_enrollment
 from django.db.models import Q
 from django.db import transaction
 from notifications.utils import create_notification
+from .models import ImportJob
 
 @shared_task(bind=True)
 def create_users_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int):
@@ -20,6 +22,12 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
 
     df = pd.DataFrame(records)
     total = len(df)
+
+    import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
+    import_job.import_type = "STUDENT_CREATION"
+    import_job.total_rows = total
+    import_job.status = "PROGRESS"
+    import_job.save()
 
     for i, row in df.iterrows():
         sid = transaction.savepoint()
@@ -62,26 +70,21 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
                 "error": str(e)
             })
 
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current": i + 1,
-                "total": total,
-                "percent": int((i + 1) * 100 / total)
-            }
-        )
+        import_job.processed_rows = i + 1
+        import_job.save()
 
-    report_path = None
     if errors:
-        report_dir = Path("media/import_reports")
-        report_dir.mkdir(parents=True, exist_ok=True)
-        report_path = report_dir / f"errors_{self.request.id}.csv"
-        pd.DataFrame(errors).to_csv(report_path, index=False)
+        csv_content = pd.DataFrame(errors).to_csv(index=False)
+        import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+
+    import_job.status = "COMPLETED"
+    import_job.success_count = total - len(errors)
+    import_job.error_count = len(errors)
+    import_job.save()
 
     return {
         "success": total - len(errors),
-        "errors": len(errors),
-        "report_path": str(report_path) if report_path else None
+        "errors": len(errors)
     }
 
 @shared_task(bind=True)
@@ -93,6 +96,12 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
 
     df = pd.DataFrame(records)
     total = len(df)
+
+    import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
+    import_job.import_type = "ENROLLMENT"
+    import_job.total_rows = total
+    import_job.status = "PROGRESS"
+    import_job.save()
 
     base_query = Q(role=Role.STUDENT, mention=semester.mention)
 
@@ -147,24 +156,19 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
                 "error": str(e)
             })
 
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current": i + 1,
-                "total": total,
-                "percent": int((i + 1) * 100 / total)
-            }
-        )
+        import_job.processed_rows = i + 1
+        import_job.save()
 
-    report_path = None
     if errors:
-        report_dir = Path("media/import_reports")
-        report_dir.mkdir(parents=True, exist_ok=True)
-        report_path = report_dir / f"errors_{self.request.id}.csv"
-        pd.DataFrame(errors).to_csv(report_path, index=False)
+        csv_content = pd.DataFrame(errors).to_csv(index=False)
+        import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+
+    import_job.status = "COMPLETED"
+    import_job.success_count = total - len(errors)
+    import_job.error_count = len(errors)
+    import_job.save()
 
     return {
         "success": total - len(errors),
-        "errors": len(errors),
-        "report_path": str(report_path) if report_path else None
+        "errors": len(errors)
     }

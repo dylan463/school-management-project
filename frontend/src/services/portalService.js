@@ -105,5 +105,40 @@ export const studentSevices = {
   delete: async (id) => {
     const r = await api.delete(`/portal/students/${id}/`)
     return r.data
+  },
+  upload: async (data) => {
+    const r = await api.post('/portal/students/upload/', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return r.data
+  }
+}
+
+export const enrollmentServices = {
+  upload: async (data) => {
+    const r = await api.post('/portal/enrollments/upload/', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return r.data
+  }
+}
+
+export const importJobServices = {
+  list: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const r = await api.get(`/portal/tasks/?${params.toString()}`)
+    return r.data
+  },
+  retrieve: async (id) => {
+    const r = await api.get(`/portal/tasks/${id}/`)
+    return r.data
+  },
+  delete: async (id) => {
+    const r = await api.delete(`/portal/tasks/${id}/`)
+    return r.data
   }
 }

@@ -265,13 +265,23 @@ export default function FormationPanel() {
           + ajouter
         </Button>
       </div>
-      {results.length != 0 ? <DataTable
-        data={results}
-        columns={columns}
-        actions={actions}
-        selectionMode={false}
-      /> : <div className="flex justify-center text-slate-500 text-[13px] items-center h-[100px]">Aucun resultats</div>
-      }
+      {isLoading ? (
+        <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">
+          Chargement...
+        </div>
+      )
+        : results.length !== 0 ? (
+          <DataTable
+            data={results}
+            columns={columns}
+            actions={actions}
+            selectionMode={false}
+          />
+        ) : results.length === 0 && (
+          <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">
+            Aucun résultat
+          </div>
+        )}
       <Paginator
         totalPages={totalPages}
         page={page}

@@ -74,7 +74,7 @@ export default function DataTable({
   return (
     // ↓ Ce div contrôle le scroll vertical ; overflow-x gère le scroll horizontal
     <div
-      className="overflow-auto border border-gray-200 rounded"
+      className="overflow-auto border border-gray-200 rounded min-h-[400px]"
       style={{ maxHeight }}
     >
       <table className="min-w-full border-collapse">
@@ -177,7 +177,7 @@ function TableRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 ${selected ? "bg-blue-50" : ""}`}
+      className={`hover:bg-gray-50 border-[2px] border-b border-b-gray-300 ${selected ? "bg-blue-50" : ""}`}
       onClick={selectionMode ? onToggle : undefined}
       style={selectionMode ? { cursor: "pointer" } : undefined}
     >

@@ -25,3 +25,6 @@ dist-ssr
 .venv/
 backend.bat
 frontend.bat
+dataset-gen.py
+dataset_etudiants.csv
+media/

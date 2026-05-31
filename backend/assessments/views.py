@@ -78,7 +78,11 @@ class EnrollmentViewSet(ModelViewSet):
         serializer = EnrollmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        enrollment = create_enrollment(data)
+        student = data["student"]
+        formation = data["formation"]
+        semester = data["semester"]
+        school_year = data["school_year"]
+        enrollment = create_enrollment(student,school_year,semester,formation)
         response_serializer = EnrollmentSerializer(enrollment)
         return Response(response_serializer.data,status=status.HTTP_201_CREATED)
 

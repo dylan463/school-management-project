@@ -113,3 +113,4 @@ class Debt(models.Model):
     cleared = models.BooleanField(default=False)
     original_score = models.FloatField()
     original_status = models.CharField(choices=EnrollmentResult.Status.choices)
+    last_deliberation = models.ForeignKey(SchoolYear,models.SET_NULL,blank=True,null=True)

@@ -1,17 +1,30 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
+from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from .task import create_users_from_dataset,create_enrollment_from_dataset
 # Local apps
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from celery.result import AsyncResult
 from structures.models import User,Role,Mention
 from structures.serializers import (
     UserSerializer,
     UserCreateSerializer
 )
+from .serializers import StudentCreateSerializer,StudentUploadValidationSerializer
 from structures.permissions import IsSystemAdmin,IsInMention,IsDepartmentStaff,IsDepartmentHead
 from structures.user_services import create_user
+from pathlib import Path
+import pandas as pd
+import uuid
+from django.core.files.storage import default_storage
+
 
 class HeadsViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -32,11 +45,12 @@ class HeadsViewSet(ModelViewSet):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        if data.get('role'):
-            data.pop('role')
         role = Role.DEPARTMENT_HEAD
         mention = data.pop('mention')
-        user = create_user(data,role,mention)
+        first_name = data["fisrt_name"]
+        last_name = data["last_name"]
+        email = data["email"]
+        user = create_user(first_name,last_name,email,role,mention)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -75,10 +89,12 @@ class SecretaryViewSet(ModelViewSet):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        data.pop('role')
         role = Role.DEPARTMENT_SECRETARY
         mention = request.user.mention
-        user = create_user(data,role,mention)
+        first_name = data["fisrt_name"]
+        last_name = data["last_name"]
+        email = data["email"]
+        user = create_user(first_name,last_name,email,role,mention)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -119,10 +135,12 @@ class OfficerViewSet(ModelViewSet):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        data.pop('role')
         role = Role.REGISTRAR_OFFICER
         mention = request.user.mention
-        user = create_user(data,role,mention)
+        first_name = data["fisrt_name"]
+        last_name = data["last_name"]
+        email = data["email"]
+        user = create_user(first_name,last_name,email,role,mention)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -139,6 +157,7 @@ class OfficerViewSet(ModelViewSet):
             })
         return super().perform_update(serializer)
     
+    
 
 class TeacherViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -148,7 +167,7 @@ class TeacherViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         mention = user.mention
-        if user.role ==  [Role.DEPARTMENT_HEAD,Role.DEPARTMENT_SECRETARY,Role.REGISTRAR_OFFICER,Role.TEACHER]:
+        if user.role in  [Role.DEPARTMENT_HEAD,Role.DEPARTMENT_SECRETARY,Role.REGISTRAR_OFFICER,Role.TEACHER]:
             return User.objects.filter(role=Role.TEACHER,mention=mention)
         elif user.role == Role.STUDENT:
             return User.objects.filter(role=Role.TEACHER,mention=mention,course_modules__semester__enrollments__student=user)
@@ -172,10 +191,12 @@ class TeacherViewSet(ModelViewSet):
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        data.pop('role')
         role = Role.TEACHER
         mention = request.user.mention
-        user = create_user(data,role,mention)
+        first_name = data["fisrt_name"]
+        last_name = data["last_name"]
+        email = data["email"]
+        user = create_user(first_name,last_name,email,role,mention)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -192,6 +213,9 @@ class TeacherViewSet(ModelViewSet):
             })
         return super().perform_update(serializer)
 
+
+from structures.models import Formation,Semester,SchoolYear
+
 class StudentViewSet(ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [SearchFilter]
@@ -200,7 +224,7 @@ class StudentViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         mention = user.mention
-        if user.role ==  [Role.DEPARTMENT_HEAD,Role.DEPARTMENT_SECRETARY,Role.REGISTRAR_OFFICER,Role.TEACHER]:
+        if user.role in [Role.DEPARTMENT_HEAD,Role.DEPARTMENT_SECRETARY,Role.REGISTRAR_OFFICER,Role.TEACHER]:
             return User.objects.filter(role=Role.STUDENT,mention=mention)
         elif user.role == Role.STUDENT:
             return User.objects.filter(role=Role.STUDENT,menton=mention)
@@ -217,17 +241,19 @@ class StudentViewSet(ModelViewSet):
         if self.action in ['list','retrieve']:
             return UserSerializer
         if self.action == 'create':
-            return UserCreateSerializer
+            return StudentCreateSerializer
         return UserCreateSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = UserCreateSerializer(data=request.data)
+        serializer = StudentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
-        data.pop('role')
         role = Role.STUDENT
         mention = request.user.mention
-        user = create_user(data,role,mention)
+        first_name = data["fisrt_name"]
+        last_name = data["last_name"]
+        email = data["email"]
+        user = create_user(first_name,last_name,email,role,mention)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -243,3 +269,132 @@ class StudentViewSet(ModelViewSet):
                 'detail':'vous ne pouvez pas changer la mention de cet utilisateur.'
             })
         return super().perform_update(serializer)
+    
+    @action(detail=False, methods=["post"])
+    def upload(self, request):
+        serializer = StudentUploadValidationSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        formation   = serializer.validated_data["formation"]    # instance Formation
+        semester    = serializer.validated_data["semester"]     # instance Semester
+        school_year = serializer.validated_data["school_year"]  # instance SchoolYear
+        file        = serializer.validated_data["file"]
+
+        file.name = f"{uuid.uuid4()}_{file.name}"
+        saved_path = default_storage.save(f"uploads/{file.name}", file)
+
+        with default_storage.open(saved_path, "rb") as f:
+            df = pd.read_csv(f)
+
+        REQUIRED_COLS = {"email", "nom", "prenoms"}
+        missing_cols = REQUIRED_COLS - set(df.columns)
+
+        if missing_cols:
+            return Response(
+                {"detail": f"colonnes manquantes : {list(missing_cols)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = create_users_from_dataset.delay(
+            df.to_dict(orient="records"),
+            formation.pk,
+            semester.pk,
+            school_year.pk,
+        )
+
+        return Response({"task_id": task.id, "file_path": saved_path})
+
+
+
+class TaskStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        task_id = request.query_params.get("task_id")
+        if not task_id:
+            return Response(
+                {"detail": "task_id est requis."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        task = AsyncResult(task_id)
+
+        if task.state == "PENDING":
+            return Response({
+                "state": task.state,
+                "percent": 0,
+                "current": 0,
+                "total": 0,
+            })
+
+        if task.state == "PROGRESS":
+            meta = task.info or {}
+            return Response({
+                "state": task.state,
+                "percent": meta.get("percent", 0),
+                "current": meta.get("current", 0),
+                "total": meta.get("total", 0),
+            })
+
+        if task.state == "SUCCESS":
+            result = task.result or {}
+            return Response({
+                "state": task.state,
+                "percent": 100,
+                "success": result.get("success"),
+                "errors": result.get("errors"),
+                "report_path": result.get("report_path"),
+            })
+
+        if task.state == "FAILURE":
+            return Response({
+                "state": task.state,
+                "detail": str(task.info),
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"state": task.state})
+    
+
+
+class EnrollmentUploadViewSet(APIView):
+    permission_classes = [IsDepartmentStaff]
+
+    def post(self, request):
+        serializer = StudentUploadValidationSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        formation   = serializer.validated_data["formation"]    # instance Formation
+        semester    = serializer.validated_data["semester"]     # instance Semester
+        school_year = serializer.validated_data["school_year"]  # instance SchoolYear
+        file        = serializer.validated_data["file"]
+
+        file.name = f"{uuid.uuid4()}_{file.name}"
+        saved_path = default_storage.save(f"uploads/enrollments-{file.name}", file)
+
+        with default_storage.open(saved_path, "rb") as f:
+            df = pd.read_csv(f)
+
+        REQUIRED_COLS = {"email","matricule"}
+        missing_cols = REQUIRED_COLS - set(df.columns)
+
+        if missing_cols:
+            return Response(
+                {"detail": f"colonnes manquantes : {list(missing_cols)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = create_enrollment_from_dataset.delay(
+            df.to_dict(orient="records"),
+            formation.pk,
+            semester.pk,
+            school_year.pk,
+        )
+
+        return Response({"task_id": task.id, "file_path": saved_path})
+

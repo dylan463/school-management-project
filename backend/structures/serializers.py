@@ -36,19 +36,16 @@ class UserSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['last_name','first_name','email','role','mention']
+        fields = ['last_name','first_name','email','mention']
         extra_kwargs = {
-            "first_name":{"required":False},
-            "last_name":{"required":False},
+            "last_name":{"required":True},
+            "first_name":{"required":True},
+            "email":{"required":True}
         }
+
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("cet email est déjà utilisé")
-        return value
-    
-    def validate_role(self, value):
-        if value not in Role.values:
-            raise serializers.ValidationError("role invalide")
         return value
 
 class ProfileUpdateSerializer(UserCreateSerializer):

@@ -8,22 +8,67 @@ from django.db.models import Prefetch
 from collections import defaultdict
 from .query import attend_to_assessment,has_no_grade_in_assessment,promoted_people,people_with_course_debt
 from .serializers import AttendantSerializer
-
-
+from structures.models import User,Formation,Semester,SchoolYear
+from notifications.utils import create_notification
 
 # ----------------- enrollment -----------------
 
 @transaction.atomic
-def create_enrollment(data: dict):
+def create_enrollment(student : User,school_year: SchoolYear,semester : Semester,formation : Formation,no_notification=True):
     if Enrollment.objects.filter(
-        student=data["student"],
-        school_year=data["school_year"]
+        student=student,
+        school_year=school_year
     ).exists():
         raise ValidationError({
             "student": "Cet étudiant est déjà inscrit pour cette année scolaire."
         })
+    elif school_year.status == SchoolYear.Status.CLOSED:
+        raise ValidationError({
+            "detail":"Impossible d'inscrire l'etudiant dans une année scolaire déjà cloturé."
+        })
+    elif Enrollment.objects.filter(student=student,school_year__status__in=[SchoolYear.Status.ACTIVE,SchoolYear.Status.UPCOMING]).exists():
+        raise ValidationError({
+            "detail":"Impossible d'réinscrit l'etudiant tant qu'il est déjà inscrit dans année ouverte."
+        })
 
-    return Enrollment.objects.create(**data)
+    redoublement = Enrollment.objects.filter(semester=semester,formation=formation).order_by("opened_at").last()
+    if redoublement:
+        # on repete les resultat qui sont déjà validé donc l'eleve ne participe qu'au examen dont il n'as pas encore de note
+        is_repeated_results = EnrollmentResult.objects.filter(
+            enrollment=redoublement,
+            course_module__is_active=True,
+            status__in=[EnrollmentResult.Status.VALIDATED,EnrollmentResult.Status.VALIDATED_AFTER_RETAKE]
+            ).select_related("course_module")
+        
+        new_enrollment = Enrollment.objects.create(
+            student=student,
+            formation=formation,
+            semester=semester,
+            school_year=school_year
+        )
+
+        to_create = []
+        for result in is_repeated_results:
+            to_create.append(EnrollmentResult(
+                enrollment=new_enrollment,
+                course_module=result.course_module,
+                status= result.status,
+                final_score=result.final_score,
+                comment= result.comment,
+                is_repeated = True
+            ))
+        EnrollmentResult.objects.bulk_create(to_create)
+        if not no_notification:
+            create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
+        return new_enrollment
+    if not no_notification:
+        create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
+    return Enrollment.objects.create(
+        student=student,
+        formation=formation,
+        semester=semester,
+        school_year=school_year
+    )
 
 
 @transaction.atomic
@@ -41,7 +86,7 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
 
     if active_sy.id == enrollment.school_year_id:
         if status == Enrollment.Status.ACTIVE:
-            Debt.objects.filter(enrollment=enrollment).delete()
+            Debt.objects.filter(result__enrollment=enrollment).delete()
         else:
             # Bug fix : select_related pour éviter N+1 sur course_module
             results = EnrollmentResult.objects.filter(
@@ -50,8 +95,7 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
 
             debts = [
                 Debt(
-                    enrollment=enrollment,
-                    course_module=result.course_module,
+                    result = result,
                     original_score=result.final_score,
                     original_status=result.status,
                 )
@@ -62,27 +106,28 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
             if debts:
                 Debt.objects.bulk_create(debts)
     else:
+        # on a annuler le resultat de l'inscription donc on dit que les debt ne sont pas encore délibéré
         if status == Enrollment.Status.ACTIVE:
-            raise ValidationError({
-                "status": "Vous ne pouvez plus activer cette inscription."
-            })
+            debts = list(
+                Debt.objects.filter(result__enrollment=enrollment)
+                .select_related("result")
+            )
+            if debts:
+                for debt in debts:
+                    debt.last_deliberation = None
+                Debt.objects.bulk_update(debts,["last_deliberation"])
+        # on délibére les resultat de l'inscription endétté donc on spécifie une date de délibération pour pouvoir suivre l'inscription au cas ou l'utilisateur commet une erreur.
+        else:
+            debts = list(
+                Debt.objects.filter(result__enrollment=enrollment)
+                .select_related("result")
+            )
 
-        # Bug fix : bulk_update manquant — les modifications n'étaient jamais persistées
-        debts = list(
-            Debt.objects.filter(enrollment=enrollment, cleared=False)
-            .select_related("result")
-        )
-
-        to_update = [
-            debt
-            for debt in debts
-            if debt.result.status != EnrollmentResult.Status.NOT_VALIDATED
-        ]
-
-        if to_update:
-            for debt in to_update:
-                debt.cleared = True
-            Debt.objects.bulk_update(to_update, ["cleared"])
+            if debts:
+                for debt in debts:
+                    debt.cleared = debt.result.status != EnrollmentResult.Status.NOT_VALIDATED
+                    debt.last_deliberation = active_sy
+                Debt.objects.bulk_update(debts, ["cleared","last_deliberation"])
 
     enrollment.status = status
     enrollment.save()

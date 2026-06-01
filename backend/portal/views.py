@@ -274,6 +274,10 @@ class StudentViewSet(ModelViewSet):
     
     @action(detail=False, methods=["post"])
     def upload(self, request):
+        if ImportJob.objects.filter(status__in=["PENDING","PROGRESS"],import_type="STUDENT_CREATION").exists():
+            raise ValidationError({
+                'detail':'un import de fichier est en cours'
+            })
         serializer = StudentUploadValidationSerializer(
             data=request.data,
             context={"request": request}
@@ -284,6 +288,7 @@ class StudentViewSet(ModelViewSet):
         semester    = serializer.validated_data["semester"]     # instance Semester
         school_year = serializer.validated_data["school_year"]  # instance SchoolYear
         file        = serializer.validated_data["file"]
+
 
         import_job = ImportJob.objects.create(
             import_type="STUDENT_CREATION",
@@ -303,15 +308,21 @@ class StudentViewSet(ModelViewSet):
                 {"detail": f"colonnes manquantes : {list(missing_cols)}."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        task = create_users_from_dataset.delay(
-            df.to_dict(orient="records"),
-            formation.pk,
-            semester.pk,
-            school_year.pk,
-        )
-        import_job.task_id = task.id
-        import_job.save()
+        try:
+            task = create_users_from_dataset.delay(
+                df.to_dict(orient="records"),
+                formation.pk,
+                semester.pk,
+                school_year.pk,
+            )
+            import_job.task_id = task.id
+            import_job.save()
+        except:
+            import_job.delete()
+            raise ValidationError({
+                "detail": "Le service de traitement est indisponible."
+            })
+            
 
         return Response({"task_id": task.id, "job_id": import_job.id})
 
@@ -331,6 +342,10 @@ class EnrollmentUploadViewSet(GenericViewSet):
 
     @action(detail=False, methods=["post"])
     def upload(self, request):
+        if ImportJob.objects.filter(status="PENDING",import_type="ENROLLMENT").exists():
+            raise ValidationError({
+                'detail':'un import de fichier est en cours'
+            })
         serializer = StudentUploadValidationSerializer(
             data=request.data,
             context={"request": request}
@@ -341,6 +356,7 @@ class EnrollmentUploadViewSet(GenericViewSet):
         semester    = serializer.validated_data["semester"]     # instance Semester
         school_year = serializer.validated_data["school_year"]  # instance SchoolYear
         file        = serializer.validated_data["file"]
+
 
         import_job = ImportJob.objects.create(
             import_type="ENROLLMENT",

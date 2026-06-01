@@ -41,6 +41,7 @@ import History from '../pages/History'
 import Deliberations from '../pages/Deliberations'
 import Reenrollment from '../pages/Reenrollment'
 import ImportJobs from '../pages/ImportJobs'
+import Schedule from '../pages/Schedule'
 
 import NotFound from '../pages/NotFound'
 
@@ -94,6 +95,7 @@ export default function AppRouter() {
           <Route path={ROUTES.COURSEUNITS} element={<CourseUnits />} />
           <Route path={ROUTES.COURSEMODULES} element={<CourseModules />} />
           <Route path={ROUTES.ASSESSMENTS} element={<Assessments />} />
+          <Route path={ROUTES.SCHEDULE} element={<Schedule />} />
           <Route path={ROUTES.GRADES} element={<Grades />} />
           <Route path={ROUTES.RESULTS} element={<Results />} />
         </Route>

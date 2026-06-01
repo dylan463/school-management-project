@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
     role,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated: hasToken,
     error,
     setError,
     mention,

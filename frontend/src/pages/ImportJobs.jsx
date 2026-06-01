@@ -1,3 +1,5 @@
+import ImportPanel from "../components/panel/ImportPanel"
+
 export default function ImportJobs() {
   return (
     <div className="p-6">
@@ -5,6 +7,7 @@ export default function ImportJobs() {
       <p className="text-slate-500">
         Cette page permettra de visualiser et de gérer l'historique des importations.
       </p>
+      <ImportPanel/>
     </div>
   )
 }

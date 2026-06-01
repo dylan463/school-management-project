@@ -14,6 +14,7 @@ class ImportJob(models.Model):
     error_count = models.IntegerField(default=0)
     input_file = models.FileField(upload_to='imports/', null=True, blank=True)
     report_file = models.FileField(upload_to='import_reports/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def delete(self, *args, **kwargs):
         if self.input_file:

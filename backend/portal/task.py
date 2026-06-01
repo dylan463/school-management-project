@@ -11,7 +11,7 @@ from django.db import transaction
 from notifications.utils import create_notification
 from .models import ImportJob
 
-@shared_task(bind=True)
+@shared_task(bind=True,acks_late=True)
 def create_users_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int):
     formation = Formation.objects.get(pk=formation_id)
     semester = Semester.objects.get(pk=semester_id)
@@ -28,66 +28,78 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
     import_job.total_rows = total
     import_job.status = "PROGRESS"
     import_job.save()
+    try:
+        for i, row in df.iterrows():
+            sid = transaction.savepoint()
+            try:
+                if pd.isna(row.get("email")):
+                    raise AttributeError("l'email n'a pas été fourni")
 
-    for i, row in df.iterrows():
-        sid = transaction.savepoint()
-        try:
-            if pd.isna(row.get("email")):
-                raise AttributeError("l'email n'a pas été fourni")
+                student ,password= create_user(row["nom"], row["prenoms"], row["email"], role, mention,no_email=True,return_password = True)
+                create_enrollment(student, school_year, semester, formation,no_notification=True)
+                transaction.savepoint_commit(sid)
+                text_content,html_content = registration_email_template(student.username,password,mention.text)
+                send_email('Creation de votre compte.',text_content,[student.email],html_content)
+                create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
 
-            student ,password= create_user(row["nom"], row["prenoms"], row["email"], role, mention,no_email=True,return_password = True)
-            create_enrollment(student, school_year, semester, formation,no_notification=True)
-            transaction.savepoint_commit(sid)
-            text_content,html_content = registration_email_template(student.username,password,mention.text)
-            send_email('Creation de votre compte.',text_content,[student.email],html_content)
-            create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
+            except ValidationError as e:
+                transaction.savepoint_rollback(sid)
+                detail = e.detail
+                if isinstance(detail, dict):
+                    msg = " | ".join(
+                        f"{key}: {value}" for key, value in detail.items()
+                    )
+                else:
+                    msg = str(detail)
 
-        except ValidationError as e:
-            transaction.savepoint_rollback(sid)
-            detail = e.detail
-            if isinstance(detail, dict):
-                msg = " | ".join(
-                    f"{key}: {value}" for key, value in detail.items()
-                )
-            else:
-                msg = str(detail)
+                errors.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "error": msg
+                })
 
-            errors.append({
-                "line": i + 2,
-                "nom": row.get("nom"),
-                "prenoms": row.get("prenoms"),
-                "email": row.get("email"),
-                "error": msg
-            })
+            except Exception as e:
+                transaction.savepoint_rollback(sid)
+                errors.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "error": str(e)
+                })
 
-        except Exception as e:
-            transaction.savepoint_rollback(sid)
-            errors.append({
-                "line": i + 2,
-                "nom": row.get("nom"),
-                "prenoms": row.get("prenoms"),
-                "email": row.get("email"),
-                "error": str(e)
-            })
+            import_job.processed_rows = i + 1
+            import_job.save()
 
-        import_job.processed_rows = i + 1
+        if errors:
+            csv_content = pd.DataFrame(errors).to_csv(index=False)
+            import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+
+        import_job.status = "COMPLETED"
+        import_job.success_count = total - len(errors)
+        import_job.error_count = len(errors)
         import_job.save()
 
-    if errors:
-        csv_content = pd.DataFrame(errors).to_csv(index=False)
-        import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+        return {
+            "success": total - len(errors),
+            "errors": len(errors)
+        }
+    except Exception as e:
+        print("-"*25)
+        print("erreur pendant le traitement dans la task : \n",str(e))
+        print("-"*25)
+        import_job.status = "FAILED"
+        import_job.success_count = total - len(errors)
+        import_job.error_count = len(errors)
+        import_job.save()
+        return {
+            "success": total - len(errors),
+            "errors": len(errors)
+        }
 
-    import_job.status = "COMPLETED"
-    import_job.success_count = total - len(errors)
-    import_job.error_count = len(errors)
-    import_job.save()
-
-    return {
-        "success": total - len(errors),
-        "errors": len(errors)
-    }
-
-@shared_task(bind=True)
+@shared_task(bind=True ,acks_late=True)
 def create_enrollment_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int):
     formation = Formation.objects.get(pk=formation_id)
     semester = Semester.objects.get(pk=semester_id)
@@ -102,73 +114,85 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
     import_job.total_rows = total
     import_job.status = "PROGRESS"
     import_job.save()
-
     base_query = Q(role=Role.STUDENT, mention=semester.mention)
 
-    for i, row in df.iterrows():
-        sid = transaction.savepoint()
-        try:
-            email_missing = pd.isna(row.get("email"))
-            matricule_missing = pd.isna(row.get("matricule"))
+    try :
+        for i, row in df.iterrows():
+            sid = transaction.savepoint()
+            try:
+                email_missing = pd.isna(row.get("email"))
+                matricule_missing = pd.isna(row.get("matricule"))
 
-            if email_missing:
-                if matricule_missing:
-                    raise AttributeError("Au moins soit l'email ou la matricule de l'utilisateur doit être fourni")
+                if email_missing:
+                    if matricule_missing:
+                        raise AttributeError("Au moins soit l'email ou la matricule de l'utilisateur doit être fourni")
+                    else:
+                        query = base_query & Q(username=row["matricule"])
                 else:
-                    query = base_query & Q(username=row["matricule"])
-            else:
-                query = base_query & Q(email=row["email"])
+                    query = base_query & Q(email=row["email"])
 
-            student = User.objects.filter(query).first()
-            if not student:
-                raise AttributeError("Cet étudiant n'existe pas dans la base de données")
+                student = User.objects.filter(query).first()
+                if not student:
+                    raise AttributeError("Cet étudiant n'existe pas dans la base de données")
 
-            create_enrollment(student, school_year, semester, formation,no_notification=True)
-            create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
+                create_enrollment(student, school_year, semester, formation,no_notification=True)
+                create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
 
-            transaction.savepoint_commit(sid)
+                transaction.savepoint_commit(sid)
 
-        except ValidationError as e:
-            transaction.savepoint_rollback(sid)
-            detail = e.detail
-            if isinstance(detail, dict):
-                msg = " | ".join(
-                    f"{key}: {value}" for key, value in detail.items()
-                )
-            else:
-                msg = str(detail)
+            except ValidationError as e:
+                transaction.savepoint_rollback(sid)
+                detail = e.detail
+                if isinstance(detail, dict):
+                    msg = " | ".join(
+                        f"{key}: {value}" for key, value in detail.items()
+                    )
+                else:
+                    msg = str(detail)
 
-            errors.append({
-                "line": i + 2,
-                "nom": row.get("nom"),
-                "prenoms": row.get("prenoms"),
-                "email": row.get("email"),
-                "error": msg
-            })
+                errors.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "error": msg
+                })
 
-        except Exception as e:
-            transaction.savepoint_rollback(sid)
-            errors.append({
-                "line": i + 2,
-                "nom": row.get("nom"),
-                "prenoms": row.get("prenoms"),
-                "email": row.get("email"),
-                "error": str(e)
-            })
+            except Exception as e:
+                transaction.savepoint_rollback(sid)
+                errors.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "error": str(e)
+                })
 
-        import_job.processed_rows = i + 1
+            import_job.processed_rows = i + 1
+            import_job.save()
+
+        if errors:
+            csv_content = pd.DataFrame(errors).to_csv(index=False)
+            import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+
+        import_job.status = "COMPLETED"
+        import_job.success_count = total - len(errors)
+        import_job.error_count = len(errors)
         import_job.save()
 
-    if errors:
-        csv_content = pd.DataFrame(errors).to_csv(index=False)
-        import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
-
-    import_job.status = "COMPLETED"
-    import_job.success_count = total - len(errors)
-    import_job.error_count = len(errors)
-    import_job.save()
-
-    return {
-        "success": total - len(errors),
-        "errors": len(errors)
-    }
+        return {
+            "success": total - len(errors),
+            "errors": len(errors)
+        }
+    except Exception as e:
+        print("-"*25)
+        print("erreur pendant le traitement dans la task : \n",str(e))
+        print("-"*25)
+        import_job.status = "FAILED"
+        import_job.success_count = total - len(errors)
+        import_job.error_count = len(errors)
+        import_job.save()
+        return {
+            "success": total - len(errors),
+            "errors": len(errors)
+        }

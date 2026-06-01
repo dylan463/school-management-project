@@ -18,6 +18,7 @@ import { useDeleteStudent } from "../../hooks/students/useDeleteStudent"
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
 import { useFormations } from "../../hooks/formations/useFormations"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
+import Filter from "../Filter"
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
   const isEdit = Boolean(initialData?.id);
@@ -357,7 +358,7 @@ export default function StudentsPanel() {
   ];
 
   return (
-    <Card>
+    <Card >
       <div className="px-2 py-2 flex justify-between items-center">
         <div className="flex items-center gap-2"></div>
         <SearchInput

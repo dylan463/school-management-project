@@ -305,7 +305,7 @@ export default function HeadsPanel() {
     }
   }, [debouncedSearch, page, mentionId])
 
-  const { data } = useHeads(filters);
+  const { data, isLoading } = useHeads(filters);
   const results = data?.results || [];
   const totalPages = Math.max(
     1,

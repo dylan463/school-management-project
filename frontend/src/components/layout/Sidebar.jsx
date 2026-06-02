@@ -172,7 +172,7 @@ export default function Sidebar({ }) {
             {user ? `${user.first_name} ${user.last_name}` : "Non authentifiée"}
           </div>
           <div className="flex-1 min-w-0">
-            {user && <p className="text-[10px] text-blue-200 truncate">{user?.username}</p>}
+            {user && <p className="text-[10px] text-red-500 truncate">{user?.username}</p>}
           </div>
         </div>
         <button

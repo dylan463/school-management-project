@@ -82,6 +82,11 @@ class MentionViewSet(ModelViewSet):
         mention = self.get_object()
         delete_mention(mention)
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
  
 
 class FormationViewSet(ModelViewSet):
@@ -100,6 +105,11 @@ class FormationViewSet(ModelViewSet):
         else:
             permissions = [IsDepartmentStaff]
         return [permission() for permission in permissions]
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
     
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -141,6 +151,11 @@ class SemesterViewSet(ModelViewSet):
         user = self.request.user
         return get_semester_queryset(user).order_by('order')
 
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
+
     def create(self, request, *args, **kwargs):
         user = request.user
         serializer = SemesterSerializer(data=request.data,context={"request":request})
@@ -178,6 +193,11 @@ class SchoolYearViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return get_school_year_queryset(user)
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
 
     @action(detail=True, methods=['POST'])
     def change_status(self, request, pk=None):
@@ -238,6 +258,11 @@ class CourseUnitViewSet(ModelViewSet):
         user = self.request.user
         return get_course_unit_queryset(user).select_related('formation').prefetch_related('course_modules')
 
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
+
     @action(methods=['post'],detail=True)
     def toggle_activation(self,request,pk=None):
         instance = self.get_object()
@@ -275,6 +300,11 @@ class CourseModuleViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return get_course_module_queryset(user).select_related('teacher','course_unit','semester')
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
 
     @action(methods=['post'],detail=True)
     def toggle_activation(self,request,pk=None):

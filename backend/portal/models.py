@@ -5,11 +5,16 @@ class ImportJob(models.Model):
         ('STUDENT_CREATION', 'Création d\'étudiants'),
         ('ENROLLMENT', 'Inscription'),
     )
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'En attente'
+        PROGRESS = 'PROGRESS', 'En cours'
+        COMPLETED = 'COMPLETED', 'Terminé'
+        FAILED = 'FAILED', 'Échoué'
     task_id = models.CharField(max_length=255)
     import_type = models.CharField(max_length=50, choices=IMPORT_TYPE_CHOICES, default='STUDENT_CREATION')
     total_rows = models.IntegerField(default=0)
     processed_rows = models.IntegerField(default=0)
-    status = models.CharField(max_length=50)
+    status = models.CharField(max_length=50, choices=Status.choices)
     success_count = models.IntegerField(default=0)
     error_count = models.IntegerField(default=0)
     input_file = models.FileField(upload_to='imports/', null=True, blank=True)

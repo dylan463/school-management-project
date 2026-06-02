@@ -26,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 import uuid
 from django.core.files.storage import default_storage
-
+from .filter import ImportJobFilter
 
 class HeadsViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -333,7 +333,7 @@ class ImportJobViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     serializer_class = ImportJobSerializer
     queryset = ImportJob.objects.all().order_by('-id')
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['import_type', 'status']
+    filterset_class = ImportJobFilter
     
 
 

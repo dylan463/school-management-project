@@ -128,12 +128,12 @@ const StudentUploadPanel = () => {
 
     // ── Upload + Celery ────────────────────────────────────────────────────────
     const [job_id, setJob_id] = useState(null)
-    const { data: jobs, isLoading: isJobsLoading } = useImportJobs({ import_type: "STUDENT_CREATION", status: "PROGRESS" })
+    const { data: jobs, isLoading: isJobsLoading } = useImportJobs({ import_type: "STUDENT_CREATION", status: "LOADING" })
 
     useEffect(() => {
         if (isJobsLoading || !jobs) return;
         const { results } = jobs
-        const pendingJobs = results.filter(job => job.status === "PROGRESS")
+        const pendingJobs = results.filter(job => ["PENDING","PROGRESS"].includes(job.status))
         setJob_id(pendingJobs[0]?.id || null)
     }, [jobs])
 
@@ -161,7 +161,7 @@ const StudentUploadPanel = () => {
                 headers: { "Content-Type": "multipart/form-data" },
             })
             queryClient.invalidateQueries({
-                queryKey: ['importJobs', { import_type: "STUDENT_CREATION", status: "PENDING" }],
+                queryKey: ['importJobs', { import_type: "STUDENT_CREATION", status: "LOADING" }],
             })
         } catch (err) {
             toast.error(err.response.data.detail || "une erreur est survenue pendant le televersement")

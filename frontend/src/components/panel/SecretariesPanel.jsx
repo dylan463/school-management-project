@@ -10,14 +10,11 @@ import { useModal } from '../../context/ModalContext'
 import { useState, useEffect } from "react"
 import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
-import { useStudents } from "../../hooks/students/useStudents"
+import { useSecretaries } from "../../hooks/secretaries/useSecretaries"
 import { useQueryParams } from "../../hooks/useQueryParams"
-import { useCreateStudent } from "../../hooks/students/useCreateStudent"
-import { useUpdateStudent } from "../../hooks/students/useUpdateStudent"
-import { useDeleteStudent } from "../../hooks/students/useDeleteStudent"
-import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
-import { useFormations } from "../../hooks/formations/useFormations"
-import { useSemesters } from "../../hooks/semesters/useSemesters"
+import { useCreateSecretary } from "../../hooks/secretaries/useCreateSecretary"
+import { useUpdateSecretary } from "../../hooks/secretaries/useUpdateSecretary"
+import { useDeleteSecretary } from "../../hooks/secretaries/useDeleteSecretary"
 import Filter from "../Filter"
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
@@ -27,25 +24,14 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
     email: "",
     first_name: "",
     last_name: "",
-    school_year: "",
-    formation: "",
-    semester: "",
   });
 
-  const create = useCreateStudent();
-  const update = useUpdateStudent();
+  const create = useCreateSecretary();
+  const update = useUpdateSecretary();
 
   const { handleErrors, getError, clearErrors } = useDRFErrors();
   const [loading, setLoading] = useState(false);
 
-  // Charger les listes de sélection pour l'ajout
-  const { data: schoolyearsData , isLoading: isSchoolyearsLoading } = useSchoolyears(isEdit ? null : { no_pagination: true });
-  const { data: formationsData , isLoading: isFormationsLoading } = useFormations(isEdit ? null : { no_pagination: true });
-  const { data: semestersData , isLoading: isSemestersLoading } = useSemesters(isEdit ? null : { no_pagination: true });
-  const loadingFilters = isSchoolyearsLoading || isFormationsLoading || isSemestersLoading;
-  const schoolyears = schoolyearsData || [];
-  const formations = formationsData || [];
-  const semesters = semestersData || [];
 
   // Remplir le formulaire si modification
   useEffect(() => {
@@ -54,9 +40,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         email: initialData.email || "",
         first_name: initialData.first_name || "",
         last_name: initialData.last_name || "",
-        school_year: "",
-        formation: "",
-        semester: "",
       });
     }
   }, [initialData?.id, initialData?.email, initialData?.first_name, initialData?.last_name]);
@@ -74,18 +57,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
     if (isEdit) {
       if (!form.email || !form.first_name || !form.last_name) return;
-    } else {
-      if (
-        !form.email ||
-        !form.first_name ||
-        !form.last_name ||
-        !form.school_year ||
-        !form.formation ||
-        !form.semester
-      )
-        return;
-    }
-
+    } 
     setLoading(true);
 
     try {
@@ -100,7 +72,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           { id: initialData.id, data: payload },
           {
             onSuccess: () => {
-              toast.success("Étudiant modifié avec succès");
+              toast.success("Secrétaire modifié avec succès");
               onSuccess?.();
             },
           }
@@ -111,13 +83,10 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           email: form.email,
           first_name: form.first_name,
           last_name: form.last_name,
-          school_year: form.school_year,
-          formation: form.formation,
-          semester: form.semester,
         };
         await create.mutateAsync(payload, {
           onSuccess: () => {
-            toast.success("Étudiant créé avec succès");
+            toast.success("Secrétaire créé avec succès");
             onSuccess?.();
           },
         });
@@ -140,7 +109,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           value={form.email}
           onChange={handleChange}
           className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
-          placeholder="Ex: etudiant@ecole.com"
+          placeholder="Ex: secretaire@ecole.com"
         />
         {getError("email") && (
           <span className="text-xs text-red-500">{getError("email")}</span>
@@ -177,45 +146,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         )}
       </div>
 
-      {/* CHAMPS UNIQUEMENT POUR L'AJOUT */}
-      {!isEdit && (
-        <>
-          {/* SCHOOL YEAR */}
-          <div className="mb-4 flex flex-col gap-3">
-            <Filter
-                value={form.formation}
-                label="Parcours"
-                onChange={handleChange}
-                name="formation"
-                options={formations}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une formation", value: "" }]}
-                render={(f) => f.text ?? f.code ?? f}
-                className="grid grid-cols-1"
-            />
-            <Filter
-                value={form.school_year}
-                label="Année scolaire"
-                onChange={handleChange}
-                name="school_year"
-                options={schoolyears}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une année", value: "" }]}
-                render={(y) => y.text ?? y.code ?? y}
-                className="grid grid-cols-1"
-            />
-            <Filter
-                value={form.semester}
-                label="Semestre"
-                onChange={handleChange}
-                name="semester"
-                options={semesters}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez un semestre", value: "" }]}
-                render={(s) => s.code ?? s.order ?? s}
-                className="grid grid-cols-1"
-            />
-          </div>
-        </>
-      )}
-
       {/* GLOBAL ERROR */}
       {getError("non_field_errors") && (
         <div className="text-sm text-red-500">{getError("non_field_errors")}</div>
@@ -232,7 +162,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 }
 
 function DeleteConfirm({ Data, onSuccess }) {
-  const destroy = useDeleteStudent();
+  const destroy = useDeleteSecretary();
   const [loading, setLoading] = useState(false);
   const { handleErrors } = useDRFErrors();
 
@@ -240,7 +170,7 @@ function DeleteConfirm({ Data, onSuccess }) {
     setLoading(true);
     try {
       await destroy.mutateAsync(Data.id);
-      toast.success("Étudiant supprimé avec succès");
+      toast.success("Secrétaire supprimé avec succès");
       onSuccess?.();
     } catch (error) {
       handleErrors(error);
@@ -254,7 +184,7 @@ function DeleteConfirm({ Data, onSuccess }) {
   return (
     <div className="p-3">
       <p>
-        Voulez-vous vraiment supprimer l'étudiant {Data.first_name} {Data.last_name} ?
+        Voulez-vous vraiment supprimer le Secrétaire {Data.first_name} {Data.last_name} ?
       </p>
       <div className="mt-4 flex justify-end gap-2">
         <Button onClick={handleConfirm} disabled={loading} variant="primary">
@@ -265,15 +195,15 @@ function DeleteConfirm({ Data, onSuccess }) {
   );
 }
 
-export default function StudentsPanel() {
+export default function SecretariesPanel() {
   const { search, page, setSearch, setPage } = useQueryParams({
-    search: { key: "student_search", type: "string", default: "" },
-    page: { key: "student_page", type: "number", default: 1 },
+    search: { key: "search", type: "string", default: "" },
+    page: { key: "page", type: "number", default: 1 },
   });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!params.get("student_page")) {
+    if (!params.get("page")) {
       setPage(1);
     }
   }, []);
@@ -288,7 +218,7 @@ export default function StudentsPanel() {
     };
   }, [debouncedSearch, page]);
 
-  const { data, isLoading } = useStudents(filters);
+  const { data, isLoading } = useSecretaries(filters);
   const results = data?.results || [];
   const totalPages = Math.max(
     1,
@@ -308,7 +238,7 @@ export default function StudentsPanel() {
       label: "Modifier",
       handler: (row) =>
         openModal({
-          title: "Modifier l'étudiant",
+          title: "Modifier le Secrétaire",
           content: <AddOrEditForm initialData={row} onSuccess={closeModal} />,
         }),
     },
@@ -327,7 +257,7 @@ export default function StudentsPanel() {
       <div className="px-2 py-2 flex justify-between items-center">
         <div className="flex items-center gap-2"></div>
         <SearchInput
-          placeholder="Rechercher un étudiant..."
+          placeholder="Rechercher un secretaire..."
           className="w-[200px]"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -336,7 +266,7 @@ export default function StudentsPanel() {
           variant="primary"
           onClick={() => {
             openModal({
-              title: "Ajouter un étudiant",
+              title: "Ajouter un Secrétaire",
               content: <AddOrEditForm onSuccess={closeModal} />,
             });
           }}

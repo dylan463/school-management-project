@@ -44,8 +44,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
         }
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        queryset = User.objects.filter(email=value)
+
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
             raise serializers.ValidationError("cet email est déjà utilisé")
+
         return value
 
 class ProfileUpdateSerializer(UserCreateSerializer):

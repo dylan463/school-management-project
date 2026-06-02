@@ -107,7 +107,12 @@ class AssessmentViewSet(ModelViewSet):
             return [IsInMention()]
         else:
             return [IsDepartmentStaff()]
-    
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
+
     def create(self, request, *args, **kwargs):
         serializer = AssessmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -183,7 +188,12 @@ class GradeViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return get_grade_queryset(user)
-    
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
+
     def get_permissions(self):
         if self.action == "list":
             return [IsInMention()]
@@ -206,7 +216,12 @@ class ResultViewSet(GenericViewSet,mixins.ListModelMixin):
             "enrollment__student",
             "enrollment__school_year"
             )
-    
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
+
     def get_permissions(self):
         if self.action == "list":
             return [IsInMention()]
@@ -227,6 +242,11 @@ class DebtViewSet(GenericViewSet,mixins.ListModelMixin):
             "result__enrollment__student",
             "result__enrollment__school_year"
             )
+
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
     
     def get_permissions(self):
         if self.action == "list":

@@ -100,7 +100,7 @@ export default function ImportPanel() {
     }},
     { header: "rapport", key: "report_file" ,render: (value)=>{
       return (
-        <a className={linkClassName} href={value}>Télécharger rapport</a>
+        <a className={linkClassName} href={value}>{value ? "Télécharger rapport" : "Aucun rapport disponible"}</a>
       )
     }},
   ];

@@ -54,7 +54,7 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             user  : User = request.user
             old_password = serializer.validated_data["old_password"]
-            new_password = serializer.validated_data["new_password"]
+            new_password = serializer.validated_data["new_password1"]
 
             # Vérifier ancien mot de passe
             if not user.check_password(old_password):

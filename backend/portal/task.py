@@ -18,7 +18,7 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
     school_year = SchoolYear.objects.get(pk=school_year_id)
     mention = semester.mention
     role = Role.STUDENT
-    errors = []
+    report = []
 
     df = pd.DataFrame(records)
     total = len(df)
@@ -26,7 +26,7 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
     import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
     import_job.import_type = "STUDENT_CREATION"
     import_job.total_rows = total
-    import_job.status = "PROGRESS"
+    import_job.status = ImportJob.Status.PROGRESS
     import_job.save()
     try:
         for i, row in df.iterrows():
@@ -41,7 +41,15 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
                 text_content,html_content = registration_email_template(student.username,password,mention.text)
                 send_email('Creation de votre compte.',text_content,[student.email],html_content)
                 create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
-
+                
+                msg = "Succès"
+                report.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "status": msg
+                })
             except ValidationError as e:
                 transaction.savepoint_rollback(sid)
                 detail = e.detail
@@ -51,52 +59,49 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
                     )
                 else:
                     msg = str(detail)
-
-                errors.append({
+                report.append({
                     "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
-                    "error": msg
+                    "status": msg
                 })
-
             except Exception as e:
                 transaction.savepoint_rollback(sid)
-                errors.append({
+                report.append({
                     "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
-                    "error": str(e)
+                    "status": msg
                 })
 
             import_job.processed_rows = i + 1
             import_job.save()
 
-        if errors:
-            csv_content = pd.DataFrame(errors).to_csv(index=False)
-            import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+        csv_content = pd.DataFrame(report).to_csv(index=False)
+        import_job.report_file.save(f"report_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
 
-        import_job.status = "COMPLETED"
-        import_job.success_count = total - len(errors)
-        import_job.error_count = len(errors)
+        import_job.status = ImportJob.Status.COMPLETED
+        import_job.success_count = total - len(report)
+        import_job.error_count = len(report)
         import_job.save()
 
         return {
-            "success": total - len(errors),
-            "errors": len(errors)
+            "success": total - len(report),
+            "report": len(report)
         }
     except Exception as e:
         print("-"*25)
         print("erreur pendant le traitement dans la task : \n",str(e))
         print("-"*25)
-        import_job.status = "FAILED"
-        import_job.success_count = total - len(errors)
-        import_job.error_count = len(errors)
+        import_job.status = ImportJob.Status.FAILED
+        import_job.success_count = total - len(report)
+        import_job.error_count = len(report)
         import_job.save()
         return {
-            "success": total - len(errors),
-            "errors": len(errors)
+            "success": total - len(report),
+            "report": len(report)
         }
 
 @shared_task(bind=True ,acks_late=True)
@@ -104,7 +109,7 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
     formation = Formation.objects.get(pk=formation_id)
     semester = Semester.objects.get(pk=semester_id)
     school_year = SchoolYear.objects.get(pk=school_year_id)
-    errors = []
+    report = []
 
     df = pd.DataFrame(records)
     total = len(df)
@@ -112,7 +117,7 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
     import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
     import_job.import_type = "ENROLLMENT"
     import_job.total_rows = total
-    import_job.status = "PROGRESS"
+    import_job.status = ImportJob.Status.PROGRESS
     import_job.save()
     base_query = Q(role=Role.STUDENT, mention=semester.mention)
 
@@ -139,6 +144,14 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
                 create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
 
                 transaction.savepoint_commit(sid)
+                msg = "Succès"
+                report.append({
+                    "line": i + 2,
+                    "nom": row.get("nom"),
+                    "prenoms": row.get("prenoms"),
+                    "email": row.get("email"),
+                    "status": msg
+                })
 
             except ValidationError as e:
                 transaction.savepoint_rollback(sid)
@@ -150,49 +163,48 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
                 else:
                     msg = str(detail)
 
-                errors.append({
+                report.append({
                     "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
-                    "error": msg
+                    "status": msg
                 })
 
             except Exception as e:
                 transaction.savepoint_rollback(sid)
-                errors.append({
+                report.append({
                     "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
-                    "error": str(e)
+                    "status": str(e)
                 })
 
             import_job.processed_rows = i + 1
             import_job.save()
 
-        if errors:
-            csv_content = pd.DataFrame(errors).to_csv(index=False)
-            import_job.report_file.save(f"errors_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+        csv_content = pd.DataFrame(report).to_csv(index=False)
+        import_job.report_file.save(f"report_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
 
-        import_job.status = "COMPLETED"
-        import_job.success_count = total - len(errors)
-        import_job.error_count = len(errors)
+        import_job.status = ImportJob.Status.COMPLETED
+        import_job.success_count = total - len(report)
+        import_job.error_count = len(report)
         import_job.save()
 
         return {
-            "success": total - len(errors),
-            "errors": len(errors)
+            "success": total - len(report),
+            "report": len(report)
         }
     except Exception as e:
         print("-"*25)
         print("erreur pendant le traitement dans la task : \n",str(e))
         print("-"*25)
-        import_job.status = "FAILED"
-        import_job.success_count = total - len(errors)
-        import_job.error_count = len(errors)
+        import_job.status = ImportJob.Status.FAILED
+        import_job.success_count = total - len(report)
+        import_job.error_count = len(report)
         import_job.save()
         return {
-            "success": total - len(errors),
-            "errors": len(errors)
+            "success": total - len(report),
+            "report": len(report)
         }

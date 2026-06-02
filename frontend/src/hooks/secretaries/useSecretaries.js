@@ -1,9 +1,9 @@
 import { secretarySevices } from "../../services/portalService"
 import { useQuery } from '@tanstack/react-query'
 
-export const useHeads =  (filters) => {
+export const useSecretaries =  (filters) => {
     return useQuery({
-        queryKey:["heads",filters],
+        queryKey:["secretaries",filters],
         queryFn:() => secretarySevices.list(filters),
         staleTime:5*60*1000
     })

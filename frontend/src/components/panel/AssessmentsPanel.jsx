@@ -396,6 +396,18 @@ export default function AssessmentsPanel() {
       handler: (row) => openModal({ title: `Supprimer ${row.name}`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> })
     },
     {
+      label:  "Dépublier",
+      handler: (row) => handleTogglePublication(row.id),
+      conditionRow: (row) => row.is_published === true
+
+    },
+    {
+      label:  "Publier",
+      handler: (row) => handleTogglePublication(row.id),
+      conditionRow: (row) => row.is_published === false
+
+    },
+    {
       label: (row) => row.is_published ? "Dépublier" : "Publier",
       handler: (row) => handleTogglePublication(row.id)
     },

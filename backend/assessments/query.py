@@ -15,8 +15,8 @@ def promoted_people(course_module : CourseModule, school_year : SchoolYear):
 
 def people_with_course_debt(course_module):
     return Q(
-        debts__course_module=course_module,
-        debts__cleared=False
+        enrollment_results__course_module=course_module,
+        enrollment_results__debts__cleared=False
     )
 
 def has_no_grade_in_assessment(assessment):

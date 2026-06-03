@@ -50,7 +50,7 @@ export const assessmentService = {
     return response.data
   },
   togglePublication: async (id) => {
-    const response = await api.post(`/assessments/assessments/${id}/toggle_publication`)
+    const response = await api.post(`/assessments/assessments/${id}/toggle_publication/`)
     return response.data  
   },
   attendants: async ({ id, ...filters }) => {

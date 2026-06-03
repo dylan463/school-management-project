@@ -166,11 +166,11 @@ export default function SemesterPanel() {
   const { search, page, setSearch, setPage, is_active, setIs_active } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
-    is_active: { key: "is_active", type: "boolean", default: null }
+    is_active: { key: "is_active", type: "boolean", default: '' }
   })
 
   const tabs = [
-    { key: "Tous", value: null },
+    { key: "Tous", value: '' },
     { key: "Active", value: true },
     { key: "Inactive", value: false },
   ]
@@ -178,9 +178,6 @@ export default function SemesterPanel() {
     const params = new URLSearchParams(window.location.search)
     if (!params.get("page")) {
       setPage(1)
-    }
-    if (!params.get("is_active")) {
-      setIs_active(null)
     }
   }, [])
 

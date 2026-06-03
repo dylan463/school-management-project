@@ -116,11 +116,24 @@ class ChangeSYStatusSerializer(serializers.Serializer):
             raise serializers.ValidationError("ce status est invalide")
         return value
 
+    
+class CourseUnitSerializer(serializers.ModelSerializer):
+    formation = FormationSerializer(read_only=True)
+    total_credits = serializers.SerializerMethodField()
+    class Meta:
+        model = CourseUnit
+        fields = ["id","code","text","formation","is_active","total_credits"]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "is_active":{"required":False}
+        }
+    def get_total_credits(self,obj):
+        return sum([ credit for credit in obj.course_modules.filter(is_active=True).values_list('credits', flat=True)])
 
 class CourseModuleSerializer(serializers.ModelSerializer):
-    teacher = serializers.CharField(source='teacher.get_full_name', read_only=True)
-    course_unit = serializers.CharField(source='course_unit.code', read_only=True)
-    semester = serializers.CharField(source='semester.code', read_only=True)
+    teacher = UserSerializer(read_only=True)
+    course_unit = CourseUnitSerializer(read_only=True)
+    semester = SemesterSerializer(read_only=True)
     class Meta:
         model = CourseModule
         fields = ["id","code","text",'semester',"teacher","credits","min_val_score","course_unit","volume_hours","is_active"]
@@ -141,19 +154,6 @@ class CourseModuleCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("la note minimale de validation doit être compris entre [1,19]")
         return value
 
-    
-class CourseUnitSerializer(serializers.ModelSerializer):
-    formation = FormationSerializer(read_only=True)
-    total_credits = serializers.SerializerMethodField()
-    class Meta:
-        model = CourseUnit
-        fields = ["id","code","text","formation","is_active","total_credits"]
-        read_only_fields = ["id"]
-        extra_kwargs = {
-            "is_active":{"required":False}
-        }
-    def get_total_credits(self,obj):
-        return sum([ credit for credit in obj.modules.filter(is_active=True).values_list('credits', flat=True)])
 
 class CourseUnitCreateSerializer(serializers.ModelSerializer):
     class Meta:

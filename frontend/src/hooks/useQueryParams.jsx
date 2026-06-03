@@ -2,16 +2,16 @@ import { useQueryState } from "nuqs"
 
 const parsers = {
     string: {
-        parse: (v) => (v === '' ? '' : v),
-        serialize: (v) => (v === '' ? '' : v),
+        parse: (v) => (v === null ? '' : v),
+        serialize: (v) => (v === '' ? null : v),
     },
     number: {
-        parse: (v) => (v === '' ? null : parseInt(v, 10)),
-        serialize: (v) => (v === null ? '' : v.toString()),
+        parse: (v) => (v === null ? '' : parseInt(v, 10)),
+        serialize: (v) => (v === '' ? null : v.toString()),
     },
     boolean: {
-        parse: (v) => (v === '' ? null : v === "true"),
-        serialize: (v) => (v === null ? '' : v.toString()),
+        parse: (v) => (v === null ? '' : v === "true"),
+        serialize: (v) => (v === '' ? null : v.toString()),
     },
 }
 

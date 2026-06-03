@@ -1,7 +1,19 @@
+import CourseModulesPanel from "../components/panel/CourseModulesPanel"
+
 const CourseModules = () => {
   return (
-    <div>
-      <h1>Modules de Cours</h1>
+    <div className="max-w-7xl mx-auto space-y-10">
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">
+            Modules de cours
+          </h2>
+          <p className="text-sm text-slate-500">
+            Consultez et gérez les modules de cours de votre formation.
+          </p>
+        </div>
+        <CourseModulesPanel />
+      </section>
     </div>
   )
 }

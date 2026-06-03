@@ -63,14 +63,14 @@ export default function SearchWithDropdown({
                                 <button
                                     type="button"
                                     onClick={() => onSelect?.(option)}
-                                    className="w-full h-[40px] text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
+                                    className="w-full h-[35px] text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-b-0"
                                 >
                                     {renderOption?.(option)}
                                 </button>
                             </li>
                         ))
                     ) : (
-                        <li className="px-3 py-2 text-xs text-slate-500">
+                        <li className="px-3 py-2 text-xs h-[35px] text-slate-500">
                             Aucun résultat trouvé
                         </li>
                     )}

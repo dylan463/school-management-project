@@ -117,11 +117,6 @@ class CourseUnit(models.Model):
         unique_together = ('formation','code')
         ordering = ['formation__text', 'code']
 
-    def get_total_credits(self):
-        """Somme des crédits de tous les modules actifs de cette UE."""
-        return self.modules.filter(is_active=True).aggregate(
-            total=models.Sum('credits')
-        )['total'] or 0
 
 class CourseModule(models.Model):
     """

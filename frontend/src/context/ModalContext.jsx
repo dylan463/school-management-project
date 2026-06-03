@@ -34,15 +34,21 @@ export function ModalProvider({ children }) {
       {/* ───────── MODAL UI ───────── */}
       {modal && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000]"
-          onClick={closeModal}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
         >
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+          ></div>
+
+          {/* Modal Container */}
           <div
-            className="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl"
+            className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900">
                 {modal.title}
               </h2>
@@ -56,8 +62,7 @@ export function ModalProvider({ children }) {
             </div>
 
             {/* Body */}
-            {/* Body */}
-            <div className="px-6 py-5 overflow-visible">{modal.content}</div>
+            <div className="px-6 py-5 overflow-y-auto flex-1">{modal.content}</div>
           </div>
         </div>
       )}

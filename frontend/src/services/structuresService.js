@@ -102,6 +102,10 @@ export const schoolyearService = {
     const response = await api.post(`/structures/schoolyears/${id}/toggle_lock/`)
     return response.data
   },
+  changeStatus: async ({id, status}) => {
+    const response = await api.post(`/structures/schoolyears/${id}/change_status/`, { status })
+    return response.data
+  },
   delete: async (id) => {
     const response = await api.delete(`/structures/schoolyears/${id}/`)
     return response.data

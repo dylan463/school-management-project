@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import Card from "../ui/Card"
+import Button from "../ui/Button"
 import SearchInput from "../SearchInput"
 import DataTable from '../DataTable'
-import { useState, useEffect } from "react"
 import useDebounced from '../../hooks/useDebounced'
 import Badge from "../Badge"
 import { useQueryParams } from "../../hooks/useQueryParams"
@@ -85,6 +87,7 @@ function GradeInput({ row, assessmentId }) {
 }
 
 export default function GradesPanel({ assessmentId }) {
+  const navigate = useNavigate()
   const { search, setSearch } = useQueryParams({
     search: { key: "student", type: "string", default: "" },
   })
@@ -107,8 +110,11 @@ export default function GradesPanel({ assessmentId }) {
 
   return (
     <Card>
-      <div className="px-2 py-4 flex justify-between border-b border-slate-100">
-        <h3 className="font-semibold text-slate-700 self-center pl-2">Saisie des notes</h3>
+      <div className="px-2 py-4 flex items-center justify-between border-b border-slate-100 gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => navigate("/examens")}>Retour</Button>
+          <h3 className="font-semibold text-slate-700 self-center pl-2">Saisie des notes</h3>
+        </div>
         <SearchInput
           placeholder="Rechercher un étudiant..."
           className="w-[250px]"

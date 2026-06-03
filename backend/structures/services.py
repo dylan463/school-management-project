@@ -85,18 +85,18 @@ def change_school_year_status(user: User, school_year: SchoolYear, new_status: s
 
     if new_status not in SchoolYear.Status.values:
         raise ValidationError({
-            "status": "Statut invalide."
+            "detail": "Statut invalide."
         })
 
     if new_status == "UPCOMING":
         raise ValidationError({
-            "status": "Vous ne pouvez pas réactiver une année scolaire."
+            "detail": "Vous ne pouvez pas réactiver une année scolaire."
         })
 
     if new_status == "ACTIVE":
         if school_year.status != "UPCOMING":
             raise ValidationError({
-                "status": "Seule une année scolaire à venir peut être activée."
+                "detail": "Seule une année scolaire à venir peut être activée."
             })
 
         if SchoolYear.objects.filter(
@@ -104,13 +104,13 @@ def change_school_year_status(user: User, school_year: SchoolYear, new_status: s
             status="ACTIVE"
         ).exists():
             raise ValidationError({
-                "mention": "Il existe déjà une année scolaire active pour votre mention."
+                "detail": "Il existe déjà une année scolaire active pour votre mention."
             })
 
     if new_status == "CLOSED":
         if school_year.status != "ACTIVE":
             raise ValidationError({
-                "status": "Seule une année scolaire active peut être clôturée."
+                "detail": "Seule une année scolaire active peut être clôturée."
             })
 
         if Enrollment.objects.filter(

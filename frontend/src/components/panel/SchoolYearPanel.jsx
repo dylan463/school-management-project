@@ -14,6 +14,7 @@ import { useCreateSchoolyear } from "../../hooks/schoolyears/useCreateSchoolyear
 import { useToggleSchoolyearLock } from "../../hooks/schoolyears/useToggleSchoolyearLock";
 import { useUpdateSchoolyear } from "../../hooks/schoolyears/useUpdateSchoolyear";
 import { useDeleteSchoolyear } from "../../hooks/schoolyears/useDeleteSchoolyear";
+import { useChangeStatusSchoolyear } from "../../hooks/schoolyears/useChangeStatusSchoolyear"
 import useDRFErrors from "../../hooks/useDRFError";
 import { toast } from 'react-toastify'
 import { useQueryParams } from "../../hooks/useQueryParams"
@@ -204,6 +205,7 @@ export default function SchoolYearPanel() {
   }, [])
 
   const toggleLock = useToggleSchoolyearLock()
+  const changeStatus = useChangeStatusSchoolyear()
   const debouncedSearch = useDebounced(search)
   const { openModal, closeModal } = useModal()
 
@@ -245,10 +247,20 @@ export default function SchoolYearPanel() {
       conditionRow: (row) => !row.is_locked
     },
     {
-      label: "Débloquer",
+      label: "Debloquer",
       handler: (row) => { toggleLock.mutate(row.id) },
       conditionRow: (row) => row.is_locked
-    }
+    },
+    {
+      label: "Activer",
+      handler: (row) => { changeStatus.mutate({ id: row.id, status: "ACTIVE" }) },
+      conditionRow: (row) => row.status == "UPCOMING"
+    },
+    {
+      label: "Cloturer",
+      handler: (row) => { changeStatus.mutate({ id: row.id, status: "CLOSED" }) },
+      conditionRow: (row) => row.status == "ACTIVE"
+    },
   ]
 
   return (

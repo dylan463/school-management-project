@@ -11,14 +11,14 @@ from structures.models import User,SchoolYear,Formation,Semester,Mention,CourseM
 from portal.models import ImportJob
 
 models = [
-#  ImportJob,
+ ImportJob,
  User,
-#  SchoolYear,
-#  Formation,
-#  Semester,
-#  Mention,
-#  CourseModule,
-#  CourseUnit,
+ SchoolYear,
+ Formation,
+ Semester,
+ Mention,
+ CourseModule,
+ CourseUnit,
 ]
 
 def reset_db():

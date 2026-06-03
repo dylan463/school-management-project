@@ -165,9 +165,9 @@ def create_assessment(data: dict):
             is_published=True
         ).exists():
 
-            raise ValidationError(
+            raise ValidationError({"detail":
                 "veillez publier une session normal avant d'entamer un rattrappage"
-            )
+            })
 
     return Assessment.objects.create(**data)
 
@@ -182,9 +182,7 @@ def update_results(course_module):
     # Récupération unique et sécurisée de l'année scolaire active
     school_year = SchoolYear.objects.filter(status="ACTIVE").first()
     if school_year is None:
-        raise ValidationError(
-            "Vous ne pouvez publier les résultats que pendant une année scolaire active"
-        )
+        raise ValidationError({"detail":"Vous ne pouvez publier les résultats que pendant une année scolaire active"})
 
     def get_grades(session):
         """Récupère les notes en une seule requête avec les relations nécessaires."""
@@ -320,9 +318,9 @@ def toggle_assessment_publication(assessment: Assessment):
                 is_published=True,
             ).exists()
             if retake_published:
-                raise ValidationError(
-                    "La session de rattrapage doit être dépubliée avant de dépublier la session normale."
-                )
+                raise ValidationError({
+                    "detail":"La session de rattrapage doit être dépubliée avant de dépublier la session normale."
+                })
 
         assessment.is_published = False
         assessment.save(update_fields=["is_published"])
@@ -337,9 +335,7 @@ def toggle_assessment_publication(assessment: Assessment):
                 is_published=True,
             ).exists()
             if not normal_published:
-                raise ValidationError(
-                    "La session normale doit être publiée avant la session de rattrapage."
-                )
+                raise ValidationError({"detail":"La session normale doit être publiée avant la session de rattrapage."})
         else:
             retake_published = Assessment.objects.filter(
                 course_module=assessment.course_module,
@@ -349,7 +345,7 @@ def toggle_assessment_publication(assessment: Assessment):
             ).exists()
             if retake_published:
                 raise ValidationError(
-                    "La session de rattrapage doit être dépubliée avant de publier la session normale."
+                    {"detail":"La session de rattrapage doit être dépubliée avant de publier la session normale."}
                 )
 
         if Enrollment.objects.filter(

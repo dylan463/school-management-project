@@ -1,6 +1,9 @@
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 
-### installation
+## installation
 - installer les application necessaire pour faire marcher le projet
 backend : 
 - python (pour le dévelloppement du projet on a utilisé la version 3.12.10)

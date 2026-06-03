@@ -134,8 +134,8 @@ class AssessmentViewSet(ModelViewSet):
         response_serializer = AssessmentSerializer(assessment)
         return Response(response_serializer.data)
 
-    @action(detail=False,methods=["get"])
-    def attendant_student(self,request):
+    @action(detail=True, methods=["get"])
+    def attendant_student(self,request, pk=None):
         assessment :Assessment = self.get_object()
         has_grade = request.query_params.get("has_grade")
         has_debt = request.query_params.get("has_debt")

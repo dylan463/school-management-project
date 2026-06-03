@@ -10,6 +10,9 @@ export const useCreateGrade = () => {
       queryClient.invalidateQueries({
         queryKey: ['grades'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['assessmentAttendants'],
+      })
     },
   })
 }

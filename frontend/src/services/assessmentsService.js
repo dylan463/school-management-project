@@ -53,9 +53,9 @@ export const assessmentService = {
     const response = await api.post(`/assessments/assessments/${id}/toggle_publication`)
     return response.data  
   },
-  attendants: async (filters) => {
+  attendants: async ({ id, ...filters }) => {
     const params = new URLSearchParams(filters)
-    const response = await api.get(`/assessments/assessments/attendant_student/?${params.toString()}`)
+    const response = await api.get(`/assessments/assessments/${id}/attendant_student/?${params.toString()}`)
     return response.data
   }
 }

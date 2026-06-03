@@ -67,14 +67,17 @@ class AttendantGradeSerializer(serializers.ModelSerializer):
 class AttendantSerializer(serializers.ModelSerializer):
     grade = serializers.SerializerMethodField()
     debt = serializers.SerializerMethodField()
+    student_name = serializers.CharField(source='student.get_full_name', read_only=True)
 
     class Meta:
         model = Enrollment
-        fields = ["id", "student", "grade", "debt"]
+        fields = ["id", "student", "student_name", "grade", "debt"]
 
     def get_grade(self, enrollment):
         grades = getattr(enrollment, "assessment_grades", [])
-        return grades[0].score if grades else None
+        if grades:
+            return {"id": grades[0].id, "score": grades[0].score}
+        return None
 
     def get_debt(self, enrollment):
         result = enrollment.enrollment_results.all().first()

@@ -2,6 +2,7 @@ import Card from "../ui/Card"
 import SearchInput from "../SearchInput"
 import Button from "../ui/Button"
 import DataTable from '../DataTable'
+import { useNavigate } from 'react-router-dom'
 import { useMemo } from "react"
 import useDebounced from '../../hooks/useDebounced'
 import Paginator from '../Paginator'
@@ -361,6 +362,7 @@ function DeleteConfirm({ Data, onSuccess }) {
 
 export default function CourseModulesPanel() {
   const { openModal, closeModal } = useModal()
+  const navigate = useNavigate()
 
   const {
     search, setSearch,
@@ -442,6 +444,18 @@ export default function CourseModulesPanel() {
         content: <DeleteConfirm Data={row} onSuccess={closeModal} />,
       }),
     },
+    {
+      label: "Voir résultats",
+      handler: (row) => {
+        navigate(`/resultats?course_module=${row.id}`)
+      }
+    },
+    {
+      label: "Voir examens",
+      handler: (row) => {
+        navigate(`/examens?course_module=${row.id}`)
+      }
+    }
   ]
 
   return (

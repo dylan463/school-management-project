@@ -15,11 +15,13 @@ class AssessmentFilter(django_filters.FilterSet):
         fields = ["school_year","course_module"]
 
 class EnrollmentResultFilter(django_filters.FilterSet):
-    school_year = django_filters.NumberFilter(field_name="enrollment__student_school_year__school_year__id")
+    school_year = django_filters.NumberFilter(field_name="enrollment__school_year__id")
     course_module = django_filters.NumberFilter(field_name="course_module__id")
+    formation = django_filters.NumberFilter(field_name="enrollment__formation__id")
+    semester = django_filters.NumberFilter(field_name="enrollment__semester__id")
     class Meta:
         model = EnrollmentResult
-        fields = ["school_year","course_module"]
+        fields = ["school_year","course_module","formation","semester","status"]
 
 class GradeFilter(django_filters.FilterSet):
     assessment = django_filters.NumberFilter(field_name="assessment__id")

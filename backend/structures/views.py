@@ -281,7 +281,7 @@ class CourseModuleViewSet(ModelViewSet):
     serializer_class = CourseModuleSerializer
     permission_classes = [IsDepartmentStaff]
     filter_backends = [DjangoFilterBackend,SearchFilter]
-    search_fields = ["code","label","teacher__first_name","teacher__last_name","teacher__username"]
+    search_fields = ["code","text","teacher__first_name","teacher__last_name","teacher__username"]
     filterset_class = CourseModuleFilter
 
     def get_serializer_class(self):

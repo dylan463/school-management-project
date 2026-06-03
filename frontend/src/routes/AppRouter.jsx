@@ -35,7 +35,6 @@ import Levels from '../pages/Levels'
 import CourseUnits from '../pages/CourseUnits'
 import CourseModules from '../pages/CourseModules'
 import Assessments from '../pages/Assessments'
-import Grades from '../pages/Grades'
 import Results from '../pages/Results'
 import History from '../pages/History'
 import Deliberations from '../pages/Deliberations'
@@ -96,7 +95,6 @@ export default function AppRouter() {
           <Route path={ROUTES.COURSEMODULES} element={<CourseModules />} />
           <Route path={ROUTES.ASSESSMENTS} element={<Assessments />} />
           <Route path={ROUTES.SCHEDULE} element={<Schedule />} />
-          <Route path={ROUTES.GRADES} element={<Grades />} />
           <Route path={ROUTES.RESULTS} element={<Results />} />
         </Route>
       </Route>
@@ -137,3 +135,4 @@ export default function AppRouter() {
     </Routes>
   )
 }
+

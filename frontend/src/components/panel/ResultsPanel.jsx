@@ -35,7 +35,7 @@ export default function ResultsPanel() {
     search, page, setSearch, setPage,
     formation, setFormation,
     status, setStatus,
-    school_year, setSchoolYear,
+    school_year, setSchool_year: setSchoolYear,
     semester, setSemester,
     course, setCourse
   } = useQueryParams({
@@ -88,7 +88,6 @@ export default function ResultsPanel() {
   }
 
   const handleSelectSchoolYear = (selectedSy) => {
-    console.log(selectedSy)
     setSchoolYear(selectedSy.id)
     syClose()
   }

@@ -10,6 +10,9 @@ export const useUpdateGrade = () => {
       queryClient.invalidateQueries({
         queryKey: ['grades'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['assessmentAttendants'],
+      })
     },
   })
 }

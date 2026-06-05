@@ -14,6 +14,7 @@ import ResetPassword from '../pages/ResetPassword'
 
 // ── Commun (tous les utilisateurs connectés) ──
 import Profile from '../pages/Profile'
+import Notifications from '../pages/Notifications'
 
 // ── Étudiant ──
 import DashboardStudent from '../pages/DashboardStudent'
@@ -56,6 +57,7 @@ export default function AppRouter() {
       <Route element={<ProtectedRoute allowedRoles={[ROLES.STUDENT, ROLES.TEACHER, ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.REGISTRAR_OFFICER, ROLES.SYSTEM_ADMIN]} />}>
         <Route element={<AppLayout />}>
           <Route path={ROUTES.PROFIL} element={<Profile />} />
+          <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
         </Route>
       </Route>
 

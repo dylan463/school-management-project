@@ -45,6 +45,7 @@ export const ROUTES = {
   REENROLLMENT: "/reinscriptions",
   IMPORTJOBS: "/imports",
   SCHEDULE: "/emplois-du-temps",
+  NOTIFICATIONS: "/notifications",
 }
 
 export const PILL_COLORS = {

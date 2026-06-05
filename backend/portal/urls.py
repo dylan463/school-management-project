@@ -1,4 +1,9 @@
-from .views import HeadsViewSet,SecretaryViewSet,TeacherViewSet,StudentViewSet,OfficerViewSet,EnrollmentUploadViewSet,ImportJobViewSet
+from .views import (
+    HeadsViewSet, SecretaryViewSet, TeacherViewSet, StudentViewSet,
+    OfficerViewSet, EnrollmentUploadViewSet, ImportJobViewSet,
+    TeacherDashboardAPIView, ManagementDashboardAPIView,
+    StudentDashboardAPIView
+)
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 
@@ -12,4 +17,8 @@ router.register('students',StudentViewSet,basename='student')
 router.register('tasks',ImportJobViewSet,basename='task')
 router.register("enrollments",EnrollmentUploadViewSet,basename='enrollment-upload')
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('dashboard/teacher/', TeacherDashboardAPIView.as_view(), name='teacher-dashboard'),
+    path('dashboard/management/', ManagementDashboardAPIView.as_view(), name='management-dashboard'),
+    path('dashboard/student/', StudentDashboardAPIView.as_view(), name='student-dashboard'),
+] + router.urls

@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { ROUTES, ROLES } from '../../utils/constants'
 import { useAuth } from '../../context/AuthContext'
+import { useUnreadNotificationsCount } from '../../hooks/notifications/useUnreadNotificationsCount'
 
 /* ── Icon components ── */
 const Icon = ({ d }) => (
@@ -22,11 +23,13 @@ const CheckIcon = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="
 const RepeatIcon = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M12 2l2 2-2 2M4 14l-2-2 2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 4H6a4 4 0 00-4 4M2 12h8a4 4 0 004-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
 const LayerIcon = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M8 1L1 5l7 4 7-4-7-4zM1 8l7 4 7-4M1 11l7 4 7-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
 const ImportIcon = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M8 1v10M5 8l3 3 3-3M2 14h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+const BellIcon = () => <svg className="w-4 h-4 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 16 16"><path d="M8 1.5a4 4 0 014 4v2.5l1.5 2H2.5L4 8V5.5a4 4 0 014-4zM6 12a2 2 0 004 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
 
 /* ── Nav items per role ── */
 
 const STUDENT_NAV = [
   { label: 'Tableau de bord', to: ROUTES.DASHBOARDSTUDENT, iconComponent: DashIcon },
+  { label: 'Notifications', to: ROUTES.NOTIFICATIONS, iconComponent: BellIcon, badgeKey: 'notifications' },
   { label: 'Emplois du Temps', to: ROUTES.SCHEDULE, iconComponent: CheckIcon },
   { label: "Unités d'ens.", to: ROUTES.COURSEUNITS, iconComponent: BookIcon },
   { label: 'Modules', to: ROUTES.COURSEMODULES, iconComponent: NoteIcon },
@@ -38,6 +41,7 @@ const STUDENT_NAV = [
 
 const TEACHER_NAV = [
   { label: 'Tableau de bord', to: ROUTES.DASHBOARDTEACHER, iconComponent: DashIcon },
+  { label: 'Notifications', to: ROUTES.NOTIFICATIONS, iconComponent: BellIcon, badgeKey: 'notifications' },
   { label: 'Emplois du Temps', to: ROUTES.SCHEDULE, iconComponent: CheckIcon },
   { label: "Unités d'ens.", to: ROUTES.COURSEUNITS, iconComponent: BookIcon },
   { label: 'Modules', to: ROUTES.COURSEMODULES, iconComponent: NoteIcon },
@@ -48,6 +52,7 @@ const TEACHER_NAV = [
 
 const HEAD_NAV = [
   { label: 'Tableau de bord', to: ROUTES.DASHBOARDMANAGEMENT, iconComponent: DashIcon },
+  { label: 'Notifications', to: ROUTES.NOTIFICATIONS, iconComponent: BellIcon, badgeKey: 'notifications' },
   { label: 'Emplois du Temps', to: ROUTES.SCHEDULE, iconComponent: CheckIcon },
   { label: 'Secrétaires', to: ROUTES.SECRETARIES, iconComponent: UsersIcon },
   { label: 'Officiers', to: ROUTES.OFFICERS, iconComponent: UsersIcon },
@@ -69,6 +74,7 @@ const HEAD_NAV = [
 
 const SECRETARY_NAV = [
   { label: 'Tableau de bord', to: ROUTES.DASHBOARDMANAGEMENT, iconComponent: DashIcon },
+  { label: 'Notifications', to: ROUTES.NOTIFICATIONS, iconComponent: BellIcon, badgeKey: 'notifications' },
   { label: 'Emplois du Temps', to: ROUTES.SCHEDULE, iconComponent: CheckIcon },
   { label: 'Étudiants', to: ROUTES.STUDENTS, iconComponent: UsersIcon },
   { label: 'Enseignants', to: ROUTES.TEACHERS, iconComponent: UsersIcon },
@@ -87,6 +93,7 @@ const SECRETARY_NAV = [
 
 const OFFICER_NAV = [
   { label: 'Tableau de bord', to: ROUTES.DASHBOARDMANAGEMENT, iconComponent: DashIcon },
+  { label: 'Notifications', to: ROUTES.NOTIFICATIONS, iconComponent: BellIcon, badgeKey: 'notifications' },
   { label: 'Historiques', to: ROUTES.HISTORY, iconComponent: ClockIcon },
   { label: 'Profil', to: ROUTES.PROFIL, iconComponent: GearIcon },
 ]
@@ -144,6 +151,7 @@ export default function Sidebar({ }) {
   const { user, role, logout } = useAuth()
   const title = `Gestion administratif`
   const Nav = getNavForRole(role)
+  const { data: unreadCount } = useUnreadNotificationsCount()
 
   return (
     <aside className="w-52 bg-gradient-to-b from-white to-white flex flex-col flex-shrink-0 min-h-screen shadow-lg shadow-black/10 z-10 relative">
@@ -153,7 +161,7 @@ export default function Sidebar({ }) {
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto ml-1 mr-1">
         {Nav.map(item => (
-          <SidebarItem key={item.to} {...item} />
+          <SidebarItem key={item.to} {...item} badge={item.badgeKey === 'notifications' && unreadCount > 0 ? unreadCount : undefined} />
         ))}
       </nav>
 

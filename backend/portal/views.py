@@ -28,7 +28,11 @@ import pandas as pd
 import uuid
 from django.core.files.storage import default_storage
 from .filter import ImportJobFilter
-from structures.models import Formation,Semester,SchoolYear
+from structures.models import Formation, Semester, SchoolYear, CourseModule
+from assessments.models import Enrollment, Assessment, Grade
+from timetable.models import ScheduleEntry
+import datetime
+from django.db.models import Count
 
 
 class HeadsViewSet(ModelViewSet):
@@ -384,3 +388,175 @@ class EnrollmentUploadViewSet(GenericViewSet):
         import_job.save()
 
         return Response({"task_id": task.id, "job_id": import_job.id})
+
+class TeacherDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if user.role not in [Role.TEACHER, Role.DEPARTMENT_HEAD]:
+            return Response({"detail": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # 1. Cours Actifs
+        active_courses = CourseModule.objects.filter(teacher=user, is_active=True)
+        active_courses_count = active_courses.count()
+
+        # 2. Total Étudiants
+        # Students enrolled in the semesters of the teacher's active courses
+        semesters = active_courses.values_list('semester', flat=True).distinct()
+        formations = active_courses.values_list('course_unit__formation', flat=True).distinct()
+        
+        total_students = Enrollment.objects.filter(
+            semester__in=semesters,
+            formation__in=formations,
+            status=Enrollment.Status.ACTIVE
+        ).values('student').distinct().count()
+
+        # 3. Classes
+        classes_count = formations.count()
+
+        # 4. Examens Prévus
+        upcoming_exams = Assessment.objects.filter(
+            course_module__teacher=user,
+            date__gte=datetime.date.today()
+        ).count()
+
+        # 5. Emploi du temps hebdomadaire (Schedule)
+        # Assuming we just fetch all for now, or we can filter by the current active school year/semester
+        # We will fetch schedule entries for the teacher's modules
+        schedule_entries = ScheduleEntry.objects.filter(
+            course_module__teacher=user
+        ).select_related('course_module', 'course_module__course_unit__formation', 'schedule__semester').order_by('day', 'start_time')
+
+        # Format schedule entries
+        weekly_schedule = []
+        for entry in schedule_entries:
+            weekly_schedule.append({
+                "id": entry.id,
+                "day": entry.get_day_display(),
+                "start_time": entry.start_time.strftime("%H:%M"),
+                "end_time": entry.end_time.strftime("%H:%M"),
+                "classe": entry.course_module.course_unit.formation.code,
+                "ec": entry.course_module.text,
+                "room": entry.room
+            })
+
+        return Response({
+            "active_courses_count": active_courses_count,
+            "total_students": total_students,
+            "classes_count": classes_count,
+            "upcoming_exams": upcoming_exams,
+            "weekly_schedule": weekly_schedule
+        })
+
+class ManagementDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if user.role not in [Role.DEPARTMENT_HEAD, Role.DEPARTMENT_SECRETARY, Role.REGISTRAR_OFFICER]:
+            return Response({"detail": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+        
+        mention = user.mention
+
+        # 1. Total Étudiants
+        total_students = User.objects.filter(role=Role.STUDENT, mention=mention).count()
+
+        # 2. Total Enseignants
+        total_teachers = User.objects.filter(role=Role.TEACHER, mention=mention).count()
+
+        # 3. Parcours Actifs
+        active_formations = Formation.objects.filter(mention=mention, is_active=True).count()
+
+        # 4. Importations en cours
+        ongoing_imports = ImportJob.objects.filter(status__in=[ImportJob.Status.PENDING, ImportJob.Status.PROGRESS]).count()
+
+        # Dernières tâches d'importation
+        recent_imports_qs = ImportJob.objects.all().order_by('-created_at')[:5]
+        recent_imports = []
+        for job in recent_imports_qs:
+            recent_imports.append({
+                "id": job.id,
+                "import_type": job.get_import_type_display(),
+                "status": job.status,
+                "created_at": job.created_at,
+                "processed_rows": job.processed_rows,
+                "total_rows": job.total_rows,
+                "success_count": job.success_count,
+                "error_count": job.error_count
+            })
+
+        return Response({
+            "total_students": total_students,
+            "total_teachers": total_teachers,
+            "active_formations": active_formations,
+            "ongoing_imports": ongoing_imports,
+            "recent_imports": recent_imports
+        })
+
+class StudentDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != Role.STUDENT:
+            return Response({"detail": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Inscriptions actives
+        active_enrollments = Enrollment.objects.filter(student=user, status=Enrollment.Status.ACTIVE).select_related('semester', 'formation')
+        
+        # Trouver les modules liés à ces inscriptions
+        active_semesters = active_enrollments.values('semester')
+        active_formations = active_enrollments.values('formation')
+
+        modules = CourseModule.objects.filter(
+            semester__in=active_semesters, 
+            course_unit__formation__in=active_formations, 
+            is_active=True
+        )
+        active_modules_count = modules.count()
+
+        # Examens à venir pour ces modules
+        upcoming_exams = Assessment.objects.filter(
+            course_module__in=modules,
+            date__gte=datetime.date.today()
+        ).count()
+
+        # Dernières notes
+        recent_grades_qs = Grade.objects.filter(
+            enrollment__student=user
+        ).select_related('assessment', 'assessment__course_module').order_by('-id')[:5]
+
+        recent_grades = []
+        for grade in recent_grades_qs:
+            recent_grades.append({
+                "id": grade.id,
+                "module": grade.assessment.course_module.text,
+                "assessment_name": grade.assessment.name,
+                "score": grade.score,
+                "date": grade.assessment.date
+            })
+
+        # Emploi du temps
+        schedule_entries = ScheduleEntry.objects.filter(
+            course_module__in=modules
+        ).select_related('course_module', 'course_module__course_unit__formation', 'schedule__semester').order_by('day', 'start_time')
+
+        weekly_schedule = []
+        for entry in schedule_entries:
+            weekly_schedule.append({
+                "id": entry.id,
+                "day": entry.get_day_display(),
+                "start_time": entry.start_time.strftime("%H:%M"),
+                "end_time": entry.end_time.strftime("%H:%M"),
+                "classe": entry.course_module.course_unit.formation.code,
+                "ec": entry.course_module.text,
+                "room": entry.classroom
+            })
+
+        return Response({
+            "active_modules_count": active_modules_count,
+            "upcoming_exams": upcoming_exams,
+            "recent_grades": recent_grades,
+            "weekly_schedule": weekly_schedule
+        })

@@ -31,7 +31,6 @@ import Students from '../pages/Students'
 import Schoolyears from '../pages/Schoolyears'
 import Formations from '../pages/Formations'
 import Semesters from '../pages/Semesters'
-import Levels from '../pages/Levels'
 import CourseUnits from '../pages/CourseUnits'
 import CourseModules from '../pages/CourseModules'
 import Assessments from '../pages/Assessments'
@@ -110,7 +109,6 @@ export default function AppRouter() {
           <Route path={ROUTES.SCHOOLYEARS} element={<Schoolyears />} />
           <Route path={ROUTES.FORMATIONS} element={<Formations />} />
           <Route path={ROUTES.SEMESTERS} element={<Semesters />} />
-          <Route path={ROUTES.LEVELS} element={<Levels />} />
           <Route path={ROUTES.DELIBERATIONS} element={<Deliberations />} />
           <Route path={ROUTES.REENROLLMENT} element={<Reenrollment />} />
         </Route>

@@ -2,16 +2,17 @@ from rest_framework import serializers
 
 from .models import Assessment, Grade, EnrollmentResult,Debt
 from structures.models import CourseModule,SchoolYear,Formation
+from structures.serializers import UserSerializer,SchoolYearSerializer,FormationSerializer,SemesterSerializer
 from rest_framework.exceptions import ValidationError
 from .models import Enrollment
 from collections import defaultdict
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):
-    student = serializers.CharField(source='student.get_full_name', read_only=True)
-    school_year = serializers.CharField(source='school_year.text', read_only=True)
-    formation = serializers.CharField(source='formation.text', read_only=True)
-    semester = serializers.CharField(source='semester.code', read_only=True)
+    student = UserSerializer(read_only=True)
+    school_year = SchoolYearSerializer(read_only=True)
+    formation = FormationSerializer(read_only=True)
+    semester = SemesterSerializer(read_only=True)
     class Meta:
         model = Enrollment
         fields = [
@@ -31,7 +32,17 @@ class EnrollmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Enrollment
         fields = ["student", "school_year", "formation", "semester"]
+        validators = []
 
+    def validate(self,attrs):
+        if Enrollment.objects.filter(
+            student=attrs["student"],
+            school_year=attrs["school_year"],
+            semester=attrs["semester"]
+        ).exists():
+            raise serializers.ValidationError("L'étudiant est déjà inscrit dans ce semestre de cette année scolaire")
+        
+        return attrs
 
 
 class AssessmentSerializer(serializers.ModelSerializer):
@@ -184,7 +195,9 @@ class EnrollmentResultSerializer(serializers.ModelSerializer):
         fields = ['full_name',"course_unit",'final_score','course_module','status','course_credit','semester','formation']
 
 class DebtSerializer(serializers.ModelSerializer):
-    result = EnrollmentResultSerializer()
+    semester = serializers.CharField(source='result.course_module.course_unit.semester.code')
+    formation = serializers.CharField(source='result.course_module.course_unit.formation.code')
+    course_module = serializers.CharField(source="result.course_module.text")
     class Meta:
         model = Debt
-        fields = ["results","cleared"]
+        fields = ["id","cleared","semester","course_module","formation"]

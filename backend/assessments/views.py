@@ -14,6 +14,7 @@ from django.db.models import Q, Prefetch
 from .models import Assessment, Grade,Enrollment,EnrollmentResult,Debt
 from .serializers import (
     EnrollmentSerializer,
+    EnrollmentCreateSerializer,
     ChangeEnrolStatusSerializer,
     AttendantSerializer,
     Assessment,
@@ -75,14 +76,14 @@ class EnrollmentViewSet(ModelViewSet):
         return Response(response_serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = EnrollmentSerializer(data=request.data)
+        serializer = EnrollmentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data.copy()
         student = data["student"]
         formation = data["formation"]
         semester = data["semester"]
         school_year = data["school_year"]
-        enrollment = create_enrollment(student,school_year,semester,formation)
+        enrollment = create_enrollment(student,school_year,semester,formation,no_notification=False)
         response_serializer = EnrollmentSerializer(enrollment)
         return Response(response_serializer.data,status=status.HTTP_201_CREATED)
 
@@ -236,7 +237,7 @@ class DebtViewSet(GenericViewSet,mixins.ListModelMixin):
 
     def get_queryset(self):
         user = self.request.user
-        return get_result_queryset(user).select_related(
+        return get_debt_queryset(user).select_related(
             "result__course_module",
             "result__course_module__course_unit",
             "result__enrollment__student",

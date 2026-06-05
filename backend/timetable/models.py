@@ -44,9 +44,15 @@ class ScheduleEntry(models.Model):
 
     classroom = models.CharField(blank=True, null=True, max_length=50)
 
+    class Meta:
+        ordering = ['day', 'start_time']
+
 
 class TeacherAvailability(models.Model):
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="teacher_availabilities")
     day = models.CharField(max_length=10, choices=ScheduleEntry.Day.choices)
     start_time = models.TimeField()
     end_time = models.TimeField()
+
+    class Meta:
+        ordering = ['day', 'start_time']

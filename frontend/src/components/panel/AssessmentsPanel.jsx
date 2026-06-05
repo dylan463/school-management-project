@@ -324,13 +324,13 @@ export default function AssessmentsPanel() {
   const [showFilters, setShowFilters] = useState(false);
   const debouncedSearch = useDebounced(search);
 
-  const { data: activeSys} = useSchoolyears({status:"ACTIVE"})
+  const { data: activeSys } = useSchoolyears({ status: "ACTIVE" })
   const activeSy = activeSys?.results?.[0] || null
-  useEffect(()=>{
-    if(activeSy){
+  useEffect(() => {
+    if (activeSy) {
       setSchoolYear(activeSy.id)
     }
-  },[activeSy])
+  }, [activeSy])
 
   // Filters hooks
   const { value: courseValue, query: courseQuery, onChange: courseOnChange, isOpen: courseIsOpen, close: courseClose, containerRef: courseContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
@@ -408,20 +408,20 @@ export default function AssessmentsPanel() {
       conditionGlobal: activeSy !== null && activeSy.id === school_year
     },
     {
-      label:  "Dépublier",
+      label: "Dépublier",
       handler: (row) => handleTogglePublication(row.id),
       conditionRow: (row) => row.is_published === true,
       conditionGlobal: activeSy !== null && activeSy.id === school_year
     },
     {
-      label:  "Publier",
+      label: "Publier",
       handler: (row) => handleTogglePublication(row.id),
       conditionRow: (row) => row.is_published === false,
       conditionGlobal: activeSy !== null && activeSy.id === school_year
 
     },
     {
-      label: "Saisir notes",
+      label: "Voir notes",
       handler: (row) => {
         navigate(`?assessment=${row.id}`);
       },

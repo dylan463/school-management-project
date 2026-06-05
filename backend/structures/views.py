@@ -1,6 +1,6 @@
 # Django REST Framework
 from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet,GenericViewSet,mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -33,10 +33,14 @@ from .services import (
 from .permissions import (
     IsDepartmentStaff,
     IsInMention,
+    IsTeacher,
+    IsAcademicStaff
 )
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from rest_framework.exceptions import ValidationError
+
 
 from .filter import (
     CourseModuleFilter,
@@ -67,6 +71,7 @@ from .models import (
     CourseUnit,
     CourseModule,
 )
+from django.db.models import Q
 
 class MentionViewSet(ModelViewSet):
     serializer_class = MentionSerailizer
@@ -131,8 +136,7 @@ class FormationViewSet(ModelViewSet):
         formation = toggle_formation_activation(instance)
         serializer = self.get_serializer(formation)
         return Response(serializer.data)
-        
-        
+      
 
 class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
@@ -294,7 +298,7 @@ class CourseModuleViewSet(ModelViewSet):
         if self.action == 'list':
             permissions = [IsInMention]
         else:
-            permissions = [IsDepartmentStaff]
+            permissions = [IsAcademicStaff]
         return [permission() for permission in permissions]
         
     def get_queryset(self):
@@ -312,3 +316,38 @@ class CourseModuleViewSet(ModelViewSet):
         course_module = toggle_course_module_activation(instance)
         serializer = self.get_serializer(course_module)
         return Response(serializer.data)
+
+
+class CourseModuleChoice(GenericViewSet,mixins.ListModelMixin):
+    serializer_class = CourseModuleSerializer
+    permission_classes = [IsTeacher]
+    filter_backends = [DjangoFilterBackend,SearchFilter]
+    search_fields = ["code","text"]
+    filterset_class = CourseModuleFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        query = Q(semester__mention=user.mention) & (Q(teacher=user) | Q(teacher__isnull=True))
+        return CourseModule.objects.filter(query).select_related('teacher','course_unit','semester')
+        
+    @action(methods=["post"],detail=True)
+    def choose(self,request,pk=None):
+        course_module = self.get_object()
+        user = request.user
+        teacher = course_module.teacher
+        if teacher==user:
+            course_module.teacher = None
+            course_module.save()
+            return Response({
+                'detail':'vous avez été retiré de ce cours'
+            })
+        elif teacher is None:
+            course_module.teacher = user
+            course_module.save()
+            return Response({
+                'detail':'Vous avez été ajouté à ce cours'
+            })
+        else:
+            raise ValidationError({
+                'detail':'ce cours est deja atribué à un autre enseignant'
+            })

@@ -1,4 +1,5 @@
 import CourseModulesPanel from "../components/panel/CourseModulesPanel"
+import CourseModuleChoicePanel from "../components/panel/CourseModuleChoicePanel"
 
 const CourseModules = () => {
   return (
@@ -12,6 +13,7 @@ const CourseModules = () => {
             Consultez et gérez les modules de cours de votre formation.
           </p>
         </div>
+        <CourseModuleChoicePanel />
         <CourseModulesPanel />
       </section>
     </div>

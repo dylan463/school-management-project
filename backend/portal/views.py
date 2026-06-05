@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from .task import create_users_from_dataset,create_enrollment_from_dataset
+from assessments.services import create_enrollment
 # Local apps
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -27,6 +28,8 @@ import pandas as pd
 import uuid
 from django.core.files.storage import default_storage
 from .filter import ImportJobFilter
+from structures.models import Formation,Semester,SchoolYear
+
 
 class HeadsViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -66,7 +69,6 @@ class HeadsViewSet(ModelViewSet):
                 })
         return super().perform_update(serializer)
     
-
 class SecretaryViewSet(ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [SearchFilter]
@@ -159,8 +161,6 @@ class OfficerViewSet(ModelViewSet):
             })
         return super().perform_update(serializer)
     
-    
-
 class TeacherViewSet(ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [SearchFilter]
@@ -215,9 +215,6 @@ class TeacherViewSet(ModelViewSet):
             })
         return super().perform_update(serializer)
 
-
-from structures.models import Formation,Semester,SchoolYear
-
 class StudentViewSet(ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [SearchFilter]
@@ -256,6 +253,10 @@ class StudentViewSet(ModelViewSet):
         last_name = data["last_name"]
         email = data["email"]
         user = create_user(first_name,last_name,email,role,mention)
+        formation = data["formation"]
+        semester = data["semester"]
+        school_year = data["school_year"]
+        create_enrollment(user,school_year,semester,formation,no_notification=False)
         return Response(
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
@@ -326,8 +327,6 @@ class StudentViewSet(ModelViewSet):
 
         return Response({"task_id": task.id, "job_id": import_job.id})
 
-
-
 class ImportJobViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = ImportJobSerializer
@@ -335,8 +334,6 @@ class ImportJobViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = ImportJobFilter
     
-
-
 class EnrollmentUploadViewSet(GenericViewSet):
     permission_classes = [IsDepartmentStaff]
 
@@ -387,4 +384,3 @@ class EnrollmentUploadViewSet(GenericViewSet):
         import_job.save()
 
         return Response({"task_id": task.id, "job_id": import_job.id})
-

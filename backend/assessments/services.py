@@ -20,7 +20,7 @@ def create_enrollment(student : User,school_year: SchoolYear,semester : Semester
         school_year=school_year
     ).exists():
         raise ValidationError({
-            "student": "Cet étudiant est déjà inscrit pour cette année scolaire."
+            "detail": "Cet étudiant est déjà inscrit pour cette année scolaire."
         })
     elif school_year.status == SchoolYear.Status.CLOSED:
         raise ValidationError({
@@ -31,7 +31,7 @@ def create_enrollment(student : User,school_year: SchoolYear,semester : Semester
             "detail":"Impossible d'réinscrit l'etudiant tant qu'il est déjà inscrit dans année ouverte."
         })
 
-    redoublement = Enrollment.objects.filter(semester=semester,formation=formation).order_by("opened_at").last()
+    redoublement = Enrollment.objects.filter(student=student,semester=semester,formation=formation).order_by("opened_at").last()
     if redoublement:
         # on repete les resultat qui sont déjà validé donc l'eleve ne participe qu'au examen dont il n'as pas encore de note
         is_repeated_results = EnrollmentResult.objects.filter(
@@ -63,6 +63,7 @@ def create_enrollment(student : User,school_year: SchoolYear,semester : Semester
         return new_enrollment
     if not no_notification:
         create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
+    
     return Enrollment.objects.create(
         student=student,
         formation=formation,
@@ -75,7 +76,7 @@ def create_enrollment(student : User,school_year: SchoolYear,semester : Semester
 def change_enrollment_status(enrollment: Enrollment, status: str):
     if status not in Enrollment.Status.values:
         raise ValidationError({
-            "status": "Décision invalide."
+            "detail": "Décision invalide."
         })
 
     active_sy = SchoolYear.objects.filter(status=SchoolYear.Status.ACTIVE).first()
@@ -351,7 +352,7 @@ def toggle_assessment_publication(assessment: Assessment):
         if Enrollment.objects.filter(
             attend_to_assessment(assessment) & has_no_grade_in_assessment(assessment)
         ).exists():
-            raise ValidationError("Certains élèves n'ont pas de note à cet examen.")
+            raise ValidationError({"detail" : "Certains élèves n'ont pas de note à cet examen."})
 
         assessment.is_published = True
         assessment.save(update_fields=["is_published"])

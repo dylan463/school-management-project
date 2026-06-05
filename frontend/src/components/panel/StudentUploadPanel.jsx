@@ -85,9 +85,9 @@ function ResultBadges({ result }) {
 
 const StudentUploadPanel = () => {
     // ── Données des filtres ────────────────────────────────────────────────────
-    const { data: formations, isLoading: isLoadingFormations } = useFormations({ page_size: 100, status: 'OPEN' })
+    const { data: formations, isLoading: isLoadingFormations } = useFormations({ page_size: 100, is_active: true })
     const { data: semesters, isLoading: isLoadingSemesters } = useSemesters({ page_size: 100, is_active: true })
-    const { data: schoolyears, isLoading: isLoadingSchoolyears } = useSchoolyears({ page_size: 100, is_active: true })
+    const { data: schoolyears, isLoading: isLoadingSchoolyears } = useSchoolyears({ page_size: 100, status: 'OPEN' })
 
     // ── État des filtres ───────────────────────────────────────────────────────
     const [filters, setFilters] = useState({
@@ -133,7 +133,7 @@ const StudentUploadPanel = () => {
     useEffect(() => {
         if (isJobsLoading || !jobs) return;
         const { results } = jobs
-        const pendingJobs = results.filter(job => ["PENDING","PROGRESS"].includes(job.status))
+        const pendingJobs = results.filter(job => ["PENDING", "PROGRESS"].includes(job.status))
         setJob_id(pendingJobs[0]?.id || null)
     }, [jobs])
 

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMemo } from "react"
 import useDebounced from '../../hooks/useDebounced'
 import Paginator from '../Paginator'
-import { PAGINATION_SIZE } from "../../utils/constants"
+import { PAGINATION_SIZE, ROLES } from "../../utils/constants"
 import { useModal } from '../../context/ModalContext'
 import { useState, useEffect } from "react"
 import useDRFErrors from "../../hooks/useDRFError"
@@ -25,8 +25,11 @@ import { useCourseunit } from "../../hooks/courseunits/useCourseunit"
 import { useTeachers } from "../../hooks/teachers/useTeachers"
 import { useTeacher } from "../../hooks/teachers/useTeacher"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
+import { useAuth } from "../../context/AuthContext"
 
 // ─── Add / Edit Form ────────────────────────────────────────────────────────
+
+
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
   const isEdit = Boolean(initialData?.id)
@@ -324,6 +327,84 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
     </form>
   )
 }
+function AddOrEditFormTeacher({ initialData = {}, onSuccess }) {
+  const isEdit = Boolean(initialData?.id)
+
+  const [form, setForm] = useState({
+    min_val_score: initialData.min_val_score ?? "",
+  })
+
+  const update = useUpdateCoursemodule()
+  const { handleErrors, getError, clearErrors } = useDRFErrors()
+  const [loading, setLoading] = useState(false)
+
+
+  const handleChange = (e) => {
+    clearErrors()
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!form.min_val_score) return
+    setLoading(true)
+    try {
+      const data = {
+        min_val_score: Number(form.min_val_score),
+      }
+
+      if (isEdit) {
+        await update.mutateAsync(
+          { id: initialData.id, data },
+          { onSuccess: () => onSuccess?.() }
+        )
+      }
+    } catch (error) {
+      handleErrors(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
+      {/* CRÉDITS & NOTE MIN – côte à côte */}
+      <div className="flex gap-3">
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-sm text-slate-600">Note min. de validation</label>
+          <input
+            name="min_val_score"
+            type="number"
+            min="1"
+            max="19"
+            value={form.min_val_score}
+            onChange={handleChange}
+            className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+            placeholder="Ex : 10"
+          />
+          {getError("min_val_score") && <span className="text-xs text-red-500">{getError("min_val_score")}</span>}
+        </div>
+      </div>
+
+      {/* ERREURS GLOBALES */}
+      {getError("non_field_errors") && (
+        <div className="text-sm text-red-500">{getError("non_field_errors")}</div>
+      )}
+      {getError("detail") && (
+        <div className="text-sm text-red-500">{getError("detail")}</div>
+      )}
+
+      {/* SUBMIT */}
+      <div className="flex justify-end">
+        <Button type="submit" variant="primary" disabled={loading}>
+          {loading ? "Enregistrement..." : isEdit ? "Modifier" : "Créer"}
+        </Button>
+      </div>
+    </form>
+  )
+}
 
 // ─── Delete Confirm ──────────────────────────────────────────────────────────
 
@@ -363,6 +444,7 @@ function DeleteConfirm({ Data, onSuccess }) {
 export default function CourseModulesPanel() {
   const { openModal, closeModal } = useModal()
   const navigate = useNavigate()
+  const { user, role } = useAuth()
 
   const {
     search, setSearch,
@@ -389,7 +471,7 @@ export default function CourseModulesPanel() {
   // ── Filtre : UE search dropdown ──
   const cuDropdown = useSearchDropdown({ delay: 300, minChars: 1 })
   const { data: cuOptions, isFetching: isCuFetching } = useCourseunits(
-    cuDropdown.query ? { search: cuDropdown.query } : null,
+    cuDropdown.query ? { search: cuDropdown.query } : {},
     cuDropdown.query.length >= 1,
     0
   )
@@ -429,13 +511,26 @@ export default function CourseModulesPanel() {
     },
   ]
 
+  const handleEdit = (row) => {
+    if (role == ROLES.TEACHER) {
+      openModal({
+        title: "Voir les détails du module",
+        content: <AddOrEditFormTeacher initialData={row} onSuccess={closeModal} />,
+      })
+      return
+    }
+    openModal({
+      title: "Modifier le module",
+      content: <AddOrEditForm initialData={row} onSuccess={closeModal} />,
+    })
+  }
+
+
   const actions = [
     {
       label: "Modifier",
-      handler: (row) => openModal({
-        title: "Modifier le module",
-        content: <AddOrEditForm initialData={row} onSuccess={closeModal} />,
-      }),
+      handler: handleEdit,
+      conditionGlobal: [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.TEACHER].includes(role)
     },
     {
       label: "Supprimer",
@@ -443,6 +538,7 @@ export default function CourseModulesPanel() {
         title: `Supprimer ${row.text}`,
         content: <DeleteConfirm Data={row} onSuccess={closeModal} />,
       }),
+      conditionGlobal: [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
     },
     {
       label: "Voir résultats",

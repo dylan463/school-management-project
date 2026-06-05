@@ -32,9 +32,10 @@ class CourseUnitFilter(django_filters.FilterSet):
 
 
 class CourseModuleFilter(django_filters.FilterSet):
+    formation = django_filters.NumberFilter(field_name="course_unit__formation__id")
     class Meta:
         model = CourseModule
-        fields = ["is_active","course_unit","semester"]
+        fields = ["is_active","course_unit","semester","formation"]
 
 
     

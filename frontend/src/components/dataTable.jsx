@@ -1,6 +1,7 @@
 /**
  * @typedef {Object} Column
  * @property {string} key          - Clé correspondant à une propriété de l'objet data
+ * @property {string} [id]         - (optionnel) ID unique si plusieurs colonnes utilisent la même clé
  * @property {string} header       - Titre affiché dans l'en-tête de la colonne
  * @property {function} [render]   - (optionnel) Fonction custom pour afficher la cellule : (value) => ReactNode
  */
@@ -137,8 +138,8 @@ function TableHeader({
           </th>
         )}
         {selectionMode === "single" && <th className="p-2 w-10" />}
-        {columns.map((column) => (
-          <th key={String(column.key)} className="p-2 text-left">
+        {columns.map((column, index) => (
+          <th key={column.id || `${String(column.key)}-${index}`} className="p-2 text-left">
             {column.header}
           </th>
         ))}
@@ -177,23 +178,23 @@ function TableRow({
 
   return (
     <tr
-      className={`hover:bg-gray-50 border-b-[1px] border-b border-b-gray-200 ${selected ? "bg-blue-50" : ""}`}
+      className={`border-b-[1px] border-b border-b-gray-200 ${selected ? "bg-red-100 hover:bg-red-200" : "hover:bg-gray-50"}`}
       onClick={selectionMode ? onToggle : undefined}
       style={selectionMode ? { cursor: "pointer" } : undefined}
     >
       {selectionMode === "multiple" && (
-        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" checked={selected} onChange={onToggle} />
+        <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={selected} onChange={onToggle} className="accent-red-500" />
         </td>
       )}
       {selectionMode === "single" && (
-        <td className="border p-2 text-center" onClick={(e) => e.stopPropagation()}>
-          <input type="radio" checked={selected} onChange={onToggle} />
+        <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
+          <input type="radio" checked={selected} onChange={onToggle} className="accent-red-500" />
         </td>
       )}
-      {columns.map((column) => (
+      {columns.map((column, index) => (
         <TableCell
-          key={String(column.key)}
+          key={column.id || `${String(column.key)}-${index}`}
           value={row[column.key]}
           render={column.render}
         />

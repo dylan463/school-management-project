@@ -1,7 +1,7 @@
 import api from './api'
 
 export const mentionService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/mentions/?${params.toString()}`)
     return response.data
@@ -14,9 +14,9 @@ export const mentionService = {
     const response = await api.post('/structures/mentions/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/mentions/${id}/`, data)
-    return response.data    
+    return response.data
   },
   delete: async (id) => {
     const response = await api.delete(`/structures/mentions/${id}/`)
@@ -25,7 +25,7 @@ export const mentionService = {
 }
 
 export const formationService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/formations/?${params.toString()}`)
     return response.data
@@ -38,9 +38,9 @@ export const formationService = {
     const response = await api.post('/structures/formations/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/formations/${id}/`, data)
-    return response.data    
+    return response.data
   },
   toggleActivation: async (id) => {
     const response = await api.post(`/structures/formations/${id}/toggle_activation/`)
@@ -53,7 +53,7 @@ export const formationService = {
 }
 
 export const semesterService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/semesters/?${params.toString()}`)
     return response.data
@@ -66,9 +66,9 @@ export const semesterService = {
     const response = await api.post('/structures/semesters/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/semesters/${id}/`, data)
-    return response.data    
+    return response.data
   },
   toggleActivation: async (id) => {
     const response = await api.post(`/structures/semesters/${id}/toggle_activation/`)
@@ -81,7 +81,7 @@ export const semesterService = {
 }
 
 export const schoolyearService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/schoolyears/?${params.toString()}`)
     return response.data
@@ -94,15 +94,15 @@ export const schoolyearService = {
     const response = await api.post('/structures/schoolyears/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/schoolyears/${id}/`, data)
-    return response.data    
+    return response.data
   },
   toggleLock: async (id) => {
     const response = await api.post(`/structures/schoolyears/${id}/toggle_lock/`)
     return response.data
   },
-  changeStatus: async ({id, status}) => {
+  changeStatus: async ({ id, status }) => {
     const response = await api.post(`/structures/schoolyears/${id}/change_status/`, { status })
     return response.data
   },
@@ -114,9 +114,18 @@ export const schoolyearService = {
 
 
 export const coursemoduleService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/coursemodules/?${params.toString()}`)
+    return response.data
+  },
+  listChoice: async (filters = {}) => {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/structures/coursemodulechoice/?${params.toString()}`)
+    return response.data
+  },
+  choose: async (id) => {
+    const response = await api.post(`/structures/coursemodulechoice/${id}/choose/`)
     return response.data
   },
   retrieve: async (id) => {
@@ -127,9 +136,9 @@ export const coursemoduleService = {
     const response = await api.post('/structures/coursemodules/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/coursemodules/${id}/`, data)
-    return response.data    
+    return response.data
   },
   toggleActivation: async (id) => {
     const response = await api.post(`/structures/coursemodules/${id}/toggle_activation/`)
@@ -138,11 +147,11 @@ export const coursemoduleService = {
   delete: async (id) => {
     const response = await api.delete(`/structures/coursemodules/${id}/`)
     return response.data
-  }
+  },
 }
 
 export const courseunitService = {
-  list: async (filters= {}) => {
+  list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/structures/courseunits/?${params.toString()}`)
     return response.data
@@ -155,9 +164,9 @@ export const courseunitService = {
     const response = await api.post('/structures/courseunits/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/structures/courseunits/${id}/`, data)
-    return response.data    
+    return response.data
   },
   toggleActivation: async (id) => {
     const response = await api.post(`/structures/courseunits/${id}/toggle_activation/`)

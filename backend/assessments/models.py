@@ -24,7 +24,7 @@ class Enrollment(models.Model):
     opened_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('student','school_year')
+        unique_together = ('student','school_year','semester')
         ordering = ['semester__order','opened_at']
 
 

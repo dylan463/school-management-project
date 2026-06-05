@@ -3,28 +3,28 @@ import api from './api'
 export const enrollmentService = {
   list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
-    const response = await api.get(`/assessments/enrollment/?${params.toString()}`)
+    const response = await api.get(`/assessments/enrollments/?${params.toString()}`)
     return response.data
   },
   retrieve: async (id) => {
-    const response = await api.get(`/assessments/enrollment/${id}/`)
+    const response = await api.get(`/assessments/enrollments/${id}/`)
     return response.data
   },
   create: async (data) => {
-    const response = await api.post('/assessments/enrollment/', data)
+    const response = await api.post('/assessments/enrollments/', data)
     return response.data
   },
-  update: async ({id, data}) => {
-    const response = await api.patch(`/assessments/enrollment/${id}/`, data)
+  update: async ({ id, data }) => {
+    const response = await api.patch(`/assessments/enrollments/${id}/`, data)
     return response.data
   },
   delete: async (id) => {
-    const response = await api.delete(`/assessments/enrollment/${id}/`)
+    const response = await api.delete(`/assessments/enrollments/${id}/`)
     return response.data
   },
-  changeStatus: async ({id,data}) => {
-    const response = await api.post(`/assessments/enrollment/${id}/change_status`, data)
-  } 
+  changeStatus: async ({ id, data }) => {
+    const response = await api.post(`/assessments/enrollments/${id}/change_status/`, data)
+  }
 }
 
 export const assessmentService = {
@@ -41,7 +41,7 @@ export const assessmentService = {
     const response = await api.post('/assessments/assessments/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/assessments/assessments/${id}/`, data)
     return response.data
   },
@@ -51,7 +51,7 @@ export const assessmentService = {
   },
   togglePublication: async (id) => {
     const response = await api.post(`/assessments/assessments/${id}/toggle_publication/`)
-    return response.data  
+    return response.data
   },
   attendants: async ({ id, ...filters }) => {
     const params = new URLSearchParams(filters)
@@ -60,7 +60,7 @@ export const assessmentService = {
   }
 }
 
-export const gradeService= {
+export const gradeService = {
   list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/assessments/grades/?${params.toString()}`)
@@ -70,7 +70,7 @@ export const gradeService= {
     const response = await api.post('/assessments/grades/', data)
     return response.data
   },
-  update: async ({id, data}) => {
+  update: async ({ id, data }) => {
     const response = await api.patch(`/assessments/grades/${id}/`, data)
     return response.data
   },
@@ -80,7 +80,7 @@ export const gradeService= {
   }
 }
 
-export const resultService= {
+export const resultService = {
   list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/assessments/results/?${params.toString()}`)
@@ -88,7 +88,7 @@ export const resultService= {
   },
 }
 
-export const debtService= {
+export const debtService = {
   list: async (filters = {}) => {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/assessments/debts/?${params.toString()}`)

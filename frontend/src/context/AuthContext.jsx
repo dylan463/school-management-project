@@ -20,11 +20,7 @@ export function AuthProvider({ children }) {
 
   // ── Récupération du profil utilisateur via useMe ─────────────────────────
   const hasToken = !!storage.getAccess();
-  const {
-    data: user,
-    isLoading: meLoading,
-    isSuccess: meSuccess,
-  } = useMe(hasToken);
+  const { data: user, isLoading: meLoading } = useMe(hasToken);
 
   const role = user?.role ?? null;
   const mention = user?.mention ?? null;

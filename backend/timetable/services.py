@@ -48,7 +48,7 @@ def create_teacher_availability(data: dict) -> ScheduleEntry:
     end_time = data.get("end_time")
 
     teacher_availabilities = TeacherAvailability.objects.filter(
-        teacher=data["course_module"].teacher,
+        teacher=data["teacher"],
         day=day,
     ).exclude(
         Q(end_time__lte=start_time) | Q(start_time__gte=end_time)

@@ -75,7 +75,7 @@ def get_debt_queryset(user : User):
 def get_enrollment_queryset(user : User):
     mention = user.mention
     if user.role in MANAGEMENT:
-        return Enrollment.objects.filter(formation_mention=mention)
+        return Enrollment.objects.filter(formation__mention=mention)
     elif user.role == Role.TEACHER:
         return Enrollment.objects.filter(formation__mention=mention, semester__course_modules__teacher=user).distinct()
     elif user.role == Role.STUDENT:

@@ -204,7 +204,7 @@ function DeleteEntryConfirm({ entry, onSuccess }) {
 export default function ScheduleDetailsPanel({ schedule, onBack }) {
   const { openModal, closeModal } = useModal()
   const { role } = useAuth()
-  const canManage = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
+  const canManage = [ROLES.DEPARTMENT_HEAD].includes(role)
 
   const { data: entriesData, isLoading: isEntriesLoading } = useScheduleEntries({ schedule: schedule.id, no_pagination: true })
   const entries = entriesData?.results || entriesData || []

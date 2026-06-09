@@ -171,8 +171,8 @@ export default function SemesterPanel() {
 
   const tabs = [
     { key: "Tous", value: '' },
-    { key: "Active", value: true },
-    { key: "Inactive", value: false },
+    { key: "Actif", value: true },
+    { key: "Inactif", value: false },
   ]
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -200,7 +200,7 @@ export default function SemesterPanel() {
     Math.ceil((data?.count || 0) / PAGINATION_SIZE)
   );
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Ordre", key: "order" },
     { header: "Code", key: "code" },
     { header: "Statut", key: "is_active", render: (value) => <ActiveBadge isActive={value} /> }
@@ -232,7 +232,7 @@ export default function SemesterPanel() {
       <div className="px-2 py-2 flex justify-between">
         <Switch tabs={tabs} active={is_active} onChange={(value) => { setIs_active(value) }} />
         <SearchInput
-          placeholder="rechercher un semestre"
+          placeholder="Rechercher un semestre"
           className="w-[200px]"
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
@@ -243,7 +243,7 @@ export default function SemesterPanel() {
             openModal({ title: "ajouter un semestre", content: <AddOrEditForm onSuccess={closeModal} /> })
           }}
         >
-          + ajouter
+          + Ajouter
         </Button>
       </div>
       {isLoading ? (

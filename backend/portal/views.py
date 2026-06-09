@@ -438,7 +438,7 @@ class TeacherDashboardAPIView(APIView):
                 "end_time": entry.end_time.strftime("%H:%M"),
                 "classe": entry.course_module.course_unit.formation.code,
                 "ec": entry.course_module.text,
-                "room": entry.room
+                "room": entry.classroom
             })
 
         return Response({
@@ -559,4 +559,4 @@ class StudentDashboardAPIView(APIView):
             "upcoming_exams": upcoming_exams,
             "recent_grades": recent_grades,
             "weekly_schedule": weekly_schedule
-        })
+        })

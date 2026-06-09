@@ -1,7 +1,6 @@
 import React from 'react';
 import { useManagementDashboard } from '../hooks/dashboard/useManagementDashboard';
 import TeacherStatCard from '../components/dashboard/TeacherStatCard';
-import RecentImportsTable from '../components/dashboard/RecentImportsTable';
 import { useAuth } from '../context/AuthContext';
 
 // Icons for Stat Cards
@@ -97,12 +96,6 @@ const DashboardManagement = () => {
           iconBgClass="bg-red-50" 
         />
       </div>
-
-      {/* Recent Imports Table */}
-      <section>
-        <RecentImportsTable imports={recent_imports} />
-      </section>
-
     </div>
   );
 };

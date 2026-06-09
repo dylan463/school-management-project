@@ -51,7 +51,7 @@ class TeacherAvailabilityCreateSerializer(serializers.ModelSerializer):
 
         if not start_time < end_time:
             raise serializers.ValidationError({
-                "detail":"le debut doit être avant la fin"
+                "detail":"Le début doit être avant la fin."
             })
 
         return attrs

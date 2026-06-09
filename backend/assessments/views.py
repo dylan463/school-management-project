@@ -134,50 +134,6 @@ class AssessmentViewSet(ModelViewSet):
         assessment = toggle_assessment_publication(instance)
         response_serializer = AssessmentSerializer(assessment)
         return Response(response_serializer.data)
-
-    @action(detail=True, methods=["get"])
-    def attendant_student(self,request, pk=None):
-        assessment :Assessment = self.get_object()
-        has_grade = request.query_params.get("has_grade")
-        has_debt = request.query_params.get("has_debt")
-        search = request.query_params.get("search")
-
-        query = Q()
-        if search:
-            search_query = (
-                Q(student__last_name__icontains=search)|
-                Q(student__first_name__icontains=search)|
-                Q(student__usernname__icontains=search)|
-                Q(student__email__icontains=search)
-                )
-            query = query & search_query
-
-        if not has_grade is None:
-            grade_query = Q(grades__assessment=assessment)
-            query = query & grade_query if has_grade  == "true" else query & ~grade_query
-        
-        if not has_debt is None:
-            debt_query = people_with_course_debt(assessment.course_module)
-            query = query  & debt_query if has_debt  == 'true' else query & ~debt_query
-
-        query = query & attend_to_assessment(assessment)
-
-        attendants = Enrollment.objects.filter(query).prefetch_related(
-            Prefetch(
-                "grades",
-                queryset=Grade.objects.filter(assessment=assessment),
-                to_attr="assessment_grades"
-                )
-        ).prefetch_related(
-            Prefetch(
-                "enrollment_results__debts",
-                queryset=Debt.objects.filter(course_module=assessment.course_module,cleared=False).select_related("result__enrollment__school_year"),
-                to_attr="module_debts"
-            )
-        )
-
-        serializer = AttendantSerializer(attendants,many=True)
-        return Response(serializer.data)
         
         
 class GradeViewSet(ModelViewSet):
@@ -188,7 +144,7 @@ class GradeViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return get_grade_queryset(user)
+        return get_grade_queryset(user).select_related("enrollment","assessment","enrollment__student","enrollment__school_year")
 
     def paginate_queryset(self, queryset):
         if self.request.query_params.get("no_pagination") == "true":

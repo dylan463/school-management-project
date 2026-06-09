@@ -20,6 +20,8 @@ import { useDeleteCourseunit } from "../../hooks/courseunits/useDeleteCourseunit
 import { useFormation } from "../../hooks/formations/useFormation";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
 import SearchWithDropdown from "../SearchWithDropdown";
+import { ROLES } from "../../utils/constants"
+import { useAuth } from "../../context/AuthContext"
 import Badge from "../Badge"
 import Filter from "../Filter"
 
@@ -245,6 +247,7 @@ function DeleteConfirm({ Data, onSuccess }) {
 
 export default function CourseUnitsPanel() {
   const { openModal, closeModal } = useModal()
+  const { role } = useAuth()
   const navigate = useNavigate()
 
   const { search, page, setSearch, setPage, formation, setFormation, status, setStatus } = useQueryParams({
@@ -298,23 +301,27 @@ export default function CourseUnitsPanel() {
     { header: "Code UE", key: "code" },
     { header: "Nom UE", key: "text" },
     {
-      header: "Status", key: "is_active", render: (value) => {
+      header: "Statut", key: "is_active", render: (value) => {
         return value ? <Badge content="Active" color="green" /> : <Badge content="Inactive" color="red" />
       }
     }
   ]
 
+  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
+
   const actions = [
     {
       label: "Modifier",
-      handler: (row) => openModal({ title: "Modifier l'UE", content: <AddOrEditForm initialData={row} onSuccess={closeModal} /> })
+      handler: (row) => openModal({ title: "Modifier l'UE", content: <AddOrEditForm initialData={row} onSuccess={closeModal} /> }),
+      conditionGlobal: canCreate
     },
     {
       label: "Supprimer",
-      handler: (row) => openModal({ title: `Supprimer ${row.text}`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> })
+      handler: (row) => openModal({ title: `Supprimer ${row.text}`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> }),
+      conditionGlobal: canCreate
     },
     {
-      label: "Voir cours",
+      label: "Voir les EC",
       handler: (row) => {
         navigate(`/course-modules?courseunit=${row.id}`)
       }
@@ -333,19 +340,19 @@ export default function CourseUnitsPanel() {
           </Button>
         </div>
         <SearchInput
-          placeholder="rechercher un responsable"
+          placeholder="Rechercher une UE"
           className="w-[200px]"
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
         ></SearchInput>
-        <Button
+        { canCreate && <Button
           variant="primary"
           onClick={() => {
-            openModal({ title: "ajouter un responsable", content: <AddOrEditForm onSuccess={closeModal} /> })
+            openModal({ title: "ajouter une UE", content: <AddOrEditForm onSuccess={closeModal} /> })
           }}
         >
           + ajouter
-        </Button>
+        </Button>}
       </div>
       {showFilters && (
         <div className="ml-2 mb-2">
@@ -391,7 +398,7 @@ export default function CourseUnitsPanel() {
             )}
             <Filter
               value={status}
-              label="status"
+              label="Statut"
               onChange={(e) => setStatus(e.target.value)}
               otherOptions={[
                 { key: "Tous", value: "" },

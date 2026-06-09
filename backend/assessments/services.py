@@ -169,8 +169,24 @@ def create_assessment(data: dict):
             raise ValidationError({"detail":
                 "veillez publier une session normal avant d'entamer un rattrappage"
             })
+    
+    examen = Assessment.objects.create(**data)
 
-    return Assessment.objects.create(**data)
+    query = attend_to_assessment(examen)
+    enrollments = Enrollment.objects.filter(query)
+    to_create = []
+    for enrollment in enrollments:
+        to_create.append(
+            Grade(
+                enrollment=enrollment,
+                assessment=examen,
+                score=None
+            )
+        )
+    
+    Grade.objects.bulk_create(to_create)
+
+    return examen
 
 def compute_weighted_score(grades):
     weighted = [(g.score, g.assessment.grade_weight) for g in grades]
@@ -194,6 +210,7 @@ def update_results(course_module):
                 assessment__school_year=school_year,
                 assessment__session=session,
                 assessment__is_published=True,
+                score__isnull=False
             )
             .select_related("enrollment", "assessment")
         )
@@ -349,8 +366,9 @@ def toggle_assessment_publication(assessment: Assessment):
                     {"detail":"La session de rattrapage doit être dépubliée avant de publier la session normale."}
                 )
 
-        if Enrollment.objects.filter(
-            attend_to_assessment(assessment) & has_no_grade_in_assessment(assessment)
+        if Grade.objects.filter(
+            assessment=assessment,
+            score__isnull=True,
         ).exists():
             raise ValidationError({"detail" : "Certains élèves n'ont pas de note à cet examen."})
 
@@ -372,31 +390,5 @@ def delete_assessment(assessment : Assessment):
             raise ValidationError({"detail":"suppression impossible : des examen session rattrapage éxiste encore"})
         
     update_results(assessment.course_module)
+    assessment.delete()
 
-# ---------
-
-def get_attendant_data(enrollments,assessment : Assessment):
-    enrollments = enrollments.select_related("student","school_year")
-    grades = Grade.objects.select_related("assessment").filter(
-        enrollment__in=enrollments,
-        assessment=assessment
-    )
-    grades_map = {grade.enrollment_id: grade for grade in grades}
-
-    debts = Debt.objects.filter(
-        result__enrollment__in=enrollments,
-        result__course_module=assessment.course_module,
-        cleared=False
-    )
-    debts_map = {debt.enrollment_id: debt for debt in debts}
-
-    serializer = AttendantSerializer(
-        enrollments,
-        many=True,
-        context={
-            "assessment": assessment,
-            "grades_map": grades_map,
-            "debts_map": debts_map,
-        }
-    )
-    return 

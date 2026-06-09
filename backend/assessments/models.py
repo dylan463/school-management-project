@@ -97,10 +97,11 @@ class Grade(models.Model):
         related_name="grades",
     )
     score = models.FloatField(
+        blank=True,
+        null=True,
         default=1.0,
         validators=[MinValueValidator(0), MaxValueValidator(20)],
     )
-
     class Meta:
         unique_together = ("enrollment","assessment")
 

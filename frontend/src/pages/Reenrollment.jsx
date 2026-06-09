@@ -11,10 +11,10 @@ const Reenrollment = () => {
             Gestion des Réinscriptions
           </h1>
           <p className="text-sm text-slate-500 mb-4">
-            Réinscriver facilement vous étudiants avec leurs email et matricule grace a l'outil d'importation, ou grace a une inscription manuelle.
+            Réinscriver facilement vos étudiants avec leurs emails et matricules grâce à l'outil d'importation ou à l'inscription manuelle.
           </p>
         </header>
-        <section className="space-y-4 w-full">
+        <section className="space-y-4">
           <ReenrollmentUploadPanel />
         </section>
         <ReenrollmentPanel />

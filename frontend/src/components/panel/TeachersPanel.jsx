@@ -226,7 +226,7 @@ export default function TeachersPanel() {
   );
 
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Matricule", key: "username" },
     { header: "Email", key: "email" },
     { header: "Prénom", key: "first_name" },

@@ -185,8 +185,8 @@ export default function FormationPanel() {
 
   const tabs = [
     { key: "Tous", value: "" },
-    { key: "Active", value: true },
-    { key: "Inactive", value: false },
+    { key: "Actif", value: true },
+    { key: "Inactif", value: false },
   ]
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function FormationPanel() {
     Math.ceil((data?.count || 0) / PAGINATION_SIZE)
   );
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Nom", key: "text" },
     { header: "Code", key: "code" },
     { header: "Description", key: "description" },

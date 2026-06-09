@@ -31,8 +31,8 @@ const DebtPanel = ({ enrollmentId }) => {
         <Card className="p-2 flex gap-2 min-h-[200px] flex-col items-center">
             <Switch
                 tabs={[
-                    { key: "payé", value: true },
-                    { key: "non payé", value: false },
+                    { key: "Réglée", value: true },
+                    { key: "Non Réglée", value: false },
                 ]}
                 active={paid}
                 onChange={(value) => setPaid(value)}

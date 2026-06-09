@@ -26,7 +26,7 @@ const Assessments = () => {
             </h2>
             {assessmentId && (
               <Button variant="outline" onClick={() => navigate("/examens")}>
-                Retour aux examens
+                Retour
               </Button>
             )}
           </div>

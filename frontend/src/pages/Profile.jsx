@@ -84,7 +84,7 @@ function ChangePasswordForm({onSuccess}) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Ancien mot de pass</label>
+        <label className="text-sm text-slate-600">Ancien mot de passe</label>
         <div className="space-x-2 flex">
           <input
             name="old_password"
@@ -94,7 +94,7 @@ function ChangePasswordForm({onSuccess}) {
             className="border rounded-md px-3 py-2 w-full h-[35px] outline-none focus:ring-2 focus:ring-red-500"
           />
           <Button variant={seePass ? "secondary" : "primary"} onClick={()=> setSeePass((value) => !value)}>
-            voir
+            Voir
           </Button>
         </div>
         {getError("old_password") && (
@@ -103,7 +103,7 @@ function ChangePasswordForm({onSuccess}) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Noveau mot de passe</label>
+        <label className="text-sm text-slate-600">Nouveau mot de passe</label>
         <input
           name="new_password1"
           type="password"
@@ -205,9 +205,9 @@ export default function InfoPerso() {
                 {prenoms.charAt(0)}{nom.charAt(0)}
               </div>
             </div>
-            <button className="absolute bottom-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-colors">
+            {/* <button className="absolute bottom-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-colors">
               <IconCamera />
-            </button>
+            </button> */}
           </div>
 
           <h2 className="text-xl font-bold text-gray-900">{prenoms} {nom}</h2>

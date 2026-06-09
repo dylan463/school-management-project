@@ -94,7 +94,7 @@ export default function DeliberationPanel() {
 
   const columns = [
     {
-      header: "Etudiant", key: "student",
+      header: "Etudiants", key: "student",
       render: (student) => student.first_name || student.last_name ? `${student.first_name} ${student.last_name}` : "-"
     },
     {
@@ -102,14 +102,14 @@ export default function DeliberationPanel() {
       render: (formation) => formation.text
     },
     {
-      header: "Semestre", key: "semester",
+      header: "Semestres", key: "semester",
       render: (semester) => semester.code
     },
     {
       header: "Année", key: "school_year",
       render: (sy) => sy.text
     },
-    { header: "status", key: "status" },
+    { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Active" },
   ];
 
   const actions = [
@@ -128,8 +128,8 @@ export default function DeliberationPanel() {
   ];
 
   const statusTabs = [
-    { key: "non délibéré", value: "NOT_DELIBERATED" },
-    { key: "délibéré", value: "DELIBERATED" },
+    { key: "Non Délibéré", value: "NOT_DELIBERATED" },
+    { key: "Délibéré", value: "DELIBERATED" },
   ]
 
 
@@ -197,7 +197,7 @@ export default function DeliberationPanel() {
 
               {/* semestre */}
               <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
+                <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
                 <Filter
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}

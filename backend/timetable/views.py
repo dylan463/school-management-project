@@ -28,7 +28,7 @@ class ScheduleViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return get_schedule_queryset(user)
+        return get_schedule_queryset(user).order_by("id")
     
     def get_permissions(self):
         if self.action == 'list':
@@ -50,7 +50,7 @@ class ScheduleEntryViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.Destroy
 
     def get_queryset(self):
         user = self.request.user
-        return get_schedule_entry_queryset(user)
+        return get_schedule_entry_queryset(user).order_by("id")
     
     def get_permissions(self):
         if self.action == 'list':
@@ -78,7 +78,7 @@ class TeacherAvailabilityViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.D
 
     def get_queryset(self):
         user = self.request.user
-        return get_teacher_availability_queryset(user)
+        return get_teacher_availability_queryset(user).order_by("id")
     
     def get_permissions(self):
         if self.action in ["list","destroy"]:

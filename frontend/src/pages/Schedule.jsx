@@ -4,11 +4,12 @@ import ScheduleDetailsPanel from "../components/panel/ScheduleDetailsPanel"
 import TeacherAvailabilitiesPanel from "../components/panel/TeacherAvailabilitiesPanel"
 import { useAuth } from "../context/AuthContext"
 import { ROLES } from "../utils/constants"
+import TimetableWidget from "../components/timetable/TimetableWidget"
 
 const Schedule = () => {
-  const [selectedSchedule, setSelectedSchedule] = useState(null)
+  const [detailSchedule, setDetailSchedule] = useState(null)
+  const [selectedShedule, setSelectedSchedule] = useState(null)
   const { role } = useAuth()
-
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <section className="space-y-4">
@@ -21,18 +22,24 @@ const Schedule = () => {
           </p>
         </header>
 
-        {role === ROLES.TEACHER && !selectedSchedule && (
+        {role === ROLES.TEACHER && !detailSchedule && (
           <TeacherAvailabilitiesPanel />
         )}
 
-        {selectedSchedule ? (
+        {detailSchedule ? (
           <ScheduleDetailsPanel 
-            schedule={selectedSchedule} 
-            onBack={() => setSelectedSchedule(null)} 
+          schedule={detailSchedule} 
+          onBack={() => setDetailSchedule(null)} 
           />
         ) : (
-          <SchedulesPanel onSelectSchedule={setSelectedSchedule} />
+          <>
+            <SchedulesPanel onDetailSchedule={setDetailSchedule} onSelectedSchedule={setSelectedSchedule} />
+            {selectedShedule && selectedShedule.length > 0 && (
+              <TimetableWidget scheduleId={selectedShedule[0].id} />
+            )}
+          </>
         )}
+
       </section>
     </div>
   )

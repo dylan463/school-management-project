@@ -64,9 +64,11 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
 
 class GradeSerializer(serializers.ModelSerializer):
+    student = serializers.CharField(source="enrollment.student.get_full_name", read_only=True)
+    school_year = serializers.CharField(source="enrollment.school_year.text", read_only=True)
     class Meta:
         model = Grade
-        fields = ["id","assessment","enrollment","score"]
+        fields = ["id","assessment","student","school_year","score"]
         read_only_fields = ["id"]
 
 class AttendantGradeSerializer(serializers.ModelSerializer):

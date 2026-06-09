@@ -176,7 +176,7 @@ const ReenrollmentUploadPanel = () => {
 
     // ─── Rendu ──────────────────────────────────────────────────────────────────
     return (
-        <Card className="mb-6 w-auto">
+        <Card className="mb-6">
             <div className="flex m-2">
                 {/* Description */}
                 <div className="">
@@ -259,7 +259,7 @@ const ReenrollmentUploadPanel = () => {
                                         Glissez et déposez votre fichier ou cliquez pour parcourir
                                     </p>
                                     <span className="font-label-md text-label-md text-secondary bg-surface-variant/50 px-3 py-1 rounded text-[11px] text-slate-500">
-                                        Formats acceptés : .csv, .xlsx
+                                        Format accepté : .csv
                                     </span>
                                 </>
                             )}
@@ -267,7 +267,7 @@ const ReenrollmentUploadPanel = () => {
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".csv,.xlsx"
+                                accept=".csv"
                                 onChange={(e) => handleFile(e.target.files[0])}
                                 className="hidden"
                             />
@@ -307,7 +307,6 @@ const ReenrollmentUploadPanel = () => {
                             <span>{fileError}</span>
                         </div>
                     )}
-
                     {/* Barre de progression */}
                     <ProgressRow status={status} progress={progress} />
 

@@ -125,7 +125,7 @@ export default function HistoryPanel() {
 
   const columns = [
     {
-      header: "Etudiant", key: "student",
+      header: "Etudiants", key: "student",
       render: (student) => student.first_name || student.last_name ? `${student.first_name} ${student.last_name}` : "-"
     },
     {
@@ -133,14 +133,14 @@ export default function HistoryPanel() {
       render: (formation) => formation.text
     },
     {
-      header: "Semestre", key: "semester",
+      header: "Semestres", key: "semester",
       render: (semester) => semester.code
     },
     {
       header: "Année", key: "school_year",
       render: (sy) => sy.text
     },
-    { header: "status", key: "status" },
+    { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Active" },
   ];
 
   const actions = [
@@ -239,7 +239,7 @@ export default function HistoryPanel() {
 
             {/* semestre */}
             <div>
-              <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
+              <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
               <Filter
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
@@ -254,13 +254,13 @@ export default function HistoryPanel() {
 
             {/* status */}
             <div>
-              <label className="text-slate-600 text-sm font-bold block mb-1">Status</label>
+              <label className="text-slate-600 text-sm font-bold block mb-1">Statut</label>
               <Filter
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 otherOptions={[
-                  { key: "Toutes", value: "" },
-                  { key: "Active", value: "ACTIVE" },
+                  { key: "Tous", value: "" },
+                  { key: "Actif", value: "ACTIVE" },
                   { key: "Validé", value: "VALIDATED" },
                   { key: "Non Validé", value: "NOT_VALIDATED" },
                 ]}

@@ -190,8 +190,8 @@ export default function SchoolYearPanel() {
   const tabs = [
     { key: "Tous", value: "" },
     { key: "Active", value: "ACTIVE" },
-    { key: "Fermer", value: "CLOSED" },
-    { key: "en Attente", value: "UPCOMING" },
+    { key: "Clôturée", value: "CLOSED" },
+    { key: "En Attente", value: "UPCOMING" },
   ]
 
   useEffect(() => {
@@ -224,11 +224,11 @@ export default function SchoolYearPanel() {
     Math.ceil((data?.count || 0) / PAGINATION_SIZE)
   );
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Nom", key: "text" },
     { header: "Date debut", key: "start_date" },
     { header: "Date fin", key: "end_date" },
-    { header: "Statut", key: "status" },
+    { header: "Statut", key: "status" ,render: (val) => val == "ACTIVE" ? "Active" : val == "UPCOMING" ? "En Attente" : "Clôturée"},
     { header: "Bloquer", key: "is_locked", render: (value) => <LockButton locked={!!value} /> }
   ]
 

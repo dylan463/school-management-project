@@ -102,7 +102,7 @@ class FormationViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return get_formation_queryset(user).order_by('text')
+        return get_formation_queryset(user).order_by('id')
     
     def get_permissions(self):
         if self.action == 'list':

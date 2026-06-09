@@ -6,10 +6,10 @@ const CourseUnits = () => {
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">
-            Unités d'enseignement
+            Unités d'enseignements
           </h2>
           <p className="text-sm text-slate-500">
-            consultez les unités d'enseignement existantes dans votre formation.
+            Consultez les unités d'enseignements existantes dans votre formation.
           </p>
         </div>
         <CourseUnitsPanel />

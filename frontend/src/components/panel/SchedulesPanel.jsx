@@ -164,7 +164,7 @@ function DeleteScheduleConfirm({ schedule, onSuccess }) {
   )
 }
 
-export default function SchedulesPanel({ onSelectSchedule }) {
+export default function SchedulesPanel({ onDetailSchedule , onSelectedSchedule }) {
   const { role } = useAuth()
   const { openModal, closeModal } = useModal()
 
@@ -198,7 +198,7 @@ export default function SchedulesPanel({ onSelectSchedule }) {
   const { data, isLoading: isDataLoading } = useSchedules(filters)
   const results = data?.results || data || []
 
-  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
+  const canCreate = [ROLES.DEPARTMENT_HEAD].includes(role)
 
   const columns = [
     { header: "ID", key: "id", render: (id) => `#${id}` },
@@ -209,8 +209,9 @@ export default function SchedulesPanel({ onSelectSchedule }) {
 
   const actions = [
     {
-      label: "Gérer les créneaux",
-      handler: (row) => onSelectSchedule(row),
+      label: "Voir les créneaux",
+      handler: (row) => onDetailSchedule(row),
+      conditionGlobal: [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.TEACHER].includes(role)
     },
     {
       label: "Supprimer",
@@ -218,7 +219,7 @@ export default function SchedulesPanel({ onSelectSchedule }) {
         title: "Supprimer l'emploi du temps",
         content: <DeleteScheduleConfirm schedule={row} onSuccess={closeModal} />
       }),
-      conditionGlobal: canCreate,
+      conditionGlobal: canCreate && [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
     }
   ]
 
@@ -308,7 +309,8 @@ export default function SchedulesPanel({ onSelectSchedule }) {
             data={results}
             columns={columns}
             actions={actions}
-            selectionMode={false}
+            selectionMode={"single"}
+            onSelectionChange={onSelectedSchedule}
           />
         ) : (
           <div className="flex justify-center text-slate-500 text-sm items-center h-[200px]">

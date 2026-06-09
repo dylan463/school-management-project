@@ -10,10 +10,10 @@ const History = () => {
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-800">
-              Historique
+              Historiques
             </h2>
             <p className="text-sm text-slate-500">
-              Voir l'historique des inscriptions au sein de la mentions.
+              Voir l'historique des inscriptions au sein de la mention.
             </p>
           </div>
           <HistoryPanel />

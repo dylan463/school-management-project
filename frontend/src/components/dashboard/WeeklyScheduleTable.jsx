@@ -35,13 +35,7 @@ export default function WeeklyScheduleTable({ scheduleEntries = [] }) {
           <h2 className="text-sm font-semibold text-slate-800">Emploi du temps hebdomadaire</h2>
         </div>
         <div className="flex items-center bg-slate-100 rounded-md p-1">
-          <button className="p-1 hover:bg-white rounded text-slate-500 transition-colors">
-            <ChevronLeft />
-          </button>
           <span className="text-xs font-medium text-slate-600 px-3">Semaine en cours</span>
-          <button className="p-1 hover:bg-white rounded text-slate-500 transition-colors">
-            <ChevronRight />
-          </button>
         </div>
       </div>
 

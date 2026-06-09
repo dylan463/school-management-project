@@ -155,7 +155,7 @@ export default function StudentReenrollmentPanel() {
     { header: "Année Scolaire", key: "school_year", render: (sy) => sy?.text || sy?.code || sy },
     { header: "Parcours", key: "formation", render: (f) => f?.text || f?.code || f },
     { header: "Semestre", key: "semester", render: (s) => s?.code || s },
-    { header: "Statut", key: "status" },
+    { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Actif" },
   ];
 
   return (

@@ -23,10 +23,10 @@ export default function LoginPage() {
         navigate(ROUTES.DASHBOARDSTUDENT, { replace: true })
       } else if (role == ROLES.TEACHER) {
         navigate(ROUTES.DASHBOARDTEACHER, { replace: true })
-      } else if (role == ROLES.DEPARTMENT_HEAD) {
+      } else if ([ROLES.DEPARTMENT_HEAD,ROLES.DEPARTMENT_SECRETARY,ROLES.REGISTRAR_OFFICER].includes(role)) {
         navigate(ROUTES.DASHBOARDMANAGEMENT, { replace: true })
       } else {
-        navigate('notFound', { replace: true })
+        navigate('*')
       }
     }
   }, [isAuthenticated, role, navigate])

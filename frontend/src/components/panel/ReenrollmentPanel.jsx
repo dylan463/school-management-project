@@ -474,7 +474,7 @@ export default function ReenrollmentPanel() {
 
         <div className="flex w-full">
           <div className="pl-2" >
-            <h1>Etudiant Non Inscrit</h1>
+            <h1 className="ml-3 text-red-600 font-bold">ETUDIANT NON INSCRIT</h1>
             {/* filtres */}
             <div className="w-[500px] flex flex-wrap gap-2 pl-2 ">
               <div>
@@ -544,7 +544,7 @@ export default function ReenrollmentPanel() {
 
               {/* semestre */}
               <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
+                <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
                 <Filter
                   value={semester1}
                   onChange={(e) => setSemester1(e.target.value)}
@@ -559,7 +559,7 @@ export default function ReenrollmentPanel() {
             </div>
             <div className="border border-gray-200 mt-2"></div>
             {!canPromote ? <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">
-              veuiller selectionner tout les parametres
+              Veuiller sélectionner tous les paramètres
             </div> :
 
               enrollments1loading ? (
@@ -582,14 +582,15 @@ export default function ReenrollmentPanel() {
                     Aucun résultat
                   </div>
                 )}
-          </div>
+            </div>
 
+            <div className="mx-4 w-px bg-gray-200" aria-hidden="true" />
 
           {/* {nouvelle année scolaire} */}
           <div className="pl-2">
-            <h1>Etudiant Inscrit</h1>
+            <h1 className="ml-3 text-red-600 font-bold">ETUDIANT INSCRIT</h1>
             {/* filtres */}
-            <div className="w-[500px] flex flex-wrap gap-2 pl-4">
+            <div className="w-[500px] flex flex-wrap gap-2">
               <div>
                 <label className="text-slate-600 text-sm font-bold block mb-1">Parcours</label>
                 {!formation2Data ? (
@@ -657,7 +658,7 @@ export default function ReenrollmentPanel() {
 
               {/* semestre */}
               <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
+                <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
                 <Filter
                   value={semester2}
                   onChange={(e) => setSemester2(e.target.value)}
@@ -672,7 +673,7 @@ export default function ReenrollmentPanel() {
             </div>
             <div className="border border-gray-200 mt-2"></div>
             {!canPromote ? <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">
-              veuiller selectionner tout les parametres
+              Veuiller sélectionner tous les paramètres
             </div> :
 
               enrollments2loading ? (

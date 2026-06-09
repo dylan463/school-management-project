@@ -514,17 +514,19 @@ export default function CourseModulesPanel() {
   const handleEdit = (row) => {
     if (role == ROLES.TEACHER) {
       openModal({
-        title: "Voir les détails du module",
+        title: "Voir les détails de l'EC",
         content: <AddOrEditFormTeacher initialData={row} onSuccess={closeModal} />,
       })
       return
     }
     openModal({
-      title: "Modifier le module",
+      title: "Modifier l'EC",
       content: <AddOrEditForm initialData={row} onSuccess={closeModal} />,
     })
   }
 
+
+  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
 
   const actions = [
     {
@@ -538,7 +540,7 @@ export default function CourseModulesPanel() {
         title: `Supprimer ${row.text}`,
         content: <DeleteConfirm Data={row} onSuccess={closeModal} />,
       }),
-      conditionGlobal: [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role)
+      conditionGlobal: canCreate
     },
     {
       label: "Voir résultats",
@@ -564,20 +566,20 @@ export default function CourseModulesPanel() {
           </Button>
         </div>
         <SearchInput
-          placeholder="Rechercher un module"
+          placeholder="Rechercher un EC"
           className="w-[200px]"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Button
+        {canCreate && <Button
           variant="primary"
           onClick={() => openModal({
-            title: "Ajouter un module",
+            title: "Ajouter un EC",
             content: <AddOrEditForm onSuccess={closeModal} />,
           })}
         >
           + Ajouter
-        </Button>
+        </Button>}
       </div>
 
       {/* ── Filtres ── */}

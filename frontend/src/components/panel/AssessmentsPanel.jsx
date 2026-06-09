@@ -27,6 +27,8 @@ import { useCoursemodules } from "../../hooks/coursemodules/useCoursemodules"
 import { useCoursemodule } from "../../hooks/coursemodules/useCoursemodule"
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
 import { useSchoolyear } from "../../hooks/schoolyears/useSchoolyear"
+import { ROLES } from "../../utils/constants"
+import { useAuth } from "../../context/AuthContext"
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
   const isEdit = Boolean(initialData?.id);
@@ -306,6 +308,7 @@ function DeleteConfirm({ Data, onSuccess }) {
 
 export default function AssessmentsPanel() {
   const { openModal, closeModal } = useModal();
+  const { role } = useAuth();
   const navigate = useNavigate();
 
   const { search, page, setSearch, setPage, course, setCourse, school_year, setSchool_year: setSchoolYear, session, setSession } = useQueryParams({
@@ -396,28 +399,31 @@ export default function AssessmentsPanel() {
     }
   ];
 
+  const basePermission = activeSy !== null && activeSy.id === school_year
+  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role) && basePermission
+
   const actions = [
     {
       label: "Modifier",
       handler: (row) => openModal({ title: "Modifier l'examen", content: <AddOrEditForm initialData={row} onSuccess={closeModal} /> }),
-      conditionGlobal: activeSy !== null && activeSy.id === school_year
+      conditionGlobal: canCreate
     },
     {
       label: "Supprimer",
       handler: (row) => openModal({ title: `Supprimer ${row.name}`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> }),
-      conditionGlobal: activeSy !== null && activeSy.id === school_year
+      conditionGlobal: canCreate
     },
     {
       label: "Dépublier",
       handler: (row) => handleTogglePublication(row.id),
       conditionRow: (row) => row.is_published === true,
-      conditionGlobal: activeSy !== null && activeSy.id === school_year
+      conditionGlobal: canCreate
     },
     {
       label: "Publier",
       handler: (row) => handleTogglePublication(row.id),
       conditionRow: (row) => row.is_published === false,
-      conditionGlobal: activeSy !== null && activeSy.id === school_year
+      conditionGlobal: canCreate
 
     },
     {
@@ -425,7 +431,6 @@ export default function AssessmentsPanel() {
       handler: (row) => {
         navigate(`?assessment=${row.id}`);
       },
-      conditionGlobal: activeSy !== null && activeSy.id === school_year
     }
   ];
 
@@ -443,7 +448,7 @@ export default function AssessmentsPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {activeSy && (
+        {canCreate && (
           <Button variant="primary" onClick={() => openModal({ title: "Ajouter un examen", content: <AddOrEditForm onSuccess={closeModal} /> })}>
             + ajouter
           </Button>

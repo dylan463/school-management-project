@@ -22,13 +22,14 @@ const DebtPanel = ({ enrollmentId }) => {
     const columns = [
         { header: "Semestre", key: "semester" },
         { header: "Module", key: "course_module" },
-        { header: "Formation", key: "formation" },
+        { header: "Parcour", key: "formation" },
+        { header: "Année", key: "school_year" },
         { header: "Statut", key: "cleared", render: (value) => value ? <Badge content="Payé" color="green" /> : <Badge content="Non payé" color="red" /> }
     ]
     if (isLoading || !enrollmentId) return
 
     return (
-        <Card className="p-2 flex gap-2 min-h-[200px] flex-col items-center">
+        <Card className="p-2 flex gap-2 min-h-[200px] flex-col">
             <Switch
                 tabs={[
                     { key: "Réglée", value: true },
@@ -41,6 +42,7 @@ const DebtPanel = ({ enrollmentId }) => {
                 <DataTable
                     data={debtResults}
                     columns={columns}
+                    selectionMode={false}
                 />
             ) : (
                 <div>Aucune dette</div>

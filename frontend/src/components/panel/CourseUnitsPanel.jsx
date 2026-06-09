@@ -47,7 +47,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
     delay: 300,
     minChars: 1,
   });
-  const { data: optionsData, isFetching } = useFormations(query ? { search: query } : null, !!query, 0);
+  const { data: optionsData, isFetching } = useFormations(query ? { search: query } : {}, {enabled:!!query ,staleTime:5*60*1000});
   const optionResults = optionsData?.results || [];
 
   const handleSelectFormation = (formation) => {
@@ -269,7 +269,7 @@ export default function CourseUnitsPanel() {
     delay: 300,
     minChars: 1,
   })
-  const { data: formationOptions, isLoading: isFormationsLoading, isFetching: isFormationFetching } = useFormations(query ? { search: query } : null, query.length >= 1, 0)
+  const { data: formationOptions, isLoading: isFormationsLoading, isFetching: isFormationFetching } = useFormations(query ? { search: query } : {}, {enabled:query.length >= 1, staleTime:0})
 
   const formationOptionResults = formationOptions?.results || []
   const { data: formationData, isLoading: isFormationLoading } = useFormation(formation)

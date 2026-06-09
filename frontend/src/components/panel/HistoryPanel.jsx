@@ -15,6 +15,7 @@ import { useQueryParams } from "../../hooks/useQueryParams"
 import { useNavigate } from 'react-router-dom'
 
 import { useEnrollments } from "../../hooks/enrollments/useEnrollments"
+import { useDeleteEnrollment} from '../../hooks/enrollments/useDeleteEnrollment'
 
 import { useSearchDropdown } from "../../hooks/useSearchDropdown"
 import SearchWithDropdown from "../SearchWithDropdown"
@@ -28,15 +29,14 @@ import { useSelected } from "../../context/SelectedContext"
 
 
 function DeleteConfirm({ Data, onSuccess }) {
-  const destroy = useDeleteAssessment();
-  const { handleErrors, getError } = useDRFErrors();
+  const destroy = useDeleteEnrollment();
+  const { handleErrors, getError ,errors,clearErrors} = useDRFErrors();
 
   const handleConfirm = async () => {
     try {
       await destroy.mutateAsync(Data.id);
     } catch (error) {
-      handleErrors(error);
-      const msg = getError("detail") || "Une erreur est survenue";
+      const msg = error.response.data.detail || "Une erreur est survenue";
       toast.error(msg);
     } finally {
       onSuccess?.();
@@ -47,7 +47,7 @@ function DeleteConfirm({ Data, onSuccess }) {
     <div>
       <p>Voulez-vous supprimer l'inscription  de <strong>{Data.student.first_name} {Data.student.last_name} en {Data.formation.text} {Data.semester.code} de l'année {Data.school_year.text}</strong> ?</p>
       <div className="mt-4 flex justify-end">
-        <Button onClick={handleConfirm} disabled={loading} className="bg-red-500 text-white hover:bg-red-600">
+        <Button onClick={handleConfirm} disabled={destroy.isPending} className="bg-red-500 text-white hover:bg-red-600">
           {destroy.isPending ? "Suppression..." : "Supprimer"}
         </Button>
       </div>
@@ -55,19 +55,17 @@ function DeleteConfirm({ Data, onSuccess }) {
   );
 }
 
-export default function HistoryPanel() {
+export default function HistoryPanel({enrollment, setEnrollment}) {
   const { openModal, closeModal } = useModal();
-  const { selected: SelectedEnrollment, setSelected: setSelectedEnrollment } = useSelected()
   const navigate = useNavigate();
 
-  const { search, page, setSearch, setPage, school_year: schoolyear, setSchool_year: setSchoolYear, formation, setFormation, semester, enrollment, setEnrollment, setSemester, status, setStatus } = useQueryParams({
+  const { search, page, setSearch, setPage, school_year: schoolyear, setSchool_year: setSchoolYear, formation, setFormation, semester, setSemester, status, setStatus } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
     school_year: { key: "school_year", type: "string", default: "" },
     formation: { key: "formation", type: "string", default: "" },
     semester: { key: "semester", type: "string", default: "" },
     status: { key: "status", type: "string", default: "" },
-    enrollment: { key: "enrollment", type: "string", default: "" },
   });
 
   useEffect(() => {
@@ -80,12 +78,12 @@ export default function HistoryPanel() {
 
   // Filters hooks
   const { value: formationValue, query: formationQuery, onChange: formationOnChange, isOpen: formationIsOpen, close: formationClose, containerRef: formationContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, formationQuery.length >= 1, 0);
+  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, {enabled:formationQuery.length >= 1, staleTime:0});
   const formationOptionResults = formationOptions?.results || [];
   const { data: formationData } = useFormation(formation);
 
   const { value: syValue, query: syQuery, onChange: syOnChange, isOpen: syIsOpen, close: syClose, containerRef: syContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : {}, syQuery.length >= 1, 0);
+  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : {}, {enabled:syQuery.length >= 1, staleTime:0});
   const syOptionResults = syOptions?.results || [];
   const { data: syData } = useSchoolyear(schoolyear);
 
@@ -105,7 +103,13 @@ export default function HistoryPanel() {
   const handleSelectEnrollment = (selectedEnrollment) => {
     const enrollmentId = selectedEnrollment?.[0]?.id || ""
     setEnrollment(enrollmentId);
-    setSelectedEnrollment(enrollmentId)
+  }
+
+  const handleDelete = (enrollment) => {
+    openModal({ title: `Supprimer l'inscription`, content: <DeleteConfirm Data={enrollment} onSuccess={() => {
+      closeModal()
+      setEnrollment("")
+    }} /> })
   }
 
   const filters = useMemo(() => {
@@ -146,7 +150,7 @@ export default function HistoryPanel() {
   const actions = [
     {
       label: "Supprimer",
-      handler: (row) => openModal({ title: `Supprimer l'inscription`, content: <DeleteConfirm Data={row} onSuccess={closeModal} /> }),
+      handler: handleDelete
     },
   ];
 

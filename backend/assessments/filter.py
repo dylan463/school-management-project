@@ -20,12 +20,12 @@ class EnrollmentFilter(django_filters.FilterSet):
                 return queryset.none()
             debts = Debt.objects.filter(last_deliberation=active_sy)
             query = Q(enrollment_results__debts__in=debts) | Q(school_year=active_sy,status__in = ["VALIDATED","NOT_VALIDATED"])
-            return queryset.filter(query)
+            return queryset.filter(query).distinct()
         elif value == "NOT_DELIBERATED":
             active_sy = SchoolYear.objects.filter(status = "ACTIVE").first()
             if not active_sy:
                 return queryset.none()
-            return queryset.filter(status ="ACTIVE")
+            return queryset.filter(status ="ACTIVE").distinct()
         return queryset
 
     def filter_exclude_year(self,queryset,name,value):

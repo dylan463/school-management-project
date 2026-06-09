@@ -16,8 +16,6 @@ from .serializers import (
     EnrollmentSerializer,
     EnrollmentCreateSerializer,
     ChangeEnrolStatusSerializer,
-    AttendantSerializer,
-    Assessment,
     GradeSerializer,
     BulletinSerializer,
     GradeGridSerializer,
@@ -25,8 +23,6 @@ from .serializers import (
     AssessmentSerializer,
     DebtSerializer
 )
-from .query import attend_to_assessment,people_with_course_debt
-
 from .filter import AssessmentFilter,EnrollmentResultFilter,GradeFilter,BulletinFilter
 
 from .services import (

@@ -38,7 +38,7 @@ class EnrollmentResult(models.Model):
 
     enrollment = models.ForeignKey(
         Enrollment,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="enrollment_results",
     )
     course_module = models.ForeignKey(

@@ -125,7 +125,7 @@ export default function StudentReenrollmentPanel() {
   const studentsResults = studentsResponse.data?.results || studentsResponse.data || [];
 
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useEnrollments({
-    student: selectedStudent ? selectedStudent.id : -1,
+    ...(selectedStudent && {id:selectedStudent.id}),
     no_pagination: true
   });
 

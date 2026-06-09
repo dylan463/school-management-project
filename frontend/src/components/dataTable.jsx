@@ -88,9 +88,9 @@ export default function DataTable({
           onToggleAll={handleToggleAll}
         />
         <tbody>
-          {data.map((row) => (
+          {data.map((row,index) => (
             <TableRow
-              key={row.id}
+              key={row.id || index}
               row={row}
               columns={columns}
               actions={actions}

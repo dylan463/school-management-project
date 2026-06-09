@@ -85,10 +85,9 @@ function ResultBadges({ result }) {
 
 const StudentUploadPanel = () => {
     // ── Données des filtres ────────────────────────────────────────────────────
-    const { data: formations, isLoading: isLoadingFormations } = useFormations({ page_size: 100, is_active: true })
-    const { data: semesters, isLoading: isLoadingSemesters } = useSemesters({ page_size: 100, is_active: true })
-    const { data: schoolyears, isLoading: isLoadingSchoolyears } = useSchoolyears({ page_size: 100, status: 'OPEN' })
-
+    const { data: formations, isLoading: isLoadingFormations } = useFormations({ no_pagination:true, is_active: true },{enabled:true,staleTime:5*60*1000})
+    const { data: semesters, isLoading: isLoadingSemesters } = useSemesters({ no_pagination:true, is_active: true })
+    const { data: schoolyears, isLoading: isLoadingSchoolyears } = useSchoolyears({ no_pagination:true, status: 'OPEN' },{enabled:true,staleTime:5*60*1000})
     // ── État des filtres ───────────────────────────────────────────────────────
     const [filters, setFilters] = useState({
         formation: "",
@@ -191,7 +190,7 @@ const StudentUploadPanel = () => {
                         label="Parcours"
                         onChange={handleFilterChange}
                         name="formation"
-                        options={formations ? formations.results : []}
+                        options={formations ? formations : []}
                         otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une formation", value: "" }]}
                         render={(f) => f.text ?? f.code ?? f}
                         className="grid grid-cols-1"
@@ -201,7 +200,7 @@ const StudentUploadPanel = () => {
                         label="Année scolaire"
                         onChange={handleFilterChange}
                         name="school_year"
-                        options={schoolyears ? schoolyears.results : []}
+                        options={schoolyears ? schoolyears : []}
                         otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une année", value: "" }]}
                         render={(y) => y.text ?? y.code ?? y}
                         className="grid grid-cols-1"
@@ -211,7 +210,7 @@ const StudentUploadPanel = () => {
                         label="Semestre"
                         onChange={handleFilterChange}
                         name="semester"
-                        options={semesters ? semesters.results : []}
+                        options={semesters ? semesters : []}
                         otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez un semestre", value: "" }]}
                         render={(s) => s.code ?? s.order ?? s}
                         className="grid grid-cols-1"

@@ -39,9 +39,9 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const [loading, setLoading] = useState(false);
 
   // Charger les listes de sélection pour l'ajout
-  const { data: schoolyearsData , isLoading: isSchoolyearsLoading } = useSchoolyears(isEdit ? null : { no_pagination: true });
-  const { data: formationsData , isLoading: isFormationsLoading } = useFormations(isEdit ? null : { no_pagination: true });
-  const { data: semestersData , isLoading: isSemestersLoading } = useSemesters(isEdit ? null : { no_pagination: true });
+  const { data: schoolyearsData , isLoading: isSchoolyearsLoading } = useSchoolyears({ no_pagination: true },{enabled:isEdit});
+  const { data: formationsData , isLoading: isFormationsLoading } = useFormations({ no_pagination: true ,status:"OPEN"},{enabled:isEdit});
+  const { data: semestersData , isLoading: isSemestersLoading } = useSemesters({ no_pagination: true },{enabled:isEdit});
   const loadingFilters = isSchoolyearsLoading || isFormationsLoading || isSemestersLoading;
   const schoolyears = schoolyearsData || [];
   const formations = formationsData || [];

@@ -10,6 +10,9 @@ export const useChangeEnrollmentStatus = () => {
       queryClient.invalidateQueries({
         queryKey: ['enrollments'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['debts'],
+      })
     },
   })
 }

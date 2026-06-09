@@ -317,24 +317,24 @@ export default function ReenrollmentPanel() {
 
   const formation1response = useFormations(formation1searchDropDown.query ? {
     search: formation1searchDropDown.query
-  } : {}, formation1searchDropDown.query.length > 0)
+  } : {}, {enabled:formation1searchDropDown.query.length >= 1, staleTime:0})
   const formation1results = formation1response.data?.results ? formation1response.data?.results : []
 
   const formation2response = useFormations(formation2searchDropDown.query ? {
     search: formation2searchDropDown.query
-  } : {}, formation2searchDropDown.query.length > 0)
+  } : {}, {enabled:formation2searchDropDown.query.length >= 1, staleTime:0})
   const formation2results = formation2response.data?.results ? formation2response.data?.results : []
 
   const schoolyear1response = useSchoolyears(schoolyear1searchDropDown.query ? {
     search: schoolyear1searchDropDown.query,
     status: "CLOSED"
-  } : {}, schoolyear1searchDropDown.query.length > 0)
+  } : {}, {enabled:schoolyear1searchDropDown.query.length >= 1, staleTime:0})
   const schoolyear1results = schoolyear1response.data?.results ? schoolyear1response.data?.results : []
 
   const schoolyear2response = useSchoolyears(schoolyear2searchDropDown.query ? {
     search: schoolyear2searchDropDown.query,
     status: "OPEN"
-  } : {}, schoolyear2searchDropDown.query.length > 0)
+  } : {}, {enabled:schoolyear2searchDropDown.query.length >= 1, staleTime:0})
   const schoolyear2results = schoolyear2response.data?.results ? schoolyear2response.data?.results : []
 
   const semester1response = useSemesters({

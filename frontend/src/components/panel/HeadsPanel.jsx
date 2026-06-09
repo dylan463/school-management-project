@@ -289,7 +289,7 @@ export default function HeadsPanel() {
     delay: 300,
     minChars: 2,
   })
-  const { data: options, isFetching } = useMentions(query ? { search: query } : null, query.length >= 2, 0)
+  const { data: options, isFetching } = useMentions(query ? { search: query } : {}, {enabled:query.length >= 1, staleTime:0})
   const handleSelectMention = (mention) => {
     setMentionId(mention.id)
     close()

@@ -64,7 +64,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   // ── Course Unit search dropdown ──
   const cuDropdown = useSearchDropdown({ delay: 300, minChars: 1 })
   const { data: cuOptions, isFetching: isCuFetching } = useCourseunits(
-    cuDropdown.query ? { search: cuDropdown.query } : null,
+    cuDropdown.query ? { search: cuDropdown.query } : {},
     !!cuDropdown.query,
     0
   )

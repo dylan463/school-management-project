@@ -7,9 +7,9 @@ import { useResults } from "../../hooks/results/useResults"
 import { useSearchParams } from "react-router-dom"
 import { useSelected } from "../../context/SelectedContext"
 import DebtPanel from "./DebtPanel"
+import Badge from "../Badge"
 
-function HistoryResultPanel() {
-    const { selected: enrollment, setSelected: setEnrollment } = useSelected()
+function HistoryResultPanel({enrollment, setEnrollment}) {
     const { data: enrollmentData, isEnrollmentDataLoading } = useEnrollment(enrollment ? enrollment : null)
     const filters = useMemo(() => {
         return {
@@ -25,7 +25,14 @@ function HistoryResultPanel() {
         { header: "EC", key: "course_module" },
         { header: "Note", key: "final_score" },
         { header: "Credit", key: "course_credit" },
-        { header: "Status", key: "status" }
+        {
+        header: "Statut", key: "status", render: (value) => {
+            if (value === "VALIDATED") return <Badge content="Validé" color="green" />
+            if (value === "VALIDATEDA_AFTER_RETAKE" || value === "VALIDATED_AFTER_RETAKE") return <Badge content="Rattrapage" color="yellow" />
+            if (value === "NOT_VALIDATED") return <Badge content="Non validé" color="red" />
+            return <Badge content={value || "Inconnu"} color="gray" />
+        }
+        }
     ]
     const isLoading = isEnrollmentDataLoading || isResultsLoading
     if (!enrollmentData) return

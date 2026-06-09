@@ -9,10 +9,9 @@ import { useSelected } from "../../context/SelectedContext"
 import { useChangeEnrollmentStatus } from "../../hooks/enrollments/useChangeEnrollmentStatus"
 import { toast } from "react-toastify"
 import DebtPanel from "./DebtPanel"
+import Badge from "../Badge"
 
-
-function DeliberationResultPanel() {
-    const { selected: enrollment, setSelected: setEnrollment } = useSelected()
+function DeliberationResultPanel({enrollment, setEnrollment}) {
     const { data: enrollmentData, isEnrollmentDataLoading } = useEnrollment(enrollment ? enrollment : null)
     const changeStatus = useChangeEnrollmentStatus()
 
@@ -30,7 +29,14 @@ function DeliberationResultPanel() {
         { header: "EC", key: "course_module" },
         { header: "Note", key: "final_score" },
         { header: "Credit", key: "course_credit" },
-        { header: "Status", key: "status" }
+    {
+      header: "Statut", key: "status", render: (value) => {
+        if (value === "VALIDATED") return <Badge content="Validé" color="green" />
+        if (value === "VALIDATEDA_AFTER_RETAKE" || value === "VALIDATED_AFTER_RETAKE") return <Badge content="Rattrapage" color="yellow" />
+        if (value === "NOT_VALIDATED") return <Badge content="Non validé" color="red" />
+        return <Badge content={value || "Inconnu"} color="gray" />
+      }
+    }
     ]
     const isLoading = isEnrollmentDataLoading || isResultsLoading
     if (!enrollmentData) return
@@ -94,7 +100,7 @@ function DeliberationResultPanel() {
                                     onClick={() => changeStatus.mutate({ id: enrollment, data: { status: "VALIDATED" } }, {
                                         onSuccess: () => {
                                             toast.success("Inscription validée avec succès")
-                                            setEnrollment(null)
+                                            setEnrollment('')
 
                                         },
                                         onError: (error) => {
@@ -109,7 +115,7 @@ function DeliberationResultPanel() {
                                     onClick={() => changeStatus.mutate({ id: enrollment, data: { status: "NOT_VALIDATED" } }, {
                                         onSuccess: () => {
                                             toast.success("Inscription annulée avec succès")
-                                            setEnrollment(null)
+                                            setEnrollment('')
                                         },
                                         onError: (error) => {
                                             console.log(error.response.data)

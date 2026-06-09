@@ -7,7 +7,6 @@ from django.db import transaction
 from django.db.models import Prefetch
 from collections import defaultdict
 from .query import attend_to_assessment,has_no_grade_in_assessment,promoted_people,people_with_course_debt
-from .serializers import AttendantSerializer
 from structures.models import User,Formation,Semester,SchoolYear
 from notifications.utils import create_notification
 
@@ -91,7 +90,8 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
         else:
             # Bug fix : select_related pour éviter N+1 sur course_module
             results = EnrollmentResult.objects.filter(
-                enrollment=enrollment
+                enrollment=enrollment,
+                status=EnrollmentResult.Status.NOT_VALIDATED
             ).select_related("course_module")
 
             debts = [
@@ -101,7 +101,6 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
                     original_status=result.status,
                 )
                 for result in results
-                if result.status == EnrollmentResult.Status.NOT_VALIDATED
             ]
 
             if debts:
@@ -137,10 +136,6 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
 
 @transaction.atomic
 def delete_enrollment(enrollment : Enrollment):
-    if EnrollmentResult.objects.filter(enrollment=enrollment).exists():
-        raise ValidationError({
-            'detail':'suppression impossible : des résultat y sont encore référencés'
-        })
     enrollment.delete()
 
 
@@ -154,9 +149,12 @@ def create_assessment(data: dict):
         id=data.get("course_module").id
     )
 
-    school_year = SchoolYear.objects.get(
-        id=data.get("school_year").id
-    )
+    school_year = SchoolYear.objects.filter(status = SchoolYear.Status.ACTIVE).first()
+
+    if not school_year:
+        raise ValidationError({"detail":"veuillez créer votre éxamen pendant une année scolaire active"})
+
+    data["school_year"] = school_year
 
     if session == "RETAKE":
         if not Assessment.objects.filter(
@@ -167,7 +165,7 @@ def create_assessment(data: dict):
         ).exists():
 
             raise ValidationError({"detail":
-                "veillez publier une session normal avant d'entamer un rattrappage"
+                "veuillez publier une session normal avant d'entamer un rattrappage"
             })
     
     examen = Assessment.objects.create(**data)

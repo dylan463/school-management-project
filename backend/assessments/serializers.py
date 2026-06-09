@@ -60,7 +60,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
             "school_year",
             "is_published"
         ]
-        read_only_fields = ["id","is_published"]
+        read_only_fields = ["id","is_published","school_year"]
 
 
 class GradeSerializer(serializers.ModelSerializer):
@@ -70,37 +70,6 @@ class GradeSerializer(serializers.ModelSerializer):
         model = Grade
         fields = ["id","assessment","student","school_year","score"]
         read_only_fields = ["id"]
-
-class AttendantGradeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Grade
-        fields = ["id","assessment","score"]
-        read_only_fields = ["id"]
-
-class AttendantSerializer(serializers.ModelSerializer):
-    grade = serializers.SerializerMethodField()
-    debt = serializers.SerializerMethodField()
-    student_name = serializers.CharField(source='student.get_full_name', read_only=True)
-
-    class Meta:
-        model = Enrollment
-        fields = ["id", "student", "student_name", "grade", "debt"]
-
-    def get_grade(self, enrollment):
-        grades = getattr(enrollment, "assessment_grades", [])
-        if grades:
-            return {"id": grades[0].id, "score": grades[0].score}
-        return None
-
-    def get_debt(self, enrollment):
-        result = enrollment.enrollment_results.all().first()
-        if not result:
-            return None
-        debts = getattr(result, "module_debts", [])
-        if not debts:
-            return None
-        school_year = debts[0].result.enrollment.school_year
-        return {"text":school_year.text}
 
 
 class BulletinSerializer(serializers.ModelSerializer):
@@ -186,7 +155,7 @@ class GradeGridSerializer(serializers.Serializer):
 class EnrollmentResultSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="enrollment.student.get_full_name")
     course_credit = serializers.CharField(source="course_module.credits")
-    semester = serializers.CharField(source='course_module.course_unit.semester.code')
+    semester = serializers.CharField(source='course_module.semester.code')
     formation = serializers.CharField(source='course_module.course_unit.formation.code')
     school_year = serializers.CharField(source='enrollment.school_year.text')
     course_module = serializers.CharField(source="course_module.text")
@@ -194,12 +163,13 @@ class EnrollmentResultSerializer(serializers.ModelSerializer):
     
     class Meta:
         model=EnrollmentResult
-        fields = ['full_name',"course_unit",'final_score','course_module','status','course_credit','semester','formation']
+        fields = ['full_name',"course_unit",'final_score',"school_year",'course_module','status','course_credit','semester','formation']
 
 class DebtSerializer(serializers.ModelSerializer):
-    semester = serializers.CharField(source='result.course_module.course_unit.semester.code')
+    semester = serializers.CharField(source='result.course_module.semester.code')
     formation = serializers.CharField(source='result.course_module.course_unit.formation.code')
     course_module = serializers.CharField(source="result.course_module.text")
+    school_year = serializers.CharField(source='result.enrollment.school_year.text')
     class Meta:
         model = Debt
-        fields = ["id","cleared","semester","course_module","formation"]
+        fields = ["id","cleared","semester","school_year","course_module","formation"]

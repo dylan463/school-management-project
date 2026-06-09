@@ -41,11 +41,9 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
     grade_weight: initialData.grade_weight || 1,
     date: initialData.date || new Date().toISOString().split('T')[0],
     course_module: initialData.course_module || "",
-    school_year: initialData.school_year || "",
   });
 
   const [selectedCourse, setSelectedCourse] = useState(initialData.course_module_details || null);
-  const [selectedSy, setSelectedSy] = useState(initialData.school_year_details || null);
 
   const create = useCreateAssessment();
   const update = useUpdateAssessment();
@@ -56,20 +54,11 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : null, !!courseQuery, 0);
   const courseOptionResults = courseOptions?.results || [];
 
-  const { value: syValue, query: syQuery, onChange: syOnChange, isOpen: syIsOpen, close: syClose, containerRef: syContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : null, !!syQuery, 0);
-  const syOptionResults = syOptions?.results || [];
 
   const handleSelectCourse = (course) => {
     setSelectedCourse(course);
     setForm(prev => ({ ...prev, course_module: course.id }));
     courseClose();
-  };
-
-  const handleSelectSy = (sy) => {
-    setSelectedSy(sy);
-    setForm(prev => ({ ...prev, school_year: sy.id }));
-    syClose();
   };
 
   const handleChange = (e) => {
@@ -82,7 +71,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.type || !form.course_module || !form.school_year) return;
+    if (!form.name || !form.type || !form.course_module) return;
 
     setLoading(true);
     try {
@@ -226,43 +215,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         {getError("course_module") && <span className="text-xs text-red-500">{getError("course_module")}</span>}
       </div>
 
-      {/* SCHOOL YEAR */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Année Scolaire</label>
-        {!selectedSy ? (
-          <SearchWithDropdown
-            value={syValue}
-            onChange={syOnChange}
-            isOpen={syIsOpen}
-            close={syClose}
-            containerRef={syContainerRef}
-            options={syOptionResults}
-            loading={isSyFetching}
-            onSelect={handleSelectSy}
-            renderOption={(option) => <div className="flex gap-x-2 items-center">
-              <div>{option.text || option.label}</div>
-            </div>}
-            inputClassName="w-full"
-            placeholder="Rechercher une année scolaire..."
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">{selectedSy.text || selectedSy.label || `Année #${form.school_year}`}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSy(null);
-                setForm(prev => ({ ...prev, school_year: "" }));
-              }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("school_year") && <span className="text-xs text-red-500">{getError("school_year")}</span>}
-      </div>
-
       {getError("non_field_errors") && <div className="text-sm text-red-500">{getError("non_field_errors")}</div>}
       {getError("detail") && <div className="text-sm text-red-500">{getError("detail")}</div>}
 
@@ -337,12 +289,12 @@ export default function AssessmentsPanel() {
 
   // Filters hooks
   const { value: courseValue, query: courseQuery, onChange: courseOnChange, isOpen: courseIsOpen, close: courseClose, containerRef: courseContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : null, courseQuery.length >= 1, 0);
+  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : {}, courseQuery.length >= 1, 0);
   const courseOptionResults = courseOptions?.results || [];
   const { data: courseData } = useCoursemodule(course);
 
   const { value: syValue, query: syQuery, onChange: syOnChange, isOpen: syIsOpen, close: syClose, containerRef: syContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : null, syQuery.length >= 1, 0);
+  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : {}, {enabled:syQuery.length >= 1, staleTime:0});
   const syOptionResults = syOptions?.results || [];
   const { data: syData } = useSchoolyear(school_year);
 
@@ -364,7 +316,6 @@ export default function AssessmentsPanel() {
       toast.success("Statut de publication mis à jour");
     } catch (e) {
       const msg = e.response.data.detail || "Erreur lors de la mise à jour";
-      console.log(msg)
       toast.error(msg);
     }
   };
@@ -399,7 +350,7 @@ export default function AssessmentsPanel() {
     }
   ];
 
-  const basePermission = activeSy !== null && activeSy.id === school_year
+  const basePermission = activeSy !== null
   const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role) && basePermission
 
   const actions = [

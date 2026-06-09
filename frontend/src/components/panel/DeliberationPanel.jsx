@@ -30,18 +30,16 @@ import { useChangeEnrollmentStatus } from "../../hooks/enrollments/useChangeEnro
 
 
 
-export default function DeliberationPanel() {
+export default function DeliberationPanel({enrollment, setEnrollment}) {
   const { openModal, closeModal } = useModal();
-  const { selected: SelectedEnrollment, setSelected: setSelectedEnrollment } = useSelected()
   const navigate = useNavigate();
 
-  const { search, page, setSearch, setPage, school_year: schoolyear, formation, setFormation, semester, enrollment, setEnrollment, setSemester, status, setStatus } = useQueryParams({
+  const { search, page, setSearch, setPage, school_year: schoolyear, formation, setFormation, semester, setSemester, status, setStatus } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
     formation: { key: "formation", type: "string", default: "" },
     semester: { key: "semester", type: "string", default: "" },
     status: { key: "status", type: "string", default: "NOT_DELIBERATED" },
-    enrollment: { key: "enrollment", type: "string", default: "" },
   });
 
   useEffect(() => {
@@ -57,7 +55,7 @@ export default function DeliberationPanel() {
 
   // Filters hooks
   const { value: formationValue, query: formationQuery, onChange: formationOnChange, isOpen: formationIsOpen, close: formationClose, containerRef: formationContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, formationQuery.length >= 1, 0);
+  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, {enabled:formationQuery.length >= 1, staleTime:0});
   const formationOptionResults = formationOptions?.results || [];
   const { data: formationData } = useFormation(formation);
 
@@ -75,7 +73,18 @@ export default function DeliberationPanel() {
   const handleSelectEnrollment = (selectedEnrollment) => {
     const enrollmentId = selectedEnrollment?.[0]?.id || ""
     setEnrollment(enrollmentId);
-    setSelectedEnrollment(enrollmentId)
+  }
+
+  const handleCancel = (enrollment) => {
+    changeEnrollmentStatusMutation.mutate({ id: enrollment.id, data: { status: "ACTIVE" } }, {
+    onSuccess: () => {
+      toast.success("Inscription annulée avec succès")
+    },
+    onError: (error) => {
+      toast.error("Erreur lors de l'annulation de l'inscription")
+    }
+    })
+    setEnrollment('')
   }
 
   const filters = useMemo(() => {
@@ -115,14 +124,7 @@ export default function DeliberationPanel() {
   const actions = [
     {
       label: "Annuler",
-      handler: (row) => changeEnrollmentStatusMutation.mutate({ id: row.id, data: { status: "ACTIVE" } }, {
-        onSuccess: () => {
-          toast.success("Inscription annulée avec succès")
-        },
-        onError: (error) => {
-          toast.error("Erreur lors de l'annulation de l'inscription")
-        }
-      }),
+      handler: handleCancel,
       conditionGlobal: status == "DELIBERATED" && !!activeSy
     },
   ];

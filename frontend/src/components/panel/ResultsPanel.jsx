@@ -65,19 +65,19 @@ export default function ResultsPanel() {
   const { value: courseValue, query: courseQuery, onChange: courseOnChange, isOpen: courseIsOpen, close: courseClose, containerRef: courseContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 })
 
   // Data hooks
-  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : null, formationQuery.length >= 1, 0)
+  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, {enabled:formationQuery.length >= 1, staleTime:0})
   const formationOptionResults = formationOptions?.results || []
   const { data: formationData } = useFormation(formation)
 
-  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : null, syQuery.length >= 1, 0)
+  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : {}, {enabled:syQuery.length >= 1, staleTime:0})
   const syOptionResults = syOptions?.results || []
   const { data: syData } = useSchoolyear(school_year)
 
-  const { data: semOptions, isFetching: isSemFetching } = useSemesters(semQuery ? { search: semQuery } : null, semQuery.length >= 1, 0)
+  const { data: semOptions, isFetching: isSemFetching } = useSemesters(semQuery ? { search: semQuery } : {}, {enabled:semQuery.length >= 1, staleTime:0})
   const semOptionResults = semOptions?.results || []
   const { data: semData } = useSemester(semester)
 
-  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : null, courseQuery.length >= 1, 0)
+  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : {}, {enabled:courseQuery.length >= 1, staleTime:0})
   const courseOptionResults = courseOptions?.results || []
   const { data: courseData } = useCoursemodule(course)
 
@@ -130,7 +130,7 @@ export default function ResultsPanel() {
     { header: "Crédits", key: "course_credit" },
     { header: "Note Finale", key: "final_score" },
     {
-      header: "Status", key: "status", render: (value) => {
+      header: "Statut", key: "status", render: (value) => {
         if (value === "VALIDATED") return <Badge content="Validé" color="green" />
         if (value === "VALIDATEDA_AFTER_RETAKE" || value === "VALIDATED_AFTER_RETAKE") return <Badge content="Rattrapage" color="yellow" />
         if (value === "NOT_VALIDATED") return <Badge content="Non validé" color="red" />

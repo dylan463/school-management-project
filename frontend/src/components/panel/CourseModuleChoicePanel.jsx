@@ -40,7 +40,7 @@ export default function CourseModuleChoicePanel() {
   const formationDropdown = useSearchDropdown({ delay: 300, minChars: 1 });
   const { data: formationsOptions, isFetching: isFormationsFetching } = useFormations(
     formationDropdown.query ? { search: formationDropdown.query } : {},
-    formationDropdown.query.length >= 1
+    {enabled:formationDropdown.query.length >= 1, staleTime:0}
   );
   const formationOptionResults = formationsOptions?.results || formationsOptions || [];
   const { data: selectedFormationData } = useFormation(formation);

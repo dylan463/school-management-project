@@ -5,7 +5,7 @@ import DataTable from '../DataTable'
 import { useMemo, useState, useEffect } from "react"
 import useDebounced from '../../hooks/useDebounced'
 import Paginator from '../Paginator'
-import { PAGINATION_SIZE } from "../../utils/constants"
+import { PAGINATION_SIZE, ROLES } from "../../utils/constants"
 import { useModal } from '../../context/ModalContext'
 import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
@@ -26,6 +26,7 @@ import { useFormation } from "../../hooks/formations/useFormation"
 import { useSchoolyear } from "../../hooks/schoolyears/useSchoolyear"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
 import { useSelected } from "../../context/SelectedContext"
+import { useAuth } from "../../context/AuthContext"
 
 
 function DeleteConfirm({ Data, onSuccess }) {
@@ -56,6 +57,7 @@ function DeleteConfirm({ Data, onSuccess }) {
 }
 
 export default function HistoryPanel({enrollment, setEnrollment}) {
+  const { role} = useAuth()
   const { openModal, closeModal } = useModal();
   const navigate = useNavigate();
 
@@ -147,10 +149,15 @@ export default function HistoryPanel({enrollment, setEnrollment}) {
     { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Active" },
   ];
 
+
+  const canDelete = [ROLES.DEPARTMENT_HEAD,ROLES.DEPARTMENT_SECRETARY].includes(role)
+  const canGetBulletin = canDelete || role == ROLES.REGISTRAR_OFFICER
+
   const actions = [
     {
       label: "Supprimer",
-      handler: handleDelete
+      handler: handleDelete,
+      conditionGlobal: canDelete
     },
   ];
 

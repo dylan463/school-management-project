@@ -5,7 +5,6 @@ from .views import (
     AssessmentViewSet,
     GradeViewSet,
     ResultViewSet,
-    BulletinView,
     GradeGridView,
     DebtViewSet
     )
@@ -18,6 +17,5 @@ router.register(r"results", ResultViewSet, basename="results")
 router.register(r"debts", DebtViewSet, basename="debts")
 
 urlpatterns = router.urls + [
-    path("enrollments/<int:pk>/bulletin/", BulletinView.as_view()),
     path("grade-grid/",GradeGridView.as_view())
 ]

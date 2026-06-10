@@ -8,9 +8,13 @@ import { useSearchParams } from "react-router-dom"
 import { useSelected } from "../../context/SelectedContext"
 import DebtPanel from "./DebtPanel"
 import Badge from "../Badge"
+import downloadBulletin from "../BulletinPDF"
+import { useAuth } from "../../context/AuthContext"
+import { ROLES } from "../../utils/constants"
 
 function HistoryResultPanel({enrollment, setEnrollment}) {
     const { data: enrollmentData, isEnrollmentDataLoading } = useEnrollment(enrollment ? enrollment : null)
+    const {role} = useAuth()
     const filters = useMemo(() => {
         return {
             ...(enrollment && { enrollment }),
@@ -40,6 +44,8 @@ function HistoryResultPanel({enrollment, setEnrollment}) {
     const student = enrollmentData.student;
     const prenoms = student.first_name;
     const nom = student.last_name;
+
+    const canDownloadBulletin = [ROLES.DEPARTMENT_HEAD,ROLES.DEPARTMENT_SECRETARY,ROLES.REGISTRAR_OFFICER].includes(role)
     return (
         <>
             {!isLoading ? (
@@ -74,9 +80,13 @@ function HistoryResultPanel({enrollment, setEnrollment}) {
                                 </div>
                             </div>
                         </div>
-                        {/* <div className="mr-4">
-                            Moyenne générale
-                        </div> */}
+                        {canDownloadBulletin && <Button
+                        variant="secondary"
+                        onClick={()=>downloadBulletin(enrollment)}
+                        className="mr-2"
+                        >
+                            télécharger Relevé
+                        </Button>}
                     </div>
                     {/* results */}
                     {enrollmentResultData?.length > 0 &&

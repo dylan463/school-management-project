@@ -9,7 +9,7 @@ from collections import defaultdict
 from .query import attend_to_assessment,has_no_grade_in_assessment,promoted_people,people_with_course_debt
 from structures.models import User,Formation,Semester,SchoolYear
 from notifications.utils import create_notification
-
+from .task import create_notifications_for_assessment
 # ----------------- enrollment -----------------
 
 @transaction.atomic
@@ -183,6 +183,8 @@ def create_assessment(data: dict):
         )
     
     Grade.objects.bulk_create(to_create)
+
+    create_notifications_for_assessment(examen)
 
     return examen
 

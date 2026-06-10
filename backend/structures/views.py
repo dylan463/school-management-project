@@ -79,6 +79,12 @@ class MentionViewSet(ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ["text","code"]
 
+    def get_permissions(self):
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
+        else:
+            return [IsDepartmentStaff()]
+
     def get_queryset(self):
         user = self.request.user
         return get_mention_queryset(user).order_by('id')
@@ -105,11 +111,10 @@ class FormationViewSet(ModelViewSet):
         return get_formation_queryset(user).order_by('id')
     
     def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permissions = [IsDepartmentStaff]
-        return [permission() for permission in permissions]
+            return [IsDepartmentStaff()]
 
     def paginate_queryset(self, queryset):
         if self.request.query_params.get("no_pagination") == "true":
@@ -145,11 +150,10 @@ class SemesterViewSet(ModelViewSet):
     filterset_class = SemesterFilter
 
     def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permissions = [IsDepartmentStaff]
-        return [permission() for permission in permissions]
+            return [IsDepartmentStaff()]
 
     def get_queryset(self):
         user = self.request.user
@@ -188,11 +192,10 @@ class SchoolYearViewSet(ModelViewSet):
     filterset_class = SchoolYearFilter
 
     def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permissions = [IsDepartmentStaff]
-        return [permission() for permission in permissions]
+            return [IsDepartmentStaff()]
 
     def get_queryset(self):
         user = self.request.user
@@ -246,11 +249,10 @@ class CourseUnitViewSet(ModelViewSet):
     filterset_class = CourseUnitFilter
 
     def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permissions = [IsDepartmentStaff]
-        return [permission() for permission in permissions]
+            return [IsDepartmentStaff()]
     
     def get_serializer_class(self):
         if self.action == "list":
@@ -295,11 +297,10 @@ class CourseModuleViewSet(ModelViewSet):
             return CourseModuleCreateSerializer
 
     def get_permissions(self):
-        if self.action == 'list':
-            permissions = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permissions = [IsAcademicStaff]
-        return [permission() for permission in permissions]
+            return [IsDepartmentStaff()]
         
     def get_queryset(self):
         user = self.request.user

@@ -53,11 +53,10 @@ class ScheduleEntryViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.Destroy
         return get_schedule_entry_queryset(user).order_by("id")
     
     def get_permissions(self):
-        if self.action == 'list':
-            permission_classes = [IsInMention]
+        if self.action in ['list',"retrieve"]:
+            return [IsInMention()]
         else:
-            permission_classes = [IsDepartmentStaff]
-        return [permission() for permission in permission_classes]
+            return [IsDepartmentStaff()]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -81,7 +80,7 @@ class TeacherAvailabilityViewSet(GenericViewSet,mixins.CreateModelMixin,mixins.D
         return get_teacher_availability_queryset(user).order_by("id")
     
     def get_permissions(self):
-        if self.action in ["list","destroy"]:
+        if self.action in ["list","destroy","retrieve"]:
             permission_classes = [IsAcademicStaff]
         else:
             permission_classes = [IsTeacher]

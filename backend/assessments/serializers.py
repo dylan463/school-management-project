@@ -71,45 +71,82 @@ class GradeSerializer(serializers.ModelSerializer):
         fields = ["id","assessment","student","school_year","score"]
         read_only_fields = ["id"]
 
-
 class BulletinSerializer(serializers.ModelSerializer):
-    student = serializers.SerializerMethodField()
-    bulletin = serializers.SerializerMethodField()
-    formation = serializers.CharField(source="formation.code")
-    school_year = serializers.CharField(source="school_year.label")
-    semester = serializers.CharField(source="semester.code")
+    matrix = serializers.SerializerMethodField()
 
     class Meta:
         model = Enrollment
-        fields = ["id", "student", "formation", "school_year", "semester", "bulletin"]
+        fields = ["matrix"]
         read_only_fields = fields
 
-    def get_student(self, obj):
-        student = obj.student
-        return {
-            "id": student.id,
-            "username": student.username,
-            "full_name": student.get_full_name(),  # utilise la méthode Django
-        }
+    def get_matrix(self, obj):
+        enrollmentresults = obj.enrollment_results.all()
 
-    def get_bulletin(self, obj):
-        # Utilise le prefetch fait en amont — aucune query supplémentaire
-        results = obj.enrollment_results.all()
-        bulletin = defaultdict(dict)
-        for result in results:
-            unit = result.course_module.course_unit.text
-            module = result.course_module.text
-            bulletin[unit][module] = {
-                "score": result.final_score,
-                "credit": result.course_module.credits,
-                "status": result.status,
+        cours_units = []
+        matrix = {}
+
+        total_score = 0
+        total_credit = 0
+
+        for er in enrollmentresults:
+            course_unit = er.course_module.course_unit.text
+            course_module = er.course_module.text
+            score = er.final_score
+            credit = er.course_module.credits
+            status = er.status
+
+            if course_unit not in matrix:
+                matrix[course_unit] = {}
+
+            matrix[course_unit][course_module] = {
+                "score": score,
+                "credit": credit,
+                "status": status,
             }
-        return bulletin
+
+            unit = next(
+                (u for u in cours_units if u["label"] == course_unit),
+                None
+            )
+
+            if unit is None:
+                unit = {
+                    "label": course_unit,
+                    "modules": [],
+                    "total_score": 0,
+                    "total_credit": 0,
+                    "validated": True,
+                }
+                cours_units.append(unit)
+
+            total_score += score * credit
+            total_credit += credit
+
+            unit["total_score"] += score * credit
+            unit["total_credit"] += credit
+
+            if status == "NOT_VALIDATED":
+                unit["validated"] = False
+
+            unit["modules"].append(course_module)
+
+        return {
+            "coursUnits": cours_units,
+            "map": matrix,
+            "totalScore": total_score,
+            "totalCredit": total_credit,
+            "average": (
+                total_score / total_credit
+                if total_credit > 0
+                else 0
+            ),
+        }
     
 class GradeGridSerializer(serializers.Serializer):
     formation = serializers.IntegerField(write_only=True)
     semester = serializers.IntegerField(write_only=True)
     school_year = serializers.IntegerField(write_only=True)
+    results = serializers.SerializerMethodField()
 
     def validate(self, attrs):
         # Confirm the formation/semester/school_year combo actually exists
@@ -146,12 +183,11 @@ class GradeGridSerializer(serializers.Serializer):
                 "student_full_name": result.enrollment.student.get_full_name(),
                 "course_unit": result.course_module.course_unit.text,
                 "course_module": result.course_module.text,
-                "score": result.final_score,
-                "credit": result.course_module.credits,
-                "status": result.status,
+                "score": result.final_score * result.course_module.credits
             }
             for result in enrollment_results
         ]
+    
 class EnrollmentResultSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="enrollment.student.get_full_name")
     course_credit = serializers.CharField(source="course_module.credits")

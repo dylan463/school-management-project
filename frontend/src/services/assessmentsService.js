@@ -24,6 +24,11 @@ export const enrollmentService = {
   },
   changeStatus: async ({ id, data }) => {
     const response = await api.post(`/assessments/enrollments/${id}/change_status/`, data)
+    return response.data
+  },
+  bulletin: async (id) => {
+    const response = await api.post(`/assessments/enrollments/${id}/bulletin/`)
+    return response.data
   }
 }
 
@@ -94,13 +99,6 @@ export const debtService = {
     const response = await api.get(`/assessments/debts/?${params.toString()}`)
     return response.data
   },
-}
-
-export const BulletinService = {
-  retrive: async (id) => {
-    const response = await api.get(`/assessments/enrollments/${id}/bulletin/`)
-    return response.data
-  }
 }
 
 export const gridService = {

@@ -50,7 +50,7 @@ class EnrollmentViewSet(ModelViewSet):
     filterset_class = EnrollmentFilter
 
     def get_permissions(self):
-        if self.action == 'list':
+        if self.action in ['list',"retrieve"]:
             permissions = [IsInMention]
         else:
             permissions = [IsDepartmentStaff]
@@ -87,6 +87,24 @@ class EnrollmentViewSet(ModelViewSet):
         enrollment = self.get_object()
         delete_enrollment(enrollment)
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(methods=["post"],detail=True)
+    def bulletin(self,request,pk=None):
+        instance = self.get_object()
+        enrollment = Enrollment.objects.filter(id=instance.id).select_related(
+                "student", "formation", "school_year", "semester"
+            ).prefetch_related(
+                Prefetch(
+                    "enrollment_results",
+                    queryset=EnrollmentResult.objects.select_related(
+                        "course_module",
+                        "course_module__course_unit",
+                    ),
+                )
+            ).first()
+        serializer = BulletinSerializer(enrollment)
+        return Response(serializer.data)
+
 
 
 class AssessmentViewSet(ModelViewSet):
@@ -100,7 +118,7 @@ class AssessmentViewSet(ModelViewSet):
         return get_assessment_queryset(user)
     
     def get_permissions(self):
-        if self.action == "list":
+        if self.action in ['list',"retrieve"]:
             return [IsInMention()]
         else:
             return [IsDepartmentStaff()]
@@ -148,7 +166,7 @@ class GradeViewSet(ModelViewSet):
         return super().paginate_queryset(queryset)
 
     def get_permissions(self):
-        if self.action == "list":
+        if self.action in ['list',"retrieve"]:
             return [IsInMention()]
         else:
             return [IsDepartmentStaff()]
@@ -176,7 +194,7 @@ class ResultViewSet(GenericViewSet,mixins.ListModelMixin):
         return super().paginate_queryset(queryset)
 
     def get_permissions(self):
-        if self.action == "list":
+        if self.action in ['list',"retrieve"]:
             return [IsInMention()]
         else:
             return [IsDepartmentStaff()]
@@ -202,30 +220,10 @@ class DebtViewSet(GenericViewSet,mixins.ListModelMixin):
         return super().paginate_queryset(queryset)
     
     def get_permissions(self):
-        if self.action == "list":
+        if self.action in ['list',"retrieve"]:
             return [IsInMention()]
         else:
             return [IsDepartmentStaff()]
-
-
-class BulletinView(generics.RetrieveAPIView):
-    serializer_class = BulletinSerializer
-
-    def get_queryset(self):
-        return (
-            Enrollment.objects.select_related(
-                "student", "formation", "school_year", "semester"
-            )
-            .prefetch_related(
-                Prefetch(
-                    "enrollment_results",
-                    queryset=EnrollmentResult.objects.select_related(
-                        "course_module",
-                        "course_module__course_unit",
-                    ),
-                )
-            )
-        )
 
 class GradeGridView(generics.GenericAPIView):
     def get(self, request):

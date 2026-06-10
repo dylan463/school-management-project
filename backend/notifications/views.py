@@ -19,4 +19,9 @@ class NotificationView(GenericViewSet,mixins.ListModelMixin,mixins.DestroyModelM
     def unread_count(self,request):
         count = self.get_queryset().filter(is_read=False).count()
         return Response({"count": count}, status=status.HTTP_200_OK)
+    
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        notifications = Notification.objects.filter(user=user,is_read=False).update(is_read=True)
+        return super().list(request, *args, **kwargs)
 

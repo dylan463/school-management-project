@@ -14,7 +14,8 @@ const CheckIcon = () => (
 );
 
 export default function Notifications() {
-  const { data: notifications = [], isLoading, isError } = useNotifications();
+  const { data: notifData, isLoading, isError } = useNotifications();
+  const notifications = notifData?.results || []
 
   if (isLoading) {
     return (

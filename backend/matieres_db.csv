@@ -1,0 +1,204 @@
+﻿Nom_matiere,UE,Semestre
+Algebre 1,PTCOxxxMATHMING,S1
+Algebre 2,PTCOxxxMATHMING,S2
+Algèbre 3,PTCOxxxMATHMING,S3
+Théorie des nommbres 1,PTCOxxxMATHMING,S4
+Fonctions spéciales,PTCOxxxMATHMING,S5
+Analyse 1,PTCOxxxMATHMING,S1
+Analyse 2,PTCOxxxMATHMING,S2
+Analyse 3,PTCOxxxMATHMING,S3
+Analyse 4,PTCOxxxMATHMING,S4
+Calcul vectoriel,PTCOxxxMATHMING,S1
+Calcul Integral,PTCOxxxMATHMING,S2
+Calcul numérique,PTCOxxxMATHMING,S3
+Analyse numérique,PTCOxxxMATHMING,S4
+Physique mathématique (distribution),PTCOxxxMATHMING,S5
+Modèles mathématiques de la physique,PTCOxxxMATHMING,S7
+Mathématiques appliquées aux communications,PTCOxxxMATHMING,S8
+Géométrie analytique,PTCOxxxMATHMING,S3
+Probabilité & statistique 1,PTCOxxxMATHMING,S3
+Probabilité & Statistique 2,PTCOxxxMATHMING,S4
+Variable aléatoire,PTCOxxxMATHMING,S5
+Processus aléatoire,PTCOxxxMATHMING,S6
+Théorie des files d’attente,PTCOxxxMATHMING,S7
+Télé-trafic,PTCOxxxMATHMING,S8
+Théorie des graphes,PTCOxxxMATHMING,S7
+Recherche opérationnelle,PTCOxxxMATHMING,S8
+Sciences cognitives,PTCOxxxMATHMING,S8
+Electrostatique,PTCOxxxSYSTPHYS,S1
+Electrocinétique des courants continus,PTCOxxxSYSTPHYS,S2
+Electrocinétique des courants variables,PTCOxxxSYSTPHYS,S3
+Electromagnétisme,PTCOxxxSYSTPHYS,S4
+Mecanique generale 1,PTCOxxxSYSTPHYS,S1
+Mecanique generale 2,PTCOxxxSYSTPHYS,S2
+Quadripôle et filtre,PTCOxxxSYSTPHYS,S3
+Chimie Generale 1,PTCOxxxSYSTPHYS,S1
+Chimie Generale 2,PTCOxxxSYSTPHYS,S2
+Optique physique,PTCOxxxSYSTPHYS,S1
+Optique geometrique,PTCOxxxSYSTPHYS,S2
+Ondes électromagnétiques,PTCOxxxSYSTPHYS,S4
+Ondes acoustiques et élastiques,PTCOxxxSYSTPHYS,S5
+Hyperfréquence,PTCOxxxSYSTPHYS,S7
+Technique micro-onde,PTCOxxxSYSTPHYS,S8
+Onde millimétrique,PTCOxxxSYSTPHYS,S10
+Propagation radioélectrique,PTCOxxxSYSTPHYS,S4
+Canal et Modèle de propagation,PTCOxxxSYSTPHYS,S7
+Compatibilité électromagnétique,PTCOxxxSYSTPHYS,S8
+Simulation OEM,PTCOxxxSYSTPHYS,S10
+Thermodynamique 1,PTCOxxxSYSTPHYS,S1
+Thermodynamique 2,PTCOxxxSYSTPHYS,S2
+Antennes,PTCOxxxSYSTPHYS,S5
+Modélisation d’antenne,PTCOxxxSYSTPHYS,S8
+Réseaux d’antenne,PTCOxxxSYSTPHYS,S10
+Energie et sécurité des sites 1,PTCOxxxSYSTPHYS,S6
+RFID - CPL,PTCOxxxSYSTPHYS,S7
+Différence finie,PTCOxxxSYSTPHYS,S6
+Modélisation des systèmes physiques,PTCOxxxSYSTPHYS,S8
+Algorithmique,PTCOxxxELEANANU,S1
+Technique de programmation,PTCOxxxELEANANU,S2
+Circuits combinatoires,PTCOxxxELEANANU,S3
+Circuits séquentiels,PTCOxxxELEANANU,S4
+Circuits mémoires et logiques programmables,PTCOxxxELEANANU,S5
+Dessin technique 1,PTCOxxxELEANANU,S1
+Dessin technique 2,PTCOxxxELEANANU,S2
+Composants électroniques,PTCOxxxELEANANU,S3
+Electronique de puissance,PTCOxxxELEANANU,S6
+Fonction de l’électronique analogique,PTCOxxxELEANANU,S3
+Fonction d’amplification,PTCOxxxELEANANU,S4
+Fonction de l’électronique intégrée,PTCOxxxELEANANU,S5
+Simulation et réalisation avancées en électronique,PTCOxxxELEANANU,S6
+Outils de simulation en TCO,PTCOxxxELEANANU,S6
+Signaux et circuit électrique,PTCOxxxELEANANU,S3
+Technologie des circuits numériques,PTCOxxxELEANANU,S4
+Théorie et Traitement du signal,PTCOxxxAUTSIMUL,S3
+Traitement numérique du signal,PTCOxxxAUTSIMUL,S4
+Traitement d’images,PTCOxxxAUTSIMUL,S6
+Traitement d’image couleur,PTCOxxxAUTSIMUL,S7
+Traitement du son,PTCOxxxAUTSIMUL,S8
+Imagerie numérique et vision par ordinateur,PTCOxxxAUTSIMUL,S10
+Tatouage & Stéganographie,PTCOxxxAUTSIMUL,S10
+Initiation à MATLAB,PTCOxxxAUTSIMUL,S3
+Technique de compression de l'information,PTCOxxxAUTSIMUL,S6
+Multimédia,PTCOxxxAUTSIMUL,S7
+Techniques d’acquisition en Imagerie médicale,PTCOxxxAUTSIMUL,S10
+Télédétection et SIG,PTCOxxxAUTSIMUL,S8
+Cryptage des signaux et images,PTCOxxxAUTSIMUL,S10
+Systèmes linéaires continus,PTCOxxxAUTSIMUL,S3
+Systèmes linéaires discrets,PTCOxxxAUTSIMUL,S5
+Analyse et synthèse des systèmes multivariables,PTCOxxxAUTSIMUL,S8
+Représentation d’état des systèmes linéaires multi-variables,PTCOxxxAUTSIMUL,S10
+Signaux et systèmes à temps discret,PTCOxxxAUTSIMUL,S4
+Asservissement analogique,PTCOxxxAUTSIMUL,S5
+Asservissement numérique,PTCOxxxAUTSIMUL,S7
+Commande optimale et modal des systèmes linéaires,PTCOxxxAUTSIMUL,S8
+Modélisation des systèmes incertains,PTCOxxxAUTSIMUL,S10
+Administration système Windows,PTCOxxxINFRESSI,S3
+Administration système Linux,PTCOxxxINFRESSI,S4
+Administration Réseau sous Linux,PTCOxxxINFRESSI,S5
+Sécurité des réseaux informatiques,PTCOxxxINFRESSI,S10
+Réseaux informatiques,PTCOxxxINFRESSI,S3
+Conception des réseaux d’entreprise,PTCOxxxINFRESSI,S7
+Théories de Simulation des réseaux,PTCOxxxINFRESSI,S8
+Réseaux TCP/IP,PTCOxxxINFRESSI,S3
+Réseaux TCP/IP2,PTCOxxxINFRESSI,S4
+Commutation dans les réseaux informatiques,PTCOxxxINFRESSI,S5
+Routage dans les réseaux informatiques,PTCOxxxINFRESSI,S6
+MPLS,PTCOxxxINFRESSI,S10
+Réseaux sans fil,PTCOxxxINFRESSI,S6
+Réseaux intelligents,PTCOxxxINFRESSI,S10
+Réseaux hauts débits,PTCOxxxINFRESSI,S7
+Interconnexion des réseaux,PTCOxxxINFRESSI,S8
+Intelligence artificielle et DeepLearning,PTCOxxxINFRESSI,S10
+Normes et Protocoles,PTCOxxxINFRESSI,S10
+SDN - LAN,PTCOxxxINFRESSI,S8
+Structure de données,PTCOxxxINFRESSI,S3
+Programmation orientées Objet,PTCOxxxINFRESSI,S4
+Technique de programmation JAVA,PTCOxxxINFRESSI,S3
+Programmation avancée sous Python,PTCOxxxINFRESSI,S5
+Analyse des données sous Python,PTCOxxxINFRESSI,S6
+Architecture des sysytèmes informatiques,PTCOxxxINFRESSI,S3
+Assembleur et Microprocesseurs,PTCOxxxINFRESSI,S3
+Interfaces et Microcontrôleurs,PTCOxxxINFRESSI,S4
+SI et MERISE,PTCOxxxINFRESSI,S3
+SGBD 1,PTCOxxxINFRESSI,S4
+Développement d’application d’entreprise,PTCOxxxINFRESSI,S5
+Développement d’application mobile,PTCOxxxINFRESSI,S7
+UML,PTCOxxxINFRESSI,S4
+Technologie web,PTCOxxxINFRESSI,S3
+WEB DYNAMIQUE,PTCOxxxINFRESSI,S4
+Web avancé,PTCOxxxINFRESSI,S6
+Théorie de l'information et codage,PTCOxxxTELECOMM,S3
+Cryptographie,PTCOxxxTELECOMM,S4
+Codage source et Codage canal,PTCOxxxTELECOMM,S7
+Initiation aux Télécommunications,PTCOxxxTELECOMM,S5
+Réseau des TCO,PTCOxxxTELECOMM,S7
+Radiocommunication mobile 2G,PTCOxxxTELECOMM,S6
+Evolution de la Radiocommunication mobile,PTCOxxxTELECOMM,S7
+Réseaux 3G,PTCOxxxTELECOMM,S8
+Réseaux 4G,PTCOxxxTELECOMM,S10
+Réseaux 5G,PTCOxxxTELECOMM,S10
+Faisceaux hertziens analogiques,PTCOxxxTELECOMM,S5
+Faisceaux hertziens numériques,PTCOxxxTELECOMM,S7
+Faisceau hertzien optique,PTCOxxxTELECOMM,S10
+Télécommunication spatiale,PTCOxxxTELECOMM,S10
+Supports de transmission,PTCOxxxTELECOMM,S3
+Télécommunication aéronautique,PTCOxxxTELECOMM,S10
+Télécommunication Maritime,PTCOxxxTELECOMM,S10
+Méthodes et Techniques d’accès,PTCOxxxTELECOMM,S4
+Techniques de modulation et d’accès avancées,PTCOxxxTELECOMM,S8
+Télécommunication militaire (PMR),PTCOxxxTELECOMM,S10
+Technique d’allocation de ressource radio,PTCOxxxTELECOMM,S8
+"Ingénierie, planification et QoS des réseaux de TCO",PTCOxxxTELECOMM,S10
+Infrastructure et liaison des systèmes de TCO,PTCOxxxTELECOMM,S10
+Emetteur-Récepteur,PTCOxxxTELECOMM,S4
+Système de radiodiffusion et télédiffusion,PTCOxxxTELECOMM,S6
+Simulation des systèmes de TCO,PTCOxxxTELECOMM,S8
+Radio cognitive,PTCOxxxTELECOMM,S10
+Télévision numérique,PTCOxxxTELECOMM,S10
+Communication Analogique,PTCOxxxTELECOMM,S4
+Introduction aux communications numériques,PTCOxxxTELECOMM,S5
+Communication numérique,PTCOxxxTELECOMM,S7
+Technologie MIMO,PTCOxxxTELECOMM,S8
+IoT,PTCOxxxTELECOMM,S10
+NGN,PTCOxxxTELECOMM,S10
+Téléphonie fixe,PTCOxxxTELECOMM,S5
+Commutation électronique 1,PTCOxxxTELECOMM,S6
+Intégration téléphonie informatique - VoIP,PTCOxxxTELECOMM,S8
+SDR,PTCOxxxTELECOMM,S10
+BigData,PTCOxxxTELECOMM,S10
+Communication Optique 1,PTCOxxxTELECOMM,S6
+Optoélectronique,PTCOxxxTELECOMM,S8
+TCO par fibre optique,PTCOxxxTELECOMM,S10
+Technique de Communication anglaise  1,PTCOxxxLANCOMCI,S4
+Anglais  dans le domaine de la Télécommunication 1,PTCOxxxLANCOMCI,S6
+Business english 1,PTCOxxxLANCOMCI,S8
+Business english 2,PTCOxxxLANCOMCI,S10
+Technique de communication française 1,PTCOxxxLANCOMCI,S4
+Technique de rédaction  française 1,PTCOxxxLANCOMCI,S6
+Communication française,PTCOxxxLANCOMCI,S8
+Expression française,PTCOxxxLANCOMCI,S10
+Management et leadership,PTCOxxxECOMAEND,S3
+Gestion des projets,PTCOxxxECOMAEND,S5
+Business plan,PTCOxxxECOMAEND,S7
+Management des ressources humaines et gestion du temps en TCO,PTCOxxxECOMAEND,S10
+Economie numérique,PTCOxxxECOMAEND,S3
+Economie des TCO,PTCOxxxECOMAEND,S5
+Culture de l’ingénieur,PTCOxxxECOMAEND,S7
+Techniques de négociation,PTCOxxxECOMAEND,S10
+MTU,PTCOxxxECOMAEND,S3
+Outils d’aide à la décision,PTCOxxxECOMAEND,S5
+Loi sur la Cybercriminalité et Cybersécurité,PTCOxxxECOMAEND,S7
+Droit et régulation des TCO,PTCOxxxECOMAEND,S10
+ATELIER  S4,PTCOxxxPROASTAM,S4
+ATELIER  S5,PTCOxxxPROASTAM,S5
+ATELIER  S7,PTCOxxxPROASTAM,S7
+ATELIER  S8,PTCOxxxPROASTAM,S8
+PROJET,PTCOxxxPROASTAM,S4
+PROJET S5,PTCOxxxPROASTAM,S5
+PROJET S7,PTCOxxxPROASTAM,S7
+PROJET S8,PTCOxxxPROASTAM,S8
+STAGE L3,PTCOxxxPROASTAM,S6
+STAGE M2,PTCOxxxPROASTAM,S9
+MEMOIRE Licence,PTCOxxxPROASTAM,S6
+MEMOIRE Master,PTCOxxxPROASTAM,S10
+VOYAGE D'ETUDES,PTCOxxxPROASTAM,S7

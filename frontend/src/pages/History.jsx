@@ -1,12 +1,17 @@
 import HistoryPanel from "../components/panel/HistoryPanel"
 import HistoryResultPanel from "../components/panel/HistoryResultPanel"
 import { useQueryParams } from "../hooks/useQueryParams"
+import HistoryGradeGridPanel from "../components/panel/HistoryGradeGridPanel"
+import { useAuth } from "../context/AuthContext"
+import { ROLES, ROUTES } from "../utils/constants"
 
 
 const History = () => {
   const {enrollment, setEnrollment } = useQueryParams({
     enrollment: { key: "enrollment", type: "string", default: "" },
   });
+  const {role} =  useAuth()
+  const canSeeGrid = [ROLES.DEPARTMENT_HEAD,ROLES.DEPARTMENT_SECRETARY,ROLES.REGISTRAR_OFFICER].includes(role)
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <section className="space-y-4">
@@ -19,6 +24,7 @@ const History = () => {
           </p>
         </div>
         <HistoryPanel enrollment={enrollment} setEnrollment={setEnrollment}/>
+        {canSeeGrid && <HistoryGradeGridPanel/>}
       </section>
       <HistoryResultPanel enrollment={enrollment} setEnrollment={setEnrollment}/>
     </div>

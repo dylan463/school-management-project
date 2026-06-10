@@ -494,6 +494,8 @@ class ManagementDashboardAPIView(APIView):
             "recent_imports": recent_imports
         })
 
+from assessments.models import EnrollmentResult
+
 class StudentDashboardAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -503,60 +505,28 @@ class StudentDashboardAPIView(APIView):
             return Response({"detail": "Non autorisé."}, status=status.HTTP_403_FORBIDDEN)
         
         # Inscriptions actives
-        active_enrollments = Enrollment.objects.filter(student=user, status=Enrollment.Status.ACTIVE).select_related('semester', 'formation')
+        enrollments = Enrollment.objects.filter(student=user).select_related('semester', 'formation').order_by('opened_at')
+        last_enrollment = enrollments.last()
+        if not last_enrollment:
+            return Response({"detail": "Aucune donnée."}, status=status.HTTP_200_OK)
+        course_modules = CourseModule.objects.filter(semester=last_enrollment.semester,course_unit__formation=last_enrollment.formation)
         
-        # Trouver les modules liés à ces inscriptions
-        active_semesters = active_enrollments.values('semester')
-        active_formations = active_enrollments.values('formation')
+        modules = {}
 
-        modules = CourseModule.objects.filter(
-            semester__in=active_semesters, 
-            course_unit__formation__in=active_formations, 
-            is_active=True
-        )
-        active_modules_count = modules.count()
+        modules["total"] = course_modules.count()
+        modules["current"] = EnrollmentResult.objects.filter(enrollment=last_enrollment,course_module__in=course_modules,status__in=["VALIDATED","VALIDATED_AFTER_RETAKE"]).distinct().count()
 
-        # Examens à venir pour ces modules
-        upcoming_exams = Assessment.objects.filter(
-            course_module__in=modules,
-            date__gte=datetime.date.today()
-        ).count()
+        semesters = {}
 
-        # Dernières notes
-        recent_grades_qs = Grade.objects.filter(
-            enrollment__student=user
-        ).select_related('assessment', 'assessment__course_module').order_by('-id')[:5]
+        semesters["total"] = Semester.objects.all().count()
+        semesters["current"] = Semester.objects.filter(enrollments__in=enrollments.filter(status="VALIDATED")).distinct().count()
 
-        recent_grades = []
-        for grade in recent_grades_qs:
-            recent_grades.append({
-                "id": grade.id,
-                "module": grade.assessment.course_module.text,
-                "assessment_name": grade.assessment.name,
-                "score": grade.score,
-                "date": grade.assessment.date
-            })
+        examens = Assessment.objects.filter(school_year=last_enrollment.school_year,course_module__in=course_modules) 
 
-        # Emploi du temps
-        schedule_entries = ScheduleEntry.objects.filter(
-            course_module__in=modules
-        ).select_related('course_module', 'course_module__course_unit__formation', 'schedule__semester').order_by('day', 'start_time')
-
-        weekly_schedule = []
-        for entry in schedule_entries:
-            weekly_schedule.append({
-                "id": entry.id,
-                "day": entry.get_day_display(),
-                "start_time": entry.start_time.strftime("%H:%M"),
-                "end_time": entry.end_time.strftime("%H:%M"),
-                "classe": entry.course_module.course_unit.formation.code,
-                "ec": entry.course_module.text,
-                "room": entry.classroom
-            })
+        examDate = [e.date for e in examens]
 
         return Response({
-            "active_modules_count": active_modules_count,
-            "upcoming_exams": upcoming_exams,
-            "recent_grades": recent_grades,
-            "weekly_schedule": weekly_schedule
+            "modules": modules,
+            "semesters": semesters,
+            "examDates": examDate
         })

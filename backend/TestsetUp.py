@@ -1,10 +1,14 @@
 import os
 import django
+import pandas as pd
+import re
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from structures.models import User, Role, Formation, Semester, SchoolYear, Mention
+from structures.user_services import create_user
+from assessments.services import create_enrollment
+from structures.models import User, Role, Formation, Semester, SchoolYear, Mention,CourseModule,CourseUnit
 
 class SystemAdmin:
     email = "sysadmin@gmail.com"
@@ -39,7 +43,7 @@ def create_tco_head():
     try:
         mention = Mention.objects.get(text="Informatique")
     except Mention.DoesNotExist:
-        mention = Mention.objects.create(
+        mention,_ = Mention.objects.get_or_create(
             text="Télécommunication",
             code="TCO"
             )
@@ -63,31 +67,106 @@ def create_tco_head():
 
 def setup_database_structure():
     """Setup database structure for testing"""
-    try:
-        mention = Mention.objects.get(code="TCO")
-    except Mention.DoesNotExist:
-        mention = Mention.objects.create(
-            text="Télécommunication",
-            code="TCO"
-            )
-
-    formation = Formation.objects.create(
-        text="RS",
-        code="rs",
-        mention=mention
-    )
-    semester = Semester.objects.create(
-        code="S1",
-        order=1,
-        mention=mention
-    )
-    school_year = SchoolYear.objects.create(
+    mention,_ = Mention.objects.get_or_create(
+        text="Télécommunication",
+        code="TCO"
+        )
+    school_year,_ = SchoolYear.objects.get_or_create(
         text="2026-2027",
         mention=mention
     )
+
+
+def enterStudents():
+    """setup users"""
+    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\listeTCO.csv"
+    df = pd.read_csv(file_name)[:20]
+    total = len(df)
+    current = 0
+    mention,_ = Mention.objects.get_or_create(
+        text="Télécommunication",
+        code="TCO"
+        )
+    school_year,_ = SchoolYear.objects.get_or_create(
+        text="2026-2027",
+        mention=mention
+    )
+    for i, row in df.iterrows():
+        try:
+            order = int(re.search(r"\d+", row["Niveau"]).group()) * 2 - 1
+            code = f"S{order}"
+
+            semester, _ = Semester.objects.get_or_create(
+                code=code,
+                order=order,
+                mention=mention
+            )
+            code = row["Formation"]
+            formation , _ = Formation.objects.get_or_create(
+                code=code,
+                text=code,
+                mention=mention
+            )
+            role = Role.STUDENT
+
+            first_name = row["Prenom"]
+            last_name = row["Nom"]
+            email = row["email"]
+            student = create_user(first_name,last_name,email,role,mention,no_email=False)
+            create_enrollment(student,school_year,semester,formation,no_notification=False)
+        except Exception as e:
+            print(str(e))
+        finally:
+            current += 1
+            if i%10 == 0:
+                print(f"progression de creation d'utilisateur: {current}/{total}")
+
+
+def enterEC():
+    mention,_ = Mention.objects.get_or_create(
+        text="Télécommunication",
+        code="TCO"
+        )
+
+    formation , _= Formation.objects.get_or_create(code="ACAD",text="ACAD",mention=mention)
+    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\matieres_db.csv"
+    df = pd.read_csv(file_name)
+    total= len(df)
+    current = 0
+    for i,row in df.iterrows():
+        try:
+            code= row["Semestre"]
+            order = int(re.search(r"\d+",code).group())
+            semester,_ = Semester.objects.get_or_create(code=code,order=order,mention=mention)
+
+            code = row["UE"]
+
+            couse_unit , _ = CourseUnit.objects.get_or_create(
+                code=code,
+                text=code,
+                formation=formation
+            )
+
+            text = row['Nom_matiere']
+
+            CourseModule.objects.create(
+                text=text,
+                code=text,
+                course_unit= couse_unit,
+                semester=semester
+            )
+        except :
+            pass
+        finally:
+            current+=1
+            if i%10 == 0:
+                print(f"progression de creation de matière : {current}/{total}")
+
 
 
 if __name__ == "__main__":
     create_system_admin()
     create_tco_head()
     setup_database_structure()
+    enterStudents()
+    enterEC()

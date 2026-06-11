@@ -4,7 +4,7 @@ services:
     build: ./backend
     container_name: django
     ports:
-      - "18000:8000"
+      - "8000:8000"
     volumes:
       - ./backend:/app
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
@@ -30,4 +30,4 @@ services:
     image: redis:7
     container_name: redis
     ports:
-      - "6380:6379"
+      - "6379:6379"

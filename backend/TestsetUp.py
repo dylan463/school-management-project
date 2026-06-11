@@ -91,6 +91,7 @@ def enterStudents():
         text="2026-2027",
         mention=mention
     )
+    role = Role.STUDENT 
     for i, row in df.iterrows():
         try:
             order = int(re.search(r"\d+", row["Niveau"]).group()) * 2 - 1
@@ -107,7 +108,6 @@ def enterStudents():
                 text=code,
                 mention=mention
             )
-            role = Role.STUDENT
 
             first_name = row["Prenom"]
             last_name = row["Nom"]
@@ -115,7 +115,7 @@ def enterStudents():
             student = create_user(first_name,last_name,email,role,mention,no_email=False)
             create_enrollment(student,school_year,semester,formation,no_notification=False)
         except Exception as e:
-            print(str(e))
+            pass
         finally:
             current += 1
             if i%10 == 0:
@@ -163,6 +163,29 @@ def enterEC():
                 print(f"progression de creation de matière : {current}/{total}")
 
 
+def enterTeachers():
+    """setup users"""
+    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\professeurs.csv"
+    df = pd.read_csv(file_name)
+    total = len(df)
+    current = 0
+    mention,_ = Mention.objects.get_or_create(
+        text="Télécommunication",
+        code="TCO"
+        )
+    role = Role.TEACHER
+    for i, row in df.iterrows():
+        try:
+            first_name = row["Prenoms"]
+            last_name = row["Nom"]
+            email = row["email"]
+            teacher = create_user(first_name,last_name,email,role,mention,no_email=False)
+        except Exception as e:
+            pass
+        finally:
+            current += 1
+            print(f"progression de creation d'utilisateur: {current}/{total}")    
+
 
 if __name__ == "__main__":
     create_system_admin()
@@ -170,3 +193,4 @@ if __name__ == "__main__":
     setup_database_structure()
     enterStudents()
     enterEC()
+    enterTeachers()

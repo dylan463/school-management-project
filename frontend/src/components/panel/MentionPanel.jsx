@@ -204,7 +204,7 @@ export default function MentionPanel() {
     Math.ceil((data?.count || 0) / PAGINATION_SIZE)
   );
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Nom", key: "text" },
     { header: "Code", key: "code" }
   ]
@@ -224,7 +224,7 @@ export default function MentionPanel() {
     <Card>
       <div className="px-2 py-2 flex justify-between">
         <SearchInput
-          placeholder="rechercher une mention"
+          placeholder="Rechercher une mention"
           className="w-[200px]"
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
@@ -235,7 +235,7 @@ export default function MentionPanel() {
             openModal({ title: "ajouter une mention", content: <AddOrEditForm onSuccess={closeModal} /> })
           }}
         >
-          + ajouter
+          + Ajouter
         </Button>
       </div>
       {isLoading ? (

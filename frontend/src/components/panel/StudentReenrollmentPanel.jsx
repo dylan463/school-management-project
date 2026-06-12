@@ -3,8 +3,8 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import DataTable from "../DataTable";
 import SearchWithDropdown from "../SearchWithDropdown";
-import Filter from "../Filter";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
+import SearchableSelect from "../SearchableSelect";
 import { useStudents } from "../../hooks/students/useStudents";
 import { useEnrollments } from "../../hooks/enrollments/useEnrollments";
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears";
@@ -16,6 +16,14 @@ import { toast } from "react-toastify";
 import { useModal } from "../../context/ModalContext";
 
 function AddEnrollmentForm({ studentId, onSuccess }) {
+  const fdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sydd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 });
+
+  const [selectedFormation, setSelectedFormation] = useState(null);
+  const [selectedSchoolyear, setSelectedSchoolyear] = useState(null);
+  const [selectedSemester, setSelectedSemester] = useState(null);
+
   const [form, setForm] = useState({
     school_year: "",
     formation: "",
@@ -26,9 +34,9 @@ function AddEnrollmentForm({ studentId, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const create = useCreateEnrollment();
 
-  const { data: schoolyearsData, isLoading: isSchoolyearsLoading } = useSchoolyears({ status: "OPEN", no_pagination: true });
-  const { data: formationsData, isLoading: isFormationsLoading } = useFormations({ no_pagination: true });
-  const { data: semestersData, isLoading: isSemestersLoading } = useSemesters({ no_pagination: true });
+  const { data: schoolyearsData, isFetching: isSchoolyearsLoading } = useSchoolyears({ status: "OPEN", no_pagination: true, ...(sydd.query ? { search: sydd.query } : {}) }, { enabled: sydd.enabled });
+  const { data: formationsData, isFetching: isFormationsLoading } = useFormations({ no_pagination: true, ...(fdd.query ? { search: fdd.query } : {}) }, { enabled: fdd.enabled });
+  const { data: semestersData, isFetching: isSemestersLoading } = useSemesters({ no_pagination: true, ...(sdd.query ? { search: sdd.query } : {}) }, { enabled: sdd.enabled });
 
   const schoolyears = schoolyearsData?.results || schoolyearsData || [];
   const formations = formationsData?.results || formationsData || [];
@@ -69,35 +77,59 @@ function AddEnrollmentForm({ studentId, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3 w-[400px]">
       <div className="mb-4 flex flex-col gap-3">
-        <Filter
-          value={form.formation}
+        <SearchableSelect
           label="Parcours"
-          onChange={handleChange}
-          name="formation"
+          selectedValue={selectedFormation}
+          onSelect={(f) => {
+            setSelectedFormation(f);
+            setForm(prev => ({ ...prev, formation: f.id }));
+          }}
+          onClear={() => {
+            setSelectedFormation(null);
+            setForm(prev => ({ ...prev, formation: "" }));
+          }}
           options={formations}
-          otherOptions={[{ key: isFormationsLoading ? "Chargement…" : "Choisissez une formation", value: "" }]}
-          render={(f) => f.text ?? f.code ?? f}
-          className="grid grid-cols-1"
+          renderOption={(op) => op.text}
+          searchDropdownProps={fdd}
+          loading={isFormationsLoading}
+          placeholder="Rechercher un parcours"
+          width="w-full"
         />
-        <Filter
-          value={form.school_year}
-          label="Année scolaire (Ouvertes)"
-          onChange={handleChange}
-          name="school_year"
+        <SearchableSelect
+          label="Année scolaire"
+          selectedValue={selectedSchoolyear}
+          onSelect={(y) => {
+            setSelectedSchoolyear(y);
+            setForm(prev => ({ ...prev, school_year: y.id }));
+          }}
+          onClear={() => {
+            setSelectedSchoolyear(null);
+            setForm(prev => ({ ...prev, school_year: "" }));
+          }}
           options={schoolyears}
-          otherOptions={[{ key: isSchoolyearsLoading ? "Chargement…" : "Choisissez une année", value: "" }]}
-          render={(y) => y.text ?? y.code ?? y}
-          className="grid grid-cols-1"
+          renderOption={(op) => op.text}
+          searchDropdownProps={sydd}
+          loading={isSchoolyearsLoading}
+          placeholder="Rechercher une année"
+          width="w-full"
         />
-        <Filter
-          value={form.semester}
+        <SearchableSelect
           label="Semestre"
-          onChange={handleChange}
-          name="semester"
+          selectedValue={selectedSemester}
+          onSelect={(s) => {
+            setSelectedSemester(s);
+            setForm(prev => ({ ...prev, semester: s.id }));
+          }}
+          onClear={() => {
+            setSelectedSemester(null);
+            setForm(prev => ({ ...prev, semester: "" }));
+          }}
           options={semesters}
-          otherOptions={[{ key: isSemestersLoading ? "Chargement…" : "Choisissez un semestre", value: "" }]}
-          render={(s) => s.code ?? s.order ?? s}
-          className="grid grid-cols-1"
+          renderOption={(op) => op.code}
+          searchDropdownProps={sdd}
+          loading={isSemestersLoading}
+          placeholder="Rechercher un semestre"
+          width="w-full mb-16"
         />
       </div>
 
@@ -117,15 +149,15 @@ function AddEnrollmentForm({ studentId, onSuccess }) {
 export default function StudentReenrollmentPanel() {
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  const studentSearchDropdown = useSearchDropdown({ delay: 300, minChars: 1 });
+  const stdd = useSearchDropdown({ delay: 300, minChars: 1 });
   const studentsResponse = useStudents(
-    studentSearchDropdown.query ? { search: studentSearchDropdown.query } : {}
+    stdd.query ? { search: stdd.query } : {}
   );
 
   const studentsResults = studentsResponse.data?.results || studentsResponse.data || [];
 
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useEnrollments({
-    ...(selectedStudent && {id:selectedStudent.id}),
+    ...(selectedStudent && { student: selectedStudent.id }),
     no_pagination: true
   });
 
@@ -135,7 +167,7 @@ export default function StudentReenrollmentPanel() {
 
   const handleSelectStudent = (student) => {
     setSelectedStudent(student);
-    studentSearchDropdown.close();
+    stdd.close();
   };
 
   const openAddModal = () => {
@@ -155,7 +187,7 @@ export default function StudentReenrollmentPanel() {
     { header: "Année Scolaire", key: "school_year", render: (sy) => sy?.text || sy?.code || sy },
     { header: "Parcours", key: "formation", render: (f) => f?.text || f?.code || f },
     { header: "Semestre", key: "semester", render: (s) => s?.code || s },
-    { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Actif" },
+    { header: "Statut", key: "status", render: (val) => val == "VALIDATED" ? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Actif" },
   ];
 
   return (
@@ -164,41 +196,24 @@ export default function StudentReenrollmentPanel() {
         <h2 className="text-xl font-bold text-slate-800 mb-4">Réinscription Individuelle</h2>
 
         <div className="flex flex-col gap-2 w-[400px]">
-          <label className="text-slate-600 text-sm font-bold">Sélectionner un étudiant</label>
-          {!selectedStudent ? (
-            <SearchWithDropdown
-              value={studentSearchDropdown.value}
-              onChange={studentSearchDropdown.onChange}
-              isOpen={studentSearchDropdown.isOpen}
-              close={studentSearchDropdown.close}
-              containerRef={studentSearchDropdown.containerRef}
-              options={studentsResults}
-              loading={studentsResponse.isFetching}
-              onSelect={handleSelectStudent}
-              renderOption={(option) => (
-                <div className="flex gap-4">
-                  <span className="font-semibold">{option.first_name} {option.last_name}</span>
-                  <span className="text-xs text-slate-500">{option.username || option.email}</span>
-                </div>
-              )}
-              placeholder="Rechercher par nom, matricule..."
-              inputClassName="w-full"
-            />
-          ) : (
-            <div className="flex items-center justify-between border h-[42px] rounded-md px-3 py-2 bg-slate-50">
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold truncate">{selectedStudent.first_name} {selectedStudent.last_name}</span>
-                <span className="text-xs text-slate-500">{selectedStudent.username}</span>
+          <SearchableSelect
+            label="Sélectionner un étudiant"
+            selectedValue={selectedStudent}
+            onSelect={handleSelectStudent}
+            onClear={() => setSelectedStudent(null)}
+            options={studentsResults}
+            renderOption={(option) => (
+              <div className="flex gap-4">
+                <span className="font-semibold">{option.first_name} {option.last_name}</span>
+                <span className="text-xs text-slate-500">{option.username || option.email}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedStudent(null)}
-                className="text-xs text-red-500 hover:underline ml-2"
-              >
-                Changer
-              </button>
-            </div>
-          )}
+            )}
+            renderSelected={(selected) => `${selected.first_name} ${selected.last_name} (${selected.username})`}
+            searchDropdownProps={stdd}
+            loading={studentsResponse.isFetching}
+            placeholder="Rechercher par nom, matricule..."
+            width="w-full"
+          />
         </div>
 
         {selectedStudent && (

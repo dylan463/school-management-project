@@ -21,7 +21,7 @@ import { useDeleteAssessment } from "../../hooks/assessments/useDeleteAssessment
 import { useToggleAssessmentPublication } from "../../hooks/assessments/useToggleAssessmentPublication"
 
 import { useSearchDropdown } from "../../hooks/useSearchDropdown"
-import SearchWithDropdown from "../SearchWithDropdown"
+import SearchableSelect from "../SearchableSelect"
 
 import { useCoursemodules } from "../../hooks/coursemodules/useCoursemodules"
 import { useCoursemodule } from "../../hooks/coursemodules/useCoursemodule"
@@ -50,15 +50,15 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const { handleErrors, getError, clearErrors } = useDRFErrors();
   const [loading, setLoading] = useState(false);
 
-  const { value: courseValue, query: courseQuery, onChange: courseOnChange, isOpen: courseIsOpen, close: courseClose, containerRef: courseContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : null, !!courseQuery, 0);
-  const courseOptionResults = courseOptions?.results || [];
+  const cmdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const { data: cmOptions, isFetching: cmFetching } = useCoursemodules(cmdd.query ? { search: cmdd.query } : {}, { enabled: cmdd.enabled });
+  const cmOptionResults = cmOptions?.results || [];
 
 
   const handleSelectCourse = (course) => {
     setSelectedCourse(course);
     setForm(prev => ({ ...prev, course_module: course.id }));
-    courseClose();
+    cmdd.close();
   };
 
   const handleChange = (e) => {
@@ -96,6 +96,30 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
+
+      {/* COURSE MODULE */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Module de cours"
+          selectedValue={selectedCourse}
+          onSelect={handleSelectCourse}
+          onClear={() => {
+            setSelectedCourse(null);
+            setForm(prev => ({ ...prev, course_module: "" }));
+          }}
+          options={cmOptionResults}
+          renderOption={(option) => <div className="flex gap-x-2 items-center">
+            <div>{option.text || option.name}</div>
+          </div>}
+          renderSelected={(selected) => selected?.text || selected?.name || `Cours #${form.course_module}`}
+          searchDropdownProps={cmdd}
+          loading={cmFetching}
+          placeholder="Rechercher un cours..."
+          width="w-full"
+        />
+        {getError("course_module") && <span className="text-xs text-red-500">{getError("course_module")}</span>}
+      </div>
+
       {/* NAME */}
       <div className="flex flex-col gap-1">
         <label className="text-sm text-slate-600">Nom de l'examen</label>
@@ -153,7 +177,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
       </div>
 
       {/* DATE & LOCATION */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 mb-16">
         <div className="flex flex-col gap-1 flex-1">
           <label className="text-sm text-slate-600">Date</label>
           <input
@@ -176,43 +200,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           />
           {getError("location") && <span className="text-xs text-red-500">{getError("location")}</span>}
         </div>
-      </div>
-
-      {/* COURSE MODULE */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Module de cours</label>
-        {!selectedCourse ? (
-          <SearchWithDropdown
-            value={courseValue}
-            onChange={courseOnChange}
-            isOpen={courseIsOpen}
-            close={courseClose}
-            containerRef={courseContainerRef}
-            options={courseOptionResults}
-            loading={isCourseFetching}
-            onSelect={handleSelectCourse}
-            renderOption={(option) => <div className="flex gap-x-2 items-center">
-              <div>{option.text || option.name}</div>
-            </div>}
-            inputClassName="w-full"
-            placeholder="Rechercher un cours..."
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">{selectedCourse.text || selectedCourse.name || `Cours #${form.course_module}`}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCourse(null);
-                setForm(prev => ({ ...prev, course_module: "" }));
-              }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("course_module") && <span className="text-xs text-red-500">{getError("course_module")}</span>}
       </div>
 
       {getError("non_field_errors") && <div className="text-sm text-red-500">{getError("non_field_errors")}</div>}
@@ -263,11 +250,11 @@ export default function AssessmentsPanel() {
   const { role } = useAuth();
   const navigate = useNavigate();
 
-  const { search, page, setSearch, setPage, course, setCourse, school_year, setSchool_year: setSchoolYear, session, setSession } = useQueryParams({
+  const { search, page, setSearch, setPage, course_module_id, setCourse_module_id, school_year_id, setSchool_year_id, session, setSession } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
-    course: { key: "course_module", type: "string", default: "" },
-    school_year: { key: "school_year", type: "string", default: "" },
+    course_module_id: { key: "course_module", type: "string", default: "" },
+    school_year_id: { key: "school_year_id", type: "number", default: "" },
     session: { key: "session", type: "string", default: "" },
   });
 
@@ -283,31 +270,31 @@ export default function AssessmentsPanel() {
   const activeSy = activeSys?.results?.[0] || null
   useEffect(() => {
     if (activeSy) {
-      setSchoolYear(activeSy.id)
+      setSchool_year_id(activeSy.id)
     }
   }, [activeSy])
 
   // Filters hooks
-  const { value: courseValue, query: courseQuery, onChange: courseOnChange, isOpen: courseIsOpen, close: courseClose, containerRef: courseContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: courseOptions, isFetching: isCourseFetching } = useCoursemodules(courseQuery ? { search: courseQuery } : {}, courseQuery.length >= 1, 0);
-  const courseOptionResults = courseOptions?.results || [];
-  const { data: courseData } = useCoursemodule(course);
+  const cmdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const { data: cmOptions, isFetching: cmFetching } = useCoursemodules(cmdd.query ? { search: cmdd.query } : {}, { enabled: cmdd.enabled });
+  const cmOptionResults = cmOptions?.results || [];
+  const { data: course_module } = useCoursemodule(course_module_id);
 
-  const { value: syValue, query: syQuery, onChange: syOnChange, isOpen: syIsOpen, close: syClose, containerRef: syContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: syOptions, isFetching: isSyFetching } = useSchoolyears(syQuery ? { search: syQuery } : {}, {enabled:syQuery.length >= 1, staleTime:0});
+  const sydd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const { data: syOptions, isFetching: syFetching } = useSchoolyears(sydd.query ? { search: sydd.query } : {}, { enabled: sydd.enabled });
   const syOptionResults = syOptions?.results || [];
-  const { data: syData } = useSchoolyear(school_year);
+  const { data: school_year } = useSchoolyear(school_year_id);
 
   const togglePub = useToggleAssessmentPublication();
 
-  const handleSelectCourse = (selectedCourse) => {
-    setCourse(selectedCourse.id);
-    courseClose();
+  const handleSelectCourse = (c) => {
+    setCourse_module_id(c.id);
+    cmdd.close();
   };
 
-  const handleSelectSy = (selectedSy) => {
-    setSchoolYear(selectedSy.id);
-    syClose();
+  const handleSelectSy = (sy) => {
+    setSchool_year_id(sy.id);
+    sydd.close();
   };
 
   const handleTogglePublication = async (id) => {
@@ -323,12 +310,12 @@ export default function AssessmentsPanel() {
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
-      ...(course && { course_module: course }),
-      ...(school_year && { school_year: school_year }),
+      ...(course_module_id && { course_module: course_module_id }),
+      ...(school_year_id && { school_year: school_year_id }),
       ...(session && { session }),
       ...(page && { page }),
     };
-  }, [debouncedSearch, page, course, school_year, session]);
+  }, [debouncedSearch, page, course_module_id, school_year_id, session]);
 
   const { data, isLoading: isDataLoading } = useAssessments(filters);
   const results = data?.results || [];
@@ -351,7 +338,7 @@ export default function AssessmentsPanel() {
   ];
 
   const basePermission = activeSy !== null
-  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY].includes(role) && basePermission
+  const canCreate = [ROLES.DEPARTMENT_HEAD, ROLES.DEPARTMENT_SECRETARY, ROLES.TEACHER].includes(role) && basePermission
 
   const actions = [
     {
@@ -409,77 +396,42 @@ export default function AssessmentsPanel() {
       {showFilters && (
         <div className="ml-2 mb-2">
           <div className="flex flex-wrap gap-4 border-b pb-4 mb-2 border-slate-200">
-            {/* Course Module */}
-            {!courseData ? (
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Cours</label>
-                <SearchWithDropdown
-                  value={courseValue}
-                  onChange={courseOnChange}
-                  isOpen={courseIsOpen}
-                  close={courseClose}
-                  containerRef={courseContainerRef}
-                  options={courseOptionResults}
-                  loading={isCourseFetching}
-                  onSelect={handleSelectCourse}
-                  renderOption={(option) => <div className="flex gap-x-2 items-center">
-                    <div>{option.text || option.name}</div>
-                  </div>}
-                  placeholder="Rechercher..."
-                  inputClassName="w-[200px]"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Cours</label>
-                <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                  <span className="text-sm truncate">{courseData?.text || courseData?.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCourse(null)}
-                    className="text-xs text-red-500 hover:underline ml-2"
-                  >
-                    Changer
-                  </button>
+            <SearchableSelect
+              label="Cours"
+              selectedValue={course_module}
+              onSelect={handleSelectCourse}
+              onClear={() => setCourse_module_id("")}
+              options={cmOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.name}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
                 </div>
-              </div>
-            )}
+              )}
+              renderSelected={(selected) => selected?.text || selected?.name}
+              searchDropdownProps={cmdd}
+              loading={cmFetching}
+              placeholder="Rechercher..."
+              width="w-[200px]"
+            />
 
-            {/* SchoolYear */}
-            {!syData ? (
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Année Scolaire</label>
-                <SearchWithDropdown
-                  value={syValue}
-                  onChange={syOnChange}
-                  isOpen={syIsOpen}
-                  close={syClose}
-                  containerRef={syContainerRef}
-                  options={syOptionResults}
-                  loading={isSyFetching}
-                  onSelect={handleSelectSy}
-                  renderOption={(option) => <div className="flex gap-x-2 items-center">
-                    <div>{option.text || option.label}</div>
-                  </div>}
-                  placeholder="Rechercher..."
-                  inputClassName="w-[200px]"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Année Scolaire</label>
-                <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                  <span className="text-sm truncate">{syData?.text || syData?.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSchoolYear(null)}
-                    className="text-xs text-red-500 hover:underline ml-2"
-                  >
-                    Changer
-                  </button>
+            <SearchableSelect
+              label="Année scolaire"
+              selectedValue={school_year}
+              onSelect={handleSelectSy}
+              onClear={() => setSchool_year_id("")}
+              options={syOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.label || option.name}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
                 </div>
-              </div>
-            )}
+              )}
+              searchDropdownProps={sydd}
+              loading={syFetching}
+              placeholder="Rechercher une année"
+              width="w-[200px]"
+            />
 
             {/* Session */}
             <div>

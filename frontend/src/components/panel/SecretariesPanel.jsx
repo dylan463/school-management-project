@@ -12,6 +12,8 @@ import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
 import { useSecretaries } from "../../hooks/secretaries/useSecretaries"
 import { useQueryParams } from "../../hooks/useQueryParams"
+import { EMAIL_AVAILABLE, EMAIL_SERVICE_UNAVAILABLE_TITLE } from "../../utils/constants"
+import EmailCredentialsModalContent from '../ui/EmailCredentialsModalContent'
 import { useCreateSecretary } from "../../hooks/secretaries/useCreateSecretary"
 import { useUpdateSecretary } from "../../hooks/secretaries/useUpdateSecretary"
 import { useDeleteSecretary } from "../../hooks/secretaries/useDeleteSecretary"
@@ -30,6 +32,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const update = useUpdateSecretary();
 
   const { handleErrors, getError, clearErrors } = useDRFErrors();
+  const { openModal } = useModal();
   const [loading, setLoading] = useState(false);
 
 
@@ -84,12 +87,18 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           first_name: form.first_name,
           last_name: form.last_name,
         };
-        await create.mutateAsync(payload, {
+        const { user, password } = await create.mutateAsync(payload, {
           onSuccess: () => {
             toast.success("Secrétaire créé avec succès");
             onSuccess?.();
           },
         });
+        if (!EMAIL_AVAILABLE) {
+          openModal({
+            title: EMAIL_SERVICE_UNAVAILABLE_TITLE,
+            content: <EmailCredentialsModalContent user={user} password={password} />
+          });
+        }
       }
     } catch (error) {
       handleErrors(error);

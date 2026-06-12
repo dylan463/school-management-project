@@ -45,5 +45,6 @@ export function useSearchDropdown({ delay = 300, minChars = 2 } = {}) {
         isOpen,
         close: () => { setValue(""); setIsOpen(false) },
         containerRef,
+        enabled:query.length >= minChars
     }
 }

@@ -59,9 +59,11 @@ class HeadsViewSet(ModelViewSet):
         first_name = data["first_name"]
         last_name = data["last_name"]
         email = data["email"]
-        user = create_user(first_name,last_name,email,role,mention)
-        return Response(
-            UserSerializer(user).data,
+        user ,password= create_user(first_name,last_name,email,role,mention,return_password=True)
+        return Response({
+            "user":UserSerializer(user).data,
+            "password":password
+            },
             status=status.HTTP_201_CREATED
         )
 
@@ -102,9 +104,11 @@ class SecretaryViewSet(ModelViewSet):
         first_name = data["first_name"]
         last_name = data["last_name"]
         email = data["email"]
-        user = create_user(first_name,last_name,email,role,mention)
-        return Response(
-            UserSerializer(user).data,
+        user ,password= create_user(first_name,last_name,email,role,mention,return_password=True)
+        return Response({
+            "user":UserSerializer(user).data,
+            "password":password
+            },
             status=status.HTTP_201_CREATED
         )
     
@@ -148,9 +152,11 @@ class OfficerViewSet(ModelViewSet):
         first_name = data["first_name"]
         last_name = data["last_name"]
         email = data["email"]
-        user = create_user(first_name,last_name,email,role,mention)
-        return Response(
-            UserSerializer(user).data,
+        user ,password= create_user(first_name,last_name,email,role,mention,return_password=True)
+        return Response({
+            "user":UserSerializer(user).data,
+            "password":password
+            },
             status=status.HTTP_201_CREATED
         )
     
@@ -202,9 +208,11 @@ class TeacherViewSet(ModelViewSet):
         first_name = data["first_name"]
         last_name = data["last_name"]
         email = data["email"]
-        user = create_user(first_name,last_name,email,role,mention)
-        return Response(
-            UserSerializer(user).data,
+        user ,password= create_user(first_name,last_name,email,role,mention,return_password=True)
+        return Response({
+            "user":UserSerializer(user).data,
+            "password":password
+            },
             status=status.HTTP_201_CREATED
         )
     
@@ -256,13 +264,15 @@ class StudentViewSet(ModelViewSet):
         first_name = data["first_name"]
         last_name = data["last_name"]
         email = data["email"]
-        user = create_user(first_name,last_name,email,role,mention)
+        user ,password= create_user(first_name,last_name,email,role,mention,return_password=True)
         formation = data["formation"]
         semester = data["semester"]
         school_year = data["school_year"]
         create_enrollment(user,school_year,semester,formation,no_notification=False)
-        return Response(
-            UserSerializer(user).data,
+        return Response({
+            "user":UserSerializer(user).data,
+            "password":password
+            },
             status=status.HTTP_201_CREATED
         )
     
@@ -330,6 +340,10 @@ class StudentViewSet(ModelViewSet):
             
 
         return Response({"task_id": task.id, "job_id": import_job.id})
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
 
 class ImportJobViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin, GenericViewSet):
     permission_classes = [IsAuthenticated]

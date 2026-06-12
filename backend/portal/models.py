@@ -11,6 +11,7 @@ class ImportJob(models.Model):
         COMPLETED = 'COMPLETED', 'Terminé'
         FAILED = 'FAILED', 'Échoué'
     task_id = models.CharField(max_length=255)
+    name= models.CharField(max_length=255,blank=True,null=True)
     import_type = models.CharField(max_length=50, choices=IMPORT_TYPE_CHOICES, default='STUDENT_CREATION')
     total_rows = models.IntegerField(default=0)
     processed_rows = models.IntegerField(default=0)

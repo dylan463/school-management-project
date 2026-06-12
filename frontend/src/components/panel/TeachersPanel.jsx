@@ -12,6 +12,8 @@ import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
 import { useTeachers } from "../../hooks/teachers/useTeachers"
 import { useQueryParams } from "../../hooks/useQueryParams"
+import { EMAIL_AVAILABLE, EMAIL_SERVICE_UNAVAILABLE_TITLE } from "../../utils/constants"
+import EmailCredentialsModalContent from '../ui/EmailCredentialsModalContent'
 import { useCreateTeacher } from "../../hooks/teachers/useCreateTeacher"
 import { useUpdateTeacher } from "../../hooks/teachers/useUpdateTeacher"
 import { useDeleteTeacher } from "../../hooks/teachers/useDeleteTeacher"
@@ -30,6 +32,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const update = useUpdateTeacher();
 
   const { handleErrors, getError, clearErrors } = useDRFErrors();
+  const { openModal } = useModal();
   const [loading, setLoading] = useState(false);
 
 
@@ -84,12 +87,18 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           first_name: form.first_name,
           last_name: form.last_name,
         };
-        await create.mutateAsync(payload, {
+        const { user, password } = await create.mutateAsync(payload, {
           onSuccess: () => {
             toast.success("Enseignant créé avec succès");
             onSuccess?.();
           },
         });
+        if (!EMAIL_AVAILABLE) {
+          openModal({
+            title: EMAIL_SERVICE_UNAVAILABLE_TITLE,
+            content: <EmailCredentialsModalContent user={user} password={password} />
+          });
+        }
       }
     } catch (error) {
       handleErrors(error);

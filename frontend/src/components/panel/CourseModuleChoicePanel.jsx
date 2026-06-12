@@ -13,53 +13,55 @@ import { useChooseCoursemodule } from "../../hooks/coursemodules/useChooseCourse
 
 import { useQueryParams } from "../../hooks/useQueryParams";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
-import SearchWithDropdown from "../SearchWithDropdown";
-import Filter from "../Filter";
+import SearchableSelect from "../SearchableSelect";
 
 import { useFormations } from "../../hooks/formations/useFormations";
 import { useFormation } from "../../hooks/formations/useFormation";
 import { useSemesters } from "../../hooks/semesters/useSemesters";
-
+import { useSemester } from "../../hooks/semesters/useSemester";
+import Badge from "../Badge";
 export default function CourseModuleChoicePanel() {
   const { role, user } = useAuth();
 
+  // global setting
   const {
     search, setSearch,
-    formation, setFormation,
-    semester, setSemester,
+    formation_id, setFormation_id,
+    semester_id, setSemester_id,
   } = useQueryParams({
     search: { key: "choice_search", type: "string", default: "" },
-    formation: { key: "choice_formation", type: "string", default: "" },
-    semester: { key: "choice_semester", type: "string", default: "" },
+    formation_id: { key: "formation_id", type: "number", default: "" },
+    semester_id: { key: "semester_id", type: "number", default: "" },
   });
-
   const debouncedSearch = useDebounced(search);
   const [showFilters, setShowFilters] = useState(false);
+  // end global setting
 
-  // ── Filtre : Formation search dropdown ──
-  const formationDropdown = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: formationsOptions, isFetching: isFormationsFetching } = useFormations(
-    formationDropdown.query ? { search: formationDropdown.query } : {},
-    {enabled:formationDropdown.query.length >= 1, staleTime:0}
-  );
-  const formationOptionResults = formationsOptions?.results || formationsOptions || [];
-  const { data: selectedFormationData } = useFormation(formation);
+  // filter setting
+  const fdd = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 })
 
-  // ── Filtre : Semestres ──
-  const { data: semesterData } = useSemesters({ no_pagination: true });
-  const semesters = semesterData?.results || semesterData || [];
+  const { data: fData, isFetching: fLoading } = useFormations({ ...(fdd.query ? { search: fdd.query } : {}) }, { enabled: fdd.enabled })
+  const { data: sData, isFetching: sLoading } = useSemesters({ ...(sdd.query ? { search: sdd.query } : {}) }, { enabled: sdd.enabled })
+
+  const fOptions = fData?.results || []
+  const sOptions = sData?.results || []
+
+  const { data: formation } = useFormation(formation_id)
+  const { data: semester } = useSemester(semester_id)
 
   const filters = useMemo(() => ({
     ...(debouncedSearch && { search: debouncedSearch }),
-    ...(formation && { formation }),
-    ...(semester && { semester }),
-  }), [debouncedSearch, formation, semester]);
+    ...(formation_id && { formation: formation_id }),
+    ...(semester_id && { semester: semester_id }),
+  }), [debouncedSearch, formation_id, semester_id]);
+  // end filter setting
 
   const { data, isLoading: isDataLoading } = useCoursemodulechoices(filters, role);
-  const results = data?.results || data || [];
-
+  const results = data?.results || [];
   const chooseMutation = useChooseCoursemodule();
 
+  // action handlers
   const handleChoose = async (courseModule) => {
     try {
       const res = await chooseMutation.mutateAsync(courseModule.id);
@@ -71,6 +73,7 @@ export default function CourseModuleChoicePanel() {
       toast.error(msg);
     }
   };
+  // end action handlers
 
   const columns = [
     { header: "Code", key: "code" },
@@ -94,7 +97,7 @@ export default function CourseModuleChoicePanel() {
   ];
 
   if (role !== ROLES.TEACHER) {
-    return null; // Only visible for teachers
+    return null;
   }
 
   return (
@@ -116,55 +119,40 @@ export default function CourseModuleChoicePanel() {
 
       {showFilters && (
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-4 items-end">
-          {/* Filtre Formation */}
-          <div className="flex flex-col gap-1">
-            <label className="text-slate-600 font-bold text-sm">Parcours (Formation)</label>
-            {!selectedFormationData ? (
-              <SearchWithDropdown
-                value={formationDropdown.value}
-                onChange={formationDropdown.onChange}
-                isOpen={formationDropdown.isOpen}
-                close={formationDropdown.close}
-                containerRef={formationDropdown.containerRef}
-                options={formationOptionResults}
-                loading={isFormationsFetching}
-                onSelect={(f) => { setFormation(f.id); formationDropdown.close() }}
-                renderOption={(option) => (
-                  <div className="flex gap-x-2 items-center">
-                    <div>{option.text || option.code}</div>
-                  </div>
-                )}
-                placeholder="Rechercher un parcours"
-                inputClassName="w-[220px]"
-              />
-            ) : (
-              <div className="flex items-center justify-between border h-[38px] w-[220px] rounded-md px-3 py-2 bg-white">
-                <span className="text-sm truncate">{selectedFormationData?.text || selectedFormationData?.code}</span>
-                <button
-                  type="button"
-                  onClick={() => setFormation("")}
-                  className="text-xs text-red-500 hover:underline ml-2"
-                >
-                  Changer
-                </button>
+          <SearchableSelect
+            label="Parcours"
+            selectedValue={formation}
+            onSelect={(s) => setFormation_id(s.id)}
+            onClear={() => setFormation_id("")}
+            options={fOptions}
+            renderOption={(option) => (
+              <div className="flex gap-x-2 items-center">
+                <div>{option.text || option.code}</div>
+                {option.code && <Badge content={option.code} color="blue" />}
               </div>
             )}
-          </div>
-
-          {/* Filtre Semestre */}
-          <div className="flex flex-col gap-1">
-            <label className="text-slate-600 font-bold text-sm">Semestre</label>
-            <select
-              value={semester}
-              onChange={(e) => setSemester(e.target.value)}
-              className="border rounded-md px-3 py-2 h-[38px] outline-none focus:ring-2 focus:ring-red-500 bg-white text-sm w-[180px]"
-            >
-              <option value="">Tous</option>
-              {semesters.map(s => (
-                <option key={s.id} value={s.id}>{s.code || s.order}</option>
-              ))}
-            </select>
-          </div>
+            searchDropdownProps={fdd}
+            loading={fLoading}
+            placeholder="Rechercher un parcours"
+            width="w-[220px]"
+          />
+          <SearchableSelect
+            label="Semestre"
+            selectedValue={semester}
+            onSelect={(s) => setSemester_id(s.id)}
+            onClear={() => setSemester_id("")}
+            options={sOptions}
+            renderOption={(option) => (
+              <div className="flex gap-x-2 items-center">
+                <div>{option.code || option.order}</div>
+                {option.code && <Badge content={option.code} color="blue" />}
+              </div>
+            )}
+            searchDropdownProps={sdd}
+            loading={sLoading}
+            placeholder="Rechercher un semestre"
+            width="w-[220px]"
+          />
         </div>
       )}
 

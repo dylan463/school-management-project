@@ -13,12 +13,15 @@ import { toast } from 'react-toastify'
 import { useHeads } from "../../hooks/heads/useHeads";
 import { useMentions } from "../../hooks/mentions/useMentions";
 import { useQueryParams } from "../../hooks/useQueryParams";
+import { EMAIL_AVAILABLE, EMAIL_SERVICE_UNAVAILABLE_TITLE } from "../../utils/constants"
+import EmailCredentialsModalContent from '../ui/EmailCredentialsModalContent'
 import { useCreateHead } from "../../hooks/heads/useCreateHead";
 import { useUpdateHead } from "../../hooks/heads/useUpdateHead";
 import { useDeleteHead } from "../../hooks/heads/useDeleteHead";
 import { useMention } from "../../hooks/mentions/useMention";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
-import SearchWithDropdown from "../SearchWithDropdown";
+import SearchableSelect from "../SearchableSelect";
+import Badge from "../Badge";
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
   const isEdit = Boolean(initialData?.id);
@@ -36,19 +39,18 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const update = useUpdateHead();
 
   const { handleErrors, getError, clearErrors } = useDRFErrors();
+  const { openModal } = useModal();
 
   const [loading, setLoading] = useState(false);
 
-  const { value, query, onChange, isOpen, close, containerRef } = useSearchDropdown({
-    delay: 300,
-    minChars: 2,
-  });
-  const { data: optionsData, isFetching } = useMentions(query ? { search: query } : null, query.length >= 2, 0);
+  const mdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const { data: mOptions, isFetching: mFetching } = useMentions(mdd.query ? { search: mdd.query } : {}, { enabled: mdd.enabled, staleTime: 0 });
+  const mOptionResults = mOptions?.results || [];
 
   const handleSelectMention = (mention) => {
     setSelectedMention(mention);
     setForm(prev => ({ ...prev, mention_id: mention.id }));
-    close();
+    mdd.close();
   };
 
 
@@ -99,14 +101,19 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           }
         );
       } else {
-
-        await create.mutateAsync(data, {
+        const { user, password } = await create.mutateAsync(data, {
           onSuccess: () => {
             setForm({ email: "", first_name: "", last_name: "", mention_id: "" });
             setSelectedMention(null);
             onSuccess?.();
           },
         });
+        if (!EMAIL_AVAILABLE) {
+          openModal({
+            title: EMAIL_SERVICE_UNAVAILABLE_TITLE,
+            content: <EmailCredentialsModalContent user={user} password={password} />
+          });
+        }
       }
     } catch (error) {
       handleErrors(error);
@@ -117,6 +124,35 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
+
+      {/* MENTION */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Mention"
+          selectedValue={selectedMention}
+          onSelect={handleSelectMention}
+          onClear={() => {
+            setSelectedMention(null);
+            setForm(prev => ({ ...prev, mention_id: "" }));
+          }}
+          options={mOptionResults}
+          renderOption={(option) => (
+            <div className="flex gap-x-2 items-center">
+              <div>{option.text || option.code}</div>
+              {option.code && <Badge content={option.code} color="blue" />}
+            </div>
+          )}
+          searchDropdownProps={mdd}
+          loading={mFetching}
+          placeholder="Rechercher une mention"
+          width="w-full"
+        />
+        {getError("mention_id") && (
+          <span className="text-xs text-red-500">
+            {getError("mention_id")}
+          </span>
+        )}
+      </div>
 
       {/* EMAIL */}
       <div className="flex flex-col gap-1">
@@ -166,45 +202,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         {getError("last_name") && (
           <span className="text-xs text-red-500">
             {getError("last_name")}
-          </span>
-        )}
-      </div>
-
-      {/* MENTION */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Mention</label>
-        {!selectedMention ? (
-          <SearchWithDropdown
-            value={value}
-            onChange={onChange}
-            isOpen={isOpen}
-            close={close}
-            containerRef={containerRef}
-            options={optionsData?.results || []}
-            loading={isFetching}
-            onSelect={handleSelectMention}
-            renderOption={(option) => option.text}
-            placeholder="Rechercher une mention"
-            inputClassName="w-full"
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">{selectedMention.text}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedMention(null);
-                setForm(prev => ({ ...prev, mention_id: "" }));
-              }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("mention_id") && (
-          <span className="text-xs text-red-500">
-            {getError("mention_id")}
           </span>
         )}
       </div>
@@ -264,10 +261,10 @@ function DeleteConfirm({ Data, onSuccess }) {
 }
 
 export default function HeadsPanel() {
-  const { search, page, setSearch, setPage, mentionId, setMentionId } = useQueryParams({
+  const { search, page, setSearch, setPage, mention_id, setMention_id } = useQueryParams({
     search: { key: "head_search", type: "string", default: "" },
     page: { key: "head_page", type: "number", default: 1 },
-    mentionId: { key: "mention_id", type: "string", default: "" },
+    mention_id: { key: "mention_id", type: "string", default: "" },
   })
 
   useEffect(() => {
@@ -275,24 +272,20 @@ export default function HeadsPanel() {
     if (!params.get("head_page")) {
       setPage(1)
     }
-    if (!params.get("mention_id")) {
-      setMentionId("")
-    }
   }, [])
 
   const [showFilters, setShowFilters] = useState(false)
   const debouncedSearch = useDebounced(search)
 
-  const { data: mention } = useMention(mentionId)
+  const { data: mention } = useMention(mention_id)
 
-  const { value, query, onChange, isOpen, close, containerRef } = useSearchDropdown({
-    delay: 300,
-    minChars: 2,
-  })
-  const { data: options, isFetching } = useMentions(query ? { search: query } : {}, {enabled:query.length >= 1, staleTime:0})
-  const handleSelectMention = (mention) => {
-    setMentionId(mention.id)
-    close()
+  const mdd = useSearchDropdown({ delay: 300, minChars: 1 })
+  const { data: mOptions, isFetching: mFetching } = useMentions(mdd.query ? { search: mdd.query } : {}, { enabled: mdd.enabled, staleTime: 0 })
+  const mOptionResults = mOptions?.results || []
+
+  const handleSelectMention = (m) => {
+    setMention_id(m.id)
+    mdd.close()
   }
 
   const { openModal, closeModal } = useModal()
@@ -300,10 +293,10 @@ export default function HeadsPanel() {
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
-      ...(mentionId && { mention: mentionId }),
+      ...(mention_id && { mention: mention_id }),
       ...(page && { page })
     }
-  }, [debouncedSearch, page, mentionId])
+  }, [debouncedSearch, page, mention_id])
 
   const { data, isLoading } = useHeads(filters);
   const results = data?.results || [];
@@ -312,7 +305,7 @@ export default function HeadsPanel() {
     Math.ceil((data?.count || 0) / PAGINATION_SIZE)
   );
   const columns = [
-    { header: "Id", key: "id" },
+    { header: "ID", key: "id" },
     { header: "Email", key: "email" },
     { header: "Prénom", key: "first_name" },
     { header: "Nom", key: "last_name" },
@@ -342,7 +335,7 @@ export default function HeadsPanel() {
           </Button>
         </div>
         <SearchInput
-          placeholder="rechercher un responsable"
+          placeholder="Rechercher un responsable"
           className="w-[200px]"
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
@@ -353,42 +346,30 @@ export default function HeadsPanel() {
             openModal({ title: "ajouter un responsable", content: <AddOrEditForm onSuccess={closeModal} /> })
           }}
         >
-          + ajouter
+          + Ajouter
         </Button>
       </div>
       {
         showFilters && (
           <div className="ml-2 mb-2">
-            <div className="flex gap-2">
-              <SearchWithDropdown
-                value={value}
-                onChange={onChange}
-                isOpen={isOpen}
-                close={close}
-                containerRef={containerRef}
-                options={options?.results || []}
-                loading={isFetching}
+            <div className="flex gap-2 border-b pb-2 mb-2 border-slate-200">
+              <SearchableSelect
+                label="Mention"
+                selectedValue={mention}
                 onSelect={handleSelectMention}
-                renderOption={(option) => option.text}
-                placeholder="rechercher une mention"
-                className="w-[200px]"
-                inputClassName="w-[200px]"
+                onClear={() => setMention_id("")}
+                options={mOptionResults}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.text || option.code}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
+                  </div>
+                )}
+                searchDropdownProps={mdd}
+                loading={mFetching}
+                placeholder="Rechercher une mention"
+                width="w-[200px]"
               />
-              {
-                mentionId && (
-                  <>
-                    <Button
-                      onClick={() => {
-                        setMentionId(null)
-                        close()
-                      }}
-                    >
-                      Clear
-                    </Button>
-                    <p className="flex h-[35px] items-center">Mention : {mention?.text || "Chargement..."}</p>
-                  </>
-                )
-              }
             </div>
           </div>
         )

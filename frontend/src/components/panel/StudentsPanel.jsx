@@ -18,10 +18,15 @@ import { useDeleteStudent } from "../../hooks/students/useDeleteStudent"
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
 import { useFormations } from "../../hooks/formations/useFormations"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
-import Filter from "../Filter"
+import { useSearchDropdown } from "../../hooks/useSearchDropdown"
+import SearchableSelect from "../SearchableSelect"
+import EmailCredentialsModalContent from '../ui/EmailCredentialsModalContent'
+import Badge from "../Badge"
+import { EMAIL_AVAILABLE, EMAIL_SERVICE_UNAVAILABLE_TITLE } from "../../utils/constants"
 
 function AddOrEditForm({ initialData = {}, onSuccess }) {
   const isEdit = Boolean(initialData?.id);
+  const { openModal, closeModal } = useModal()
 
   const [form, setForm] = useState({
     email: "",
@@ -38,14 +43,22 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const { handleErrors, getError, clearErrors } = useDRFErrors();
   const [loading, setLoading] = useState(false);
 
+  const fdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sydd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 });
+
+  const [selectedFormation, setSelectedFormation] = useState(null);
+  const [selectedSchoolyear, setSelectedSchoolyear] = useState(null);
+  const [selectedSemester, setSelectedSemester] = useState(null);
+
   // Charger les listes de sélection pour l'ajout
-  const { data: schoolyearsData , isLoading: isSchoolyearsLoading } = useSchoolyears({ no_pagination: true ,status:"OPEN"},{enabled:!isEdit});
-  const { data: formationsData , isLoading: isFormationsLoading } = useFormations({ no_pagination: true },{enabled:!isEdit});
-  const { data: semestersData , isLoading: isSemestersLoading } = useSemesters({ no_pagination: true },{enabled:!isEdit});
-  const loadingFilters = isSchoolyearsLoading || isFormationsLoading || isSemestersLoading;
-  const schoolyears = schoolyearsData || [];
-  const formations = formationsData || [];
-  const semesters = semestersData || [];
+  const { data: syOptions, isFetching: syFetching } = useSchoolyears({ no_pagination: true, status: "OPEN", ...(sydd.query ? { search: sydd.query } : {}) }, { enabled: !isEdit && sydd.enabled });
+  const { data: fOptions, isFetching: fFetching } = useFormations({ no_pagination: true, ...(fdd.query ? { search: fdd.query } : {}) }, { enabled: !isEdit && fdd.enabled });
+  const { data: sOptions, isFetching: sFetching } = useSemesters({ no_pagination: true, ...(sdd.query ? { search: sdd.query } : {}) }, { enabled: !isEdit && sdd.enabled });
+
+  const syOptionResults = syOptions?.results || syOptions || [];
+  const fOptionResults = fOptions?.results || fOptions || [];
+  const sOptionResults = sOptions?.results || sOptions || [];
 
   // Remplir le formulaire si modification
   useEffect(() => {
@@ -115,12 +128,18 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           formation: form.formation,
           semester: form.semester,
         };
-        await create.mutateAsync(payload, {
+        const { user, password } = await create.mutateAsync(payload, {
           onSuccess: () => {
             toast.success("Étudiant créé avec succès");
             onSuccess?.();
           },
         });
+        if (!EMAIL_AVAILABLE) {
+          openModal({
+            title: EMAIL_SERVICE_UNAVAILABLE_TITLE,
+            content: <EmailCredentialsModalContent user={user} password={password} />
+          })
+        }
       }
     } catch (error) {
       handleErrors(error);
@@ -131,6 +150,85 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
+
+      {/* CHAMPS UNIQUEMENT POUR L'AJOUT */}
+      {!isEdit && (
+        <>
+          {/* SCHOOL YEAR */}
+          <div className="mb-4 flex flex-col gap-3">
+            <SearchableSelect
+              label="Parcours"
+              selectedValue={selectedFormation}
+              onSelect={(f) => {
+                setSelectedFormation(f);
+                setForm(prev => ({ ...prev, formation: f.id }));
+              }}
+              onClear={() => {
+                setSelectedFormation(null);
+                setForm(prev => ({ ...prev, formation: "" }));
+              }}
+              options={fOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.code}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={fdd}
+              loading={fFetching}
+              placeholder="Rechercher un parcours"
+              width="w-full"
+            />
+            <SearchableSelect
+              label="Année scolaire"
+              selectedValue={selectedSchoolyear}
+              onSelect={(y) => {
+                setSelectedSchoolyear(y);
+                setForm(prev => ({ ...prev, school_year: y.id }));
+              }}
+              onClear={() => {
+                setSelectedSchoolyear(null);
+                setForm(prev => ({ ...prev, school_year: "" }));
+              }}
+              options={syOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.label || option.name}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={sydd}
+              loading={syFetching}
+              placeholder="Rechercher une année"
+              width="w-full"
+            />
+            <SearchableSelect
+              label="Semestre"
+              selectedValue={selectedSemester}
+              onSelect={(s) => {
+                setSelectedSemester(s);
+                setForm(prev => ({ ...prev, semester: s.id }));
+              }}
+              onClear={() => {
+                setSelectedSemester(null);
+                setForm(prev => ({ ...prev, semester: "" }));
+              }}
+              options={sOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.code || option.order}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={sdd}
+              loading={sFetching}
+              placeholder="Rechercher un semestre"
+              width="w-full"
+            />
+          </div>
+        </>
+      )}
+
       {/* EMAIL */}
       <div className="flex flex-col gap-1">
         <label className="text-sm text-slate-600">Email</label>
@@ -163,7 +261,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
       </div>
 
       {/* LAST NAME */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 mb-16">
         <label className="text-sm text-slate-600">Nom</label>
         <input
           name="last_name"
@@ -177,44 +275,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         )}
       </div>
 
-      {/* CHAMPS UNIQUEMENT POUR L'AJOUT */}
-      {!isEdit && (
-        <>
-          {/* SCHOOL YEAR */}
-          <div className="mb-4 flex flex-col gap-3">
-            <Filter
-                value={form.formation}
-                label="Parcours"
-                onChange={handleChange}
-                name="formation"
-                options={formations}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une formation", value: "" }]}
-                render={(f) => f.text ?? f.code ?? f}
-                className="grid grid-cols-1"
-            />
-            <Filter
-                value={form.school_year}
-                label="Année scolaire"
-                onChange={handleChange}
-                name="school_year"
-                options={schoolyears}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une année", value: "" }]}
-                render={(y) => y.text ?? y.code ?? y}
-                className="grid grid-cols-1"
-            />
-            <Filter
-                value={form.semester}
-                label="Semestre"
-                onChange={handleChange}
-                name="semester"
-                options={semesters}
-                otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez un semestre", value: "" }]}
-                render={(s) => s.code ?? s.order ?? s}
-                className="grid grid-cols-1"
-            />
-          </div>
-        </>
-      )}
 
       {/* GLOBAL ERROR */}
       {getError("non_field_errors") && (

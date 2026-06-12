@@ -34,7 +34,7 @@ class EnrollmentResult(models.Model):
     class Status(models.TextChoices):
         NOT_VALIDATED = "NOT_VALIDATED", "non validé"
         VALIDATED = "VALIDATED", "validé"
-        VALIDATED_AFTER_RETAKE = "VALIDATEDA_AFTER_RETAKE", "validé apres rattrapage"
+        VALIDATED_AFTER_RETAKE = "VALIDATED_AFTER_RETAKE", "validé apres rattrapage"
 
     enrollment = models.ForeignKey(
         Enrollment,

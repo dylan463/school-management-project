@@ -2,7 +2,6 @@ from celery import shared_task
 from django.core.files.base import ContentFile
 import pandas as pd
 from structures.user_services import create_user,send_email,registration_email_template
-from pathlib import Path
 from structures.models import User,Formation,SchoolYear,Semester,Role
 from rest_framework.exceptions import ValidationError
 from assessments.services import create_enrollment
@@ -12,19 +11,21 @@ from notifications.utils import create_notification
 from .models import ImportJob
 
 @shared_task(bind=True,acks_late=True)
-def create_users_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int):
+def create_users_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int,inculde_auth=False):
     formation = Formation.objects.get(pk=formation_id)
     semester = Semester.objects.get(pk=semester_id)
     school_year = SchoolYear.objects.get(pk=school_year_id)
     mention = semester.mention
     role = Role.STUDENT
     report = []
+    name = f"IE-{semester.code}-{formation.text}-{school_year.label}"
 
     df = pd.DataFrame(records)
     total = len(df)
 
     import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
     import_job.import_type = "STUDENT_CREATION"
+    import_job.name = name
     import_job.total_rows = total
     import_job.status = ImportJob.Status.PROGRESS
     import_job.save()
@@ -42,9 +43,8 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
                 send_email('Creation de votre compte.',text_content,[student.email],html_content)
                 create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
                 
-                msg = "Succès"
+                msg = f"M:/P : {student.username}/{password}"
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -60,7 +60,6 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
                 else:
                     msg = str(detail)
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -69,7 +68,6 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
             except Exception as e:
                 transaction.savepoint_rollback(sid)
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -80,7 +78,7 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
             import_job.save()
 
         csv_content = pd.DataFrame(report).to_csv(index=False)
-        import_job.report_file.save(f"report_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+        import_job.report_file.save(f"report_{name}_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
 
         import_job.status = ImportJob.Status.COMPLETED
         import_job.success_count = total - len(report)
@@ -110,12 +108,14 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
     semester = Semester.objects.get(pk=semester_id)
     school_year = SchoolYear.objects.get(pk=school_year_id)
     report = []
+    name = f"RE-{semester.code}-{formation.text}-{school_year.label}"
 
     df = pd.DataFrame(records)
     total = len(df)
 
     import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
     import_job.import_type = "ENROLLMENT"
+    import_job.name = name
     import_job.total_rows = total
     import_job.status = ImportJob.Status.PROGRESS
     import_job.save()
@@ -144,9 +144,8 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
                 create_notification(student,"Vous avez été inscrit.",f"votre réinscription en {semester.code} du parcours {formation.text} est réussit. L'année scolaire {school_year.text} ne fait que commencer. Bon courage !")
 
                 transaction.savepoint_commit(sid)
-                msg = "Succès"
+                msg = "Inscription réussit"
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -164,7 +163,6 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
                     msg = str(detail)
 
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -174,7 +172,6 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
             except Exception as e:
                 transaction.savepoint_rollback(sid)
                 report.append({
-                    "line": i + 2,
                     "nom": row.get("nom"),
                     "prenoms": row.get("prenoms"),
                     "email": row.get("email"),
@@ -185,7 +182,7 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
             import_job.save()
 
         csv_content = pd.DataFrame(report).to_csv(index=False)
-        import_job.report_file.save(f"report_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
+        import_job.report_file.save(f"report_{name}_{self.request.id}.csv", ContentFile(csv_content.encode('utf-8')))
 
         import_job.status = ImportJob.Status.COMPLETED
         import_job.success_count = total - len(report)

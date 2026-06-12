@@ -12,6 +12,8 @@ import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
 import { useOfficers } from "../../hooks/officers/useOfficers"
 import { useQueryParams } from "../../hooks/useQueryParams"
+import { EMAIL_AVAILABLE, EMAIL_SERVICE_UNAVAILABLE_TITLE } from "../../utils/constants"
+import EmailCredentialsModalContent from '../ui/EmailCredentialsModalContent'
 import { useCreateOfficer } from "../../hooks/officers/useCreateOfficer"
 import { useUpdateOfficer } from "../../hooks/officers/useUpdateOfficer"
 import { useDeleteOfficer } from "../../hooks/officers/useDeleteOfficer"
@@ -30,6 +32,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const update = useUpdateOfficer();
 
   const { handleErrors, getError, clearErrors } = useDRFErrors();
+  const { openModal } = useModal();
   const [loading, setLoading] = useState(false);
 
 
@@ -84,12 +87,18 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
           first_name: form.first_name,
           last_name: form.last_name,
         };
-        await create.mutateAsync(payload, {
+        const { user, password } = await create.mutateAsync(payload, {
           onSuccess: () => {
             toast.success("Officier créé avec succès");
             onSuccess?.();
           },
         });
+        if (!EMAIL_AVAILABLE) {
+          openModal({
+            title: EMAIL_SERVICE_UNAVAILABLE_TITLE,
+            content: <EmailCredentialsModalContent user={user} password={password} />
+          });
+        }
       }
     } catch (error) {
       handleErrors(error);

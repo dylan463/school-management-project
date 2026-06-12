@@ -19,9 +19,10 @@ import { useFormations } from "../../hooks/formations/useFormations"
 import { useFormation } from "../../hooks/formations/useFormation"
 import { useSchoolyear } from "../../hooks/schoolyears/useSchoolyear"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
-import Filter from "../Filter"
+import { useSemester } from "../../hooks/semesters/useSemester"
 import { useSearchDropdown } from "../../hooks/useSearchDropdown"
-import SearchWithDropdown from "../SearchWithDropdown"
+import SearchableSelect from "../SearchableSelect"
+import Badge from "../Badge"
 import { useEnrollments } from "../../hooks/enrollments/useEnrollments"
 import { useCreateEnrollment } from "../../hooks/enrollments/useCreateEnrollment"
 import { useDeleteEnrollment } from "../../hooks/enrollments/useDeleteEnrollment"
@@ -46,14 +47,22 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const { handleErrors, getError, clearErrors } = useDRFErrors();
   const [loading, setLoading] = useState(false);
 
+  const fdd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sydd = useSearchDropdown({ delay: 300, minChars: 1 });
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 });
+
+  const [selectedFormation, setSelectedFormation] = useState(null);
+  const [selectedSchoolyear, setSelectedSchoolyear] = useState(null);
+  const [selectedSemester, setSelectedSemester] = useState(null);
+
   // Charger les listes de sélection pour l'ajout
-  const { data: schoolyearsData, isLoading: isSchoolyearsLoading } = useSchoolyears(isEdit ? null : { no_pagination: true });
-  const { data: formationsData, isLoading: isFormationsLoading } = useFormations(isEdit ? null : { no_pagination: true });
-  const { data: semestersData, isLoading: isSemestersLoading } = useSemesters(isEdit ? null : { no_pagination: true });
-  const loadingFilters = isSchoolyearsLoading || isFormationsLoading || isSemestersLoading;
-  const schoolyears = schoolyearsData || [];
-  const formations = formationsData || [];
-  const semesters = semestersData || [];
+  const { data: syOptions, isFetching: syFetching } = useSchoolyears(isEdit ? null : { no_pagination: true, status: "OPEN", ...(sydd.query ? { search: sydd.query } : {}) }, { enabled: !isEdit && sydd.enabled });
+  const { data: fOptions, isFetching: fFetching } = useFormations(isEdit ? null : { no_pagination: true, ...(fdd.query ? { search: fdd.query } : {}) }, { enabled: !isEdit && fdd.enabled });
+  const { data: sOptions, isFetching: sFetching } = useSemesters(isEdit ? null : { no_pagination: true, ...(sdd.query ? { search: sdd.query } : {}) }, { enabled: !isEdit && sdd.enabled });
+  
+  const syOptionResults = syOptions?.results || syOptions || [];
+  const fOptionResults = fOptions?.results || fOptions || [];
+  const sOptionResults = sOptions?.results || sOptions || [];
 
   // Remplir le formulaire si modification
   useEffect(() => {
@@ -190,35 +199,74 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         <>
           {/* SCHOOL YEAR */}
           <div className="mb-4 flex flex-col gap-3">
-            <Filter
-              value={form.formation}
+            <SearchableSelect
               label="Parcours"
-              onChange={handleChange}
-              name="formation"
-              options={formations}
-              otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une formation", value: "" }]}
-              render={(f) => f.text ?? f.code ?? f}
-              className="grid grid-cols-1"
+              selectedValue={selectedFormation}
+              onSelect={(f) => {
+                setSelectedFormation(f);
+                setForm(prev => ({ ...prev, formation: f.id }));
+              }}
+              onClear={() => {
+                setSelectedFormation(null);
+                setForm(prev => ({ ...prev, formation: "" }));
+              }}
+              options={fOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.code}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={fdd}
+              loading={fFetching}
+              placeholder="Rechercher un parcours"
+              width="w-full"
             />
-            <Filter
-              value={form.school_year}
+            <SearchableSelect
               label="Année scolaire"
-              onChange={handleChange}
-              name="school_year"
-              options={schoolyears}
-              otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une année", value: "" }]}
-              render={(y) => y.text ?? y.code ?? y}
-              className="grid grid-cols-1"
+              selectedValue={selectedSchoolyear}
+              onSelect={(y) => {
+                setSelectedSchoolyear(y);
+                setForm(prev => ({ ...prev, school_year: y.id }));
+              }}
+              onClear={() => {
+                setSelectedSchoolyear(null);
+                setForm(prev => ({ ...prev, school_year: "" }));
+              }}
+              options={syOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.label || option.name}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={sydd}
+              loading={syFetching}
+              placeholder="Rechercher une année"
+              width="w-full"
             />
-            <Filter
-              value={form.semester}
+            <SearchableSelect
               label="Semestre"
-              onChange={handleChange}
-              name="semester"
-              options={semesters}
-              otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez un semestre", value: "" }]}
-              render={(s) => s.code ?? s.order ?? s}
-              className="grid grid-cols-1"
+              selectedValue={selectedSemester}
+              onSelect={(s) => {
+                setSelectedSemester(s);
+                setForm(prev => ({ ...prev, semester: s.id }));
+              }}
+              onClear={() => {
+                setSelectedSemester(null);
+                setForm(prev => ({ ...prev, semester: "" }));
+              }}
+              options={sOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.code || option.order}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
+                </div>
+              )}
+              searchDropdownProps={sdd}
+              loading={sFetching}
+              placeholder="Rechercher un semestre"
+              width="w-full"
             />
           </div>
         </>
@@ -275,75 +323,58 @@ function DeleteConfirm({ Data, onSuccess }) {
 
 export default function ReenrollmentPanel() {
   const {
-    search,
-    setSearch,
-    page1,
-    setPage1,
-    formation1,
-    setFormation1,
-    semester1,
-    setSemester1,
-    schoolyear1,
-    setSchoolyear1,
-    page2,
-    setPage2,
-    formation2,
-    setFormation2,
-    semester2,
-    setSemester2,
-    schoolyear2,
-    setSchoolyear2,
+    search, setSearch,
+    page1, setPage1,
+    formation1_id, setFormation1_id,
+    semester1_id, setSemester1_id,
+    schoolyear1_id, setSchoolyear1_id,
+    page2, setPage2,
+    formation2_id, setFormation2_id,
+    semester2_id, setSemester2_id,
+    schoolyear2_id, setSchoolyear2_id,
   } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page1: { key: "page1", type: "number", default: 1 },
-    formation1: { key: "formation1", type: "number", default: "" },
-    semester1: { key: "semseter1", type: "number", default: "" },
-    schoolyear1: { key: "schoolyear1", type: "number", default: "" },
+    formation1_id: { key: "formation1_id", type: "number", default: "" },
+    semester1_id: { key: "semester1_id", type: "number", default: "" },
+    schoolyear1_id: { key: "schoolyear1_id", type: "number", default: "" },
     page2: { key: "page2", type: "number", default: 1 },
-    formation2: { key: "formation2", type: "number", default: "" },
-    semester2: { key: "semseter2", type: "number", default: "" },
-    schoolyear2: { key: "schoolyear2", type: "number", default: "" },
+    formation2_id: { key: "formation2_id", type: "number", default: "" },
+    semester2_id: { key: "semester2_id", type: "number", default: "" },
+    schoolyear2_id: { key: "schoolyear2_id", type: "number", default: "" },
   });
 
-  const formation1searchDropDown = useSearchDropdown({ delay: 300, minChars: 1 })
-  const schoolyear1searchDropDown = useSearchDropdown({ delay: 300, minChars: 1 })
-  const formation2searchDropDown = useSearchDropdown({ delay: 300, minChars: 1 })
-  const schoolyear2searchDropDown = useSearchDropdown({ delay: 300, minChars: 1 })
+  const fdd1 = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sydd1 = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sdd1 = useSearchDropdown({ delay: 300, minChars: 1 })
+  const fdd2 = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sydd2 = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sdd2 = useSearchDropdown({ delay: 300, minChars: 1 })
 
-  const { data: formation1Data } = useFormation(formation1)
-  const { data: formation2Data } = useFormation(formation2)
-  const { data: schoolyear1Data } = useSchoolyear(schoolyear1)
-  const { data: schoolyear2Data } = useSchoolyear(schoolyear2)
+  const { data: formation1Data } = useFormation(formation1_id)
+  const { data: formation2Data } = useFormation(formation2_id)
+  const { data: schoolyear1Data } = useSchoolyear(schoolyear1_id)
+  const { data: schoolyear2Data } = useSchoolyear(schoolyear2_id)
+  const { data: semester1Data } = useSemester(semester1_id)
+  const { data: semester2Data } = useSemester(semester2_id)
 
-  const formation1response = useFormations(formation1searchDropDown.query ? {
-    search: formation1searchDropDown.query
-  } : {}, {enabled:formation1searchDropDown.query.length >= 1, staleTime:0})
-  const formation1results = formation1response.data?.results ? formation1response.data?.results : []
+  const { data: f1Data, isFetching: f1Fetching } = useFormations(fdd1.query ? { search: fdd1.query } : {}, { enabled: fdd1.enabled, staleTime: 0 })
+  const { data: f2Data, isFetching: f2Fetching } = useFormations(fdd2.query ? { search: fdd2.query } : {}, { enabled: fdd2.enabled, staleTime: 0 })
+  
+  const { data: sy1Data, isFetching: sy1Fetching } = useSchoolyears(sydd1.query ? { search: sydd1.query, status: "CLOSED" } : { status: "CLOSED" }, { enabled: sydd1.enabled, staleTime: 0 })
+  const { data: sy2Data, isFetching: sy2Fetching } = useSchoolyears(sydd2.query ? { search: sydd2.query, status: "OPEN" } : { status: "OPEN" }, { enabled: sydd2.enabled, staleTime: 0 })
+  
+  const { data: s1Data, isFetching: s1Fetching } = useSemesters(sdd1.query ? { search: sdd1.query, is_active: true } : { is_active: true }, { enabled: sdd1.enabled, staleTime: 0 })
+  const { data: s2Data, isFetching: s2Fetching } = useSemesters(sdd2.query ? { search: sdd2.query, is_active: true } : { is_active: true }, { enabled: sdd2.enabled, staleTime: 0 })
 
-  const formation2response = useFormations(formation2searchDropDown.query ? {
-    search: formation2searchDropDown.query
-  } : {}, {enabled:formation2searchDropDown.query.length >= 1, staleTime:0})
-  const formation2results = formation2response.data?.results ? formation2response.data?.results : []
+  const formation1results = f1Data?.results || []
+  const formation2results = f2Data?.results || []
+  const schoolyear1results = sy1Data?.results || []
+  const schoolyear2results = sy2Data?.results || []
+  const semester1results = s1Data?.results || s1Data || []
+  const semester2results = s2Data?.results || s2Data || []
 
-  const schoolyear1response = useSchoolyears(schoolyear1searchDropDown.query ? {
-    search: schoolyear1searchDropDown.query,
-    status: "CLOSED"
-  } : {}, {enabled:schoolyear1searchDropDown.query.length >= 1, staleTime:0})
-  const schoolyear1results = schoolyear1response.data?.results ? schoolyear1response.data?.results : []
-
-  const schoolyear2response = useSchoolyears(schoolyear2searchDropDown.query ? {
-    search: schoolyear2searchDropDown.query,
-    status: "OPEN"
-  } : {}, {enabled:schoolyear2searchDropDown.query.length >= 1, staleTime:0})
-  const schoolyear2results = schoolyear2response.data?.results ? schoolyear2response.data?.results : []
-
-  const semester1response = useSemesters({
-    is_active: true,
-    no_pagination: true
-  })
-  const semester1results = semester1response.data ? semester1response.data : []
-
-  const filtersLoading = formation1response.isLoading || semester1response.isLoading || schoolyear1response.isLoading || schoolyear2response.isLoading
+  const filtersLoading = false
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -362,22 +393,22 @@ export default function ReenrollmentPanel() {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(page1 && { page: page1 }),
-      ...(semester1 && { semester: semester1 }),
-      ...(formation1 && { formation: formation1 }),
-      ...(schoolyear1 && { school_year: schoolyear1 }),
-      ...(schoolyear2 && { exclude_year: schoolyear2 })
+      ...(semester1_id && { semester: semester1_id }),
+      ...(formation1_id && { formation: formation1_id }),
+      ...(schoolyear1_id && { school_year: schoolyear1_id }),
+      ...(schoolyear2_id && { exclude_year: schoolyear2_id })
     };
-  }, [debouncedSearch, page1, semester1, formation1, schoolyear1]);
+  }, [debouncedSearch, page1, semester1_id, formation1_id, schoolyear1_id, schoolyear2_id]);
 
   const filters2 = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(page2 && { page: page2 }),
-      ...(semester2 && { semester: semester2 }),
-      ...(formation2 && { formation: formation2 }),
-      ...(schoolyear2 && { school_year: schoolyear2 }),
+      ...(semester2_id && { semester: semester2_id }),
+      ...(formation2_id && { formation: formation2_id }),
+      ...(schoolyear2_id && { school_year: schoolyear2_id }),
     };
-  }, [debouncedSearch, page2, semester2, formation2, schoolyear2]);
+  }, [debouncedSearch, page2, semester2_id, formation2_id, schoolyear2_id]);
 
   const { data: enrollments1, isLoading: enrollments1loading } = useEnrollments(filters1)
   const enrollments1results = enrollments1?.results ? enrollments1.results : []
@@ -398,23 +429,31 @@ export default function ReenrollmentPanel() {
   const destroy = useDeleteEnrollment()
 
   const handleSelectFormation1 = (formation) => {
-    setFormation1(formation.id)
-    formation1searchDropDown.close()
+    setFormation1_id(formation.id)
+    fdd1.close()
   }
   const handleSelectSchoolyear1 = (schoolyear) => {
-    setSchoolyear1(schoolyear.id)
-    schoolyear1searchDropDown.close()
+    setSchoolyear1_id(schoolyear.id)
+    sydd1.close()
+  }
+  const handleSelectSemester1 = (semester) => {
+    setSemester1_id(semester.id)
+    sdd1.close()
   }
   const handleSelectFormation2 = (formation) => {
-    setFormation2(formation.id)
-    formation2searchDropDown.close()
+    setFormation2_id(formation.id)
+    fdd2.close()
   }
   const handleSelectSchoolyear2 = (schoolyear) => {
-    setSchoolyear2(schoolyear.id)
-    schoolyear2searchDropDown.close()
+    setSchoolyear2_id(schoolyear.id)
+    sydd2.close()
+  }
+  const handleSelectSemester2 = (semester) => {
+    setSemester2_id(semester.id)
+    sdd2.close()
   }
 
-  const canPromote = semester1 && semester2 && formation1Data && formation2Data && schoolyear1Data && schoolyear2Data
+  const canPromote = semester1_id && semester2_id && formation1Data && formation2Data && schoolyear1Data && schoolyear2Data
   const handleSelectEnrollment = (enrollment) => {
 
   }
@@ -422,7 +461,7 @@ export default function ReenrollmentPanel() {
   const handlePromote = async (enrollment) => {
     if (!canPromote) return
     try {
-      await promote.mutateAsync({ student: enrollment.student.id, formation: formation2Data.id, school_year: schoolyear2Data.id, semester: semester2 })
+      await promote.mutateAsync({ student: enrollment.student.id, formation: formation2Data.id, school_year: schoolyear2Data.id, semester: semester2_id })
 
     } catch (error) {
       console.log(error.response.data)
@@ -476,86 +515,58 @@ export default function ReenrollmentPanel() {
           <div className="pl-2" >
             <h1 className="ml-3 text-red-600 font-bold">ETUDIANT NON INSCRIT</h1>
             {/* filtres */}
-            <div className="w-[500px] flex flex-wrap gap-2 pl-2 ">
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Parcours</label>
-                {!formation1Data ? (
-                  <SearchWithDropdown
-                    value={formation1searchDropDown.value}
-                    onChange={formation1searchDropDown.onChange}
-                    isOpen={formation1searchDropDown.isOpen}
-                    close={formation1searchDropDown.close}
-                    containerRef={formation1searchDropDown.containerRef}
-                    options={formation1results}
-                    loading={formation1response.isFetching}
-                    onSelect={handleSelectFormation1}
-                    renderOption={(option) => <div className="flex gap-x-2 items-center">
-                      <div>{option.text}</div>
-                    </div>}
-                    placeholder="Rechercher..."
-                    inputClassName="w-[200px]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                    <span className="text-sm truncate">{formation1Data?.text}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFormation1("")}
-                      className="text-xs text-red-500 hover:underline ml-2"
-                    >
-                      Changer
-                    </button>
+            <div className="w-[500px] flex flex-wrap gap-2 pl-2 items-end">
+              <SearchableSelect
+                label="Parcours"
+                selectedValue={formation1Data}
+                onSelect={handleSelectFormation1}
+                onClear={() => setFormation1_id("")}
+                options={formation1results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.text || option.code}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
                   </div>
                 )}
-              </div>
-
-              {/* SchoolYear */}
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Année Scolaire</label>
-                {!schoolyear1Data ? (
-                  <SearchWithDropdown
-                    value={schoolyear1searchDropDown.value}
-                    onChange={schoolyear1searchDropDown.onChange}
-                    isOpen={schoolyear1searchDropDown.isOpen}
-                    close={schoolyear1searchDropDown.close}
-                    containerRef={schoolyear1searchDropDown.containerRef}
-                    options={schoolyear1results}
-                    loading={schoolyear1response.isFetching}
-                    onSelect={handleSelectSchoolyear1}
-                    renderOption={(option) => <div className="flex gap-x-2 items-center">
-                      <div>{option.text}</div>
-                    </div>}
-                    placeholder="Rechercher..."
-                    inputClassName="w-[200px]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                    <span className="text-sm truncate">{schoolyear1Data?.text}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSchoolyear1("")}
-                      className="text-xs text-red-500 hover:underline ml-2"
-                    >
-                      Changer
-                    </button>
+                searchDropdownProps={fdd1}
+                loading={f1Fetching}
+                placeholder="Rechercher un parcours"
+                width="w-[200px]"
+              />
+              <SearchableSelect
+                label="Année Scolaire (clôturée)"
+                selectedValue={schoolyear1Data}
+                onSelect={handleSelectSchoolyear1}
+                onClear={() => setSchoolyear1_id("")}
+                options={schoolyear1results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.text || option.label || option.name}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
                   </div>
                 )}
-              </div>
-
-              {/* semestre */}
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
-                <Filter
-                  value={semester1}
-                  onChange={(e) => setSemester1(e.target.value)}
-                  otherOptions={[
-                    { key: "Toutes", value: "" },
-                  ]}
-                  options={semester1results}
-                  render={(value) => value.code}
-                  className="w-[200px] h-[38px]"
-                />
-              </div>
+                searchDropdownProps={sydd1}
+                loading={sy1Fetching}
+                placeholder="Rechercher une année"
+                width="w-[200px]"
+              />
+              <SearchableSelect
+                label="Semestre"
+                selectedValue={semester1Data}
+                onSelect={handleSelectSemester1}
+                onClear={() => setSemester1_id("")}
+                options={semester1results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.code || option.order}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
+                  </div>
+                )}
+                searchDropdownProps={sdd1}
+                loading={s1Fetching}
+                placeholder="Rechercher un semestre"
+                width="w-[200px]"
+              />
             </div>
             <div className="border border-gray-200 mt-2"></div>
             {!canPromote ? <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">
@@ -582,94 +593,66 @@ export default function ReenrollmentPanel() {
                     Aucun résultat
                   </div>
                 )}
-            </div>
+          </div>
 
-            <div className="mx-4 w-px bg-gray-200" aria-hidden="true" />
+          <div className="mx-4 w-px bg-gray-200" aria-hidden="true" />
 
           {/* {nouvelle année scolaire} */}
           <div className="pl-2">
             <h1 className="ml-3 text-red-600 font-bold">ETUDIANT INSCRIT</h1>
             {/* filtres */}
-            <div className="w-[500px] flex flex-wrap gap-2">
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Parcours</label>
-                {!formation2Data ? (
-                  <SearchWithDropdown
-                    value={formation2searchDropDown.value}
-                    onChange={formation2searchDropDown.onChange}
-                    isOpen={formation2searchDropDown.isOpen}
-                    close={formation2searchDropDown.close}
-                    containerRef={formation2searchDropDown.containerRef}
-                    options={formation2results}
-                    loading={formation2response.isFetching}
-                    onSelect={handleSelectFormation2}
-                    renderOption={(option) => <div className="flex gap-x-2 items-center">
-                      <div>{option.text}</div>
-                    </div>}
-                    placeholder="Rechercher..."
-                    inputClassName="w-[200px]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                    <span className="text-sm truncate">{formation2Data?.text}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFormation2("")}
-                      className="text-xs text-red-500 hover:underline ml-2"
-                    >
-                      Changer
-                    </button>
+            <div className="w-[500px] flex flex-wrap gap-2 items-end">
+              <SearchableSelect
+                label="Parcours"
+                selectedValue={formation2Data}
+                onSelect={handleSelectFormation2}
+                onClear={() => setFormation2_id("")}
+                options={formation2results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.text || option.code}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
                   </div>
                 )}
-              </div>
-
-              {/* SchoolYear */}
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Année Scolaire</label>
-                {!schoolyear2Data ? (
-                  <SearchWithDropdown
-                    value={schoolyear2searchDropDown.value}
-                    onChange={schoolyear2searchDropDown.onChange}
-                    isOpen={schoolyear2searchDropDown.isOpen}
-                    close={schoolyear2searchDropDown.close}
-                    containerRef={schoolyear2searchDropDown.containerRef}
-                    options={schoolyear2results}
-                    loading={schoolyear2response.isFetching}
-                    onSelect={handleSelectSchoolyear2}
-                    renderOption={(option) => <div className="flex gap-x-2 items-center">
-                      <div>{option.text}</div>
-                    </div>}
-                    placeholder="Rechercher..."
-                    inputClassName="w-[200px]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                    <span className="text-sm truncate">{schoolyear2Data?.text}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSchoolyear2("")}
-                      className="text-xs text-red-500 hover:underline ml-2"
-                    >
-                      Changer
-                    </button>
+                searchDropdownProps={fdd2}
+                loading={f2Fetching}
+                placeholder="Rechercher un parcours"
+                width="w-[200px]"
+              />
+              <SearchableSelect
+                label="Année Scolaire (ouverte)"
+                selectedValue={schoolyear2Data}
+                onSelect={handleSelectSchoolyear2}
+                onClear={() => setSchoolyear2_id("")}
+                options={schoolyear2results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.text || option.label || option.name}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
                   </div>
                 )}
-              </div>
-
-              {/* semestre */}
-              <div>
-                <label className="text-slate-600 text-sm font-bold block mb-1">Semestre</label>
-                <Filter
-                  value={semester2}
-                  onChange={(e) => setSemester2(e.target.value)}
-                  otherOptions={[
-                    { key: "Toutes", value: "" },
-                  ]}
-                  options={semester1results}
-                  render={(value) => value.code}
-                  className="w-[200px] h-[38px]"
-                />
-              </div>
+                searchDropdownProps={sydd2}
+                loading={sy2Fetching}
+                placeholder="Rechercher une année"
+                width="w-[200px]"
+              />
+              <SearchableSelect
+                label="Semestre"
+                selectedValue={semester2Data}
+                onSelect={handleSelectSemester2}
+                onClear={() => setSemester2_id("")}
+                options={semester2results}
+                renderOption={(option) => (
+                  <div className="flex gap-x-2 items-center">
+                    <div>{option.code || option.order}</div>
+                    {option.code && <Badge content={option.code} color="blue" />}
+                  </div>
+                )}
+                searchDropdownProps={sdd2}
+                loading={s2Fetching}
+                placeholder="Rechercher un semestre"
+                width="w-[200px]"
+              />
             </div>
             <div className="border border-gray-200 mt-2"></div>
             {!canPromote ? <div className="flex justify-center text-slate-500 text-[13px] items-center h-[400px]">

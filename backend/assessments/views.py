@@ -1,7 +1,8 @@
 from rest_framework.viewsets import ModelViewSet,generics,views,mixins,GenericViewSet
 from structures.permissions import (
     IsInMention,
-    IsDepartmentStaff
+    IsDepartmentStaff,
+    IsAcademicStaff
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
@@ -105,6 +106,10 @@ class EnrollmentViewSet(ModelViewSet):
         serializer = BulletinSerializer(enrollment)
         return Response(serializer.data)
 
+    def paginate_queryset(self, queryset):
+        if self.request.query_params.get("no_pagination") == "true":
+            return None
+        return super().paginate_queryset(queryset)
 
 
 class AssessmentViewSet(ModelViewSet):
@@ -115,11 +120,13 @@ class AssessmentViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return get_assessment_queryset(user)
+        return get_assessment_queryset(user).order_by("date")
     
     def get_permissions(self):
         if self.action in ['list',"retrieve"]:
             return [IsInMention()]
+        elif self.action in ["create","toggle_publication","destroy","partial_update","update"]:
+            return [IsAcademicStaff()]
         else:
             return [IsDepartmentStaff()]
 
@@ -168,6 +175,8 @@ class GradeViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action in ['list',"retrieve"]:
             return [IsInMention()]
+        elif self.action in ["create","destroy","partial_update","update"]:
+            return [IsAcademicStaff()]
         else:
             return [IsDepartmentStaff()]
 
@@ -196,6 +205,7 @@ class ResultViewSet(GenericViewSet,mixins.ListModelMixin):
     def get_permissions(self):
         if self.action in ['list',"retrieve"]:
             return [IsInMention()]
+        
         else:
             return [IsDepartmentStaff()]
         

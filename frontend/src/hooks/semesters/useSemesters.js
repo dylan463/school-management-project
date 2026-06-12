@@ -1,11 +1,17 @@
 import { semesterService } from "../../services/structuresService"
 import { useQuery } from '@tanstack/react-query'
 
-export const useSemesters =  (filters) => {
+export const useSemesters =  (filters, options = {}) => {
+    const defaultOptions = {
+        enabled: true,
+        staleTime: 5 * 60 * 1000,
+    }
+
     return useQuery({
         queryKey:["semesters",filters],
         queryFn:() => semesterService.list(filters),
-        staleTime:5*60*1000
+        ...defaultOptions,
+        ...options,
     })
 }
 

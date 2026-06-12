@@ -17,7 +17,7 @@ import { useUpdateCoursemodule } from "../../hooks/coursemodules/useUpdateCourse
 import { useDeleteCoursemodule } from "../../hooks/coursemodules/useDeleteCoursemodule"
 import { useQueryParams } from "../../hooks/useQueryParams"
 import { useSearchDropdown } from "../../hooks/useSearchDropdown"
-import SearchWithDropdown from "../SearchWithDropdown"
+import SearchableSelect from "../SearchableSelect"
 import Badge from "../Badge"
 import Filter from "../Filter"
 import { useCourseunits } from "../../hooks/courseunits/useCourseunits"
@@ -25,6 +25,7 @@ import { useCourseunit } from "../../hooks/courseunits/useCourseunit"
 import { useTeachers } from "../../hooks/teachers/useTeachers"
 import { useTeacher } from "../../hooks/teachers/useTeacher"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
+import { useSemester } from "../../hooks/semesters/useSemester"
 import { useAuth } from "../../context/AuthContext"
 
 // ─── Add / Edit Form ────────────────────────────────────────────────────────
@@ -50,6 +51,11 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
       ? initialData.course_unit
       : null
   )
+  const [selectedSemester, setSelectedSemester] = useState(
+    initialData.semester && typeof initialData.semester === "object"
+      ? initialData.semester
+      : null
+  )
   const [selectedTeacher, setSelectedTeacher] = useState(
     initialData.teacher && typeof initialData.teacher === "object"
       ? initialData.teacher
@@ -62,24 +68,28 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const [loading, setLoading] = useState(false)
 
   // ── Course Unit search dropdown ──
-  const cuDropdown = useSearchDropdown({ delay: 300, minChars: 1 })
+  const cudd = useSearchDropdown({ delay: 300, minChars: 1 })
   const { data: cuOptions, isFetching: isCuFetching } = useCourseunits(
-    cuDropdown.query ? { search: cuDropdown.query } : {},
-    !!cuDropdown.query,
+    cudd.query ? { search: cudd.query } : {},
+    !!cudd.query,
     0
   )
   const cuResults = cuOptions?.results || []
 
   // ── Teacher search dropdown ──
-  const teacherDropdown = useSearchDropdown({ delay: 300, minChars: 1 })
+  const tdd = useSearchDropdown({ delay: 300, minChars: 1 })
   const { data: teacherOptions, isFetching: isTeacherFetching } = useTeachers(
-    teacherDropdown.query ? { search: teacherDropdown.query } : null
+    tdd.query ? { search: tdd.query } : null
   )
   const teacherResults = teacherOptions?.results || []
 
   // ── Semesters (small list – load all) ──
-  const { data: semesterData } = useSemesters({ no_pagination: true })
-  const semesters = semesterData || []
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 })
+  const { data: semesterData, isFetching: isSemesterFetching } = useSemesters(
+    sdd.query ? { search: sdd.query } : {},
+    { enabled: sdd.enabled }
+  )
+  const semesters = semesterData?.results || semesterData || []
 
   const handleChange = (e) => {
     clearErrors()
@@ -89,13 +99,19 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const handleSelectCourseUnit = (cu) => {
     setSelectedCourseUnit(cu)
     setForm(prev => ({ ...prev, course_unit: cu.id }))
-    cuDropdown.close()
+    cudd.close()
+  }
+
+  const handleSelectSemester = (s) => {
+    setSelectedSemester(s)
+    setForm(prev => ({ ...prev, semester: s.id }))
+    sdd.close()
   }
 
   const handleSelectTeacher = (teacher) => {
     setSelectedTeacher(teacher)
     setForm(prev => ({ ...prev, teacher: teacher.id }))
-    teacherDropdown.close()
+    tdd.close()
   }
 
   const handleSubmit = async (e) => {
@@ -139,6 +155,67 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
+      {/* UNITÉ D'ENSEIGNEMENT */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Unité d'enseignement"
+          selectedValue={selectedCourseUnit}
+          onSelect={handleSelectCourseUnit}
+          onClear={() => { setSelectedCourseUnit(null); setForm(prev => ({ ...prev, course_unit: "" })) }}
+          options={cuResults}
+          renderOption={(option) => (
+            <div className="flex gap-x-2 items-center">
+              <div>{option.text}</div>
+              <Badge content={option.code} color="blue" />
+            </div>
+          )}
+          searchDropdownProps={cudd}
+          loading={isCuFetching}
+          placeholder="Rechercher une UE"
+          width="w-full"
+        />
+        {getError("course_unit") && <span className="text-xs text-red-500">{getError("course_unit")}</span>}
+      </div>
+      {/* SEMESTRE */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Semestre"
+          selectedValue={selectedSemester}
+          onSelect={handleSelectSemester}
+          onClear={() => {
+            setSelectedSemester(null)
+            setForm(prev => ({ ...prev, semester: "" }))
+          }}
+          options={semesters}
+          renderOption={(op) => op.code}
+          searchDropdownProps={sdd}
+          loading={isSemesterFetching}
+          placeholder="Rechercher un semestre"
+          width="w-full"
+        />
+      </div>
+
+      {/* ENSEIGNANT (optionnel) */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Enseignant (optionnel)"
+          selectedValue={selectedTeacher}
+          onSelect={handleSelectTeacher}
+          onClear={() => { setSelectedTeacher(null); setForm(prev => ({ ...prev, teacher: "" })) }}
+          options={teacherResults}
+          renderOption={(option) => (
+            <div className="flex gap-x-2 items-center">
+              <div>{option.user?.full_name || option.full_name || `${option.first_name} ${option.last_name}`}</div>
+            </div>
+          )}
+          renderSelected={(selected) => selected.user?.full_name || selected.full_name || `${selected.first_name} ${selected.last_name}`}
+          searchDropdownProps={tdd}
+          loading={isTeacherFetching}
+          placeholder="Rechercher un enseignant"
+          width="w-full"
+        />
+        {getError("teacher") && <span className="text-xs text-red-500">{getError("teacher")}</span>}
+      </div>
 
       {/* NOM */}
       <div className="flex flex-col gap-1">
@@ -199,102 +276,8 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         </div>
       </div>
 
-      {/* SEMESTRE */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Semestre</label>
-        <select
-          name="semester"
-          value={form.semester}
-          onChange={handleChange}
-          className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 bg-white"
-        >
-          <option value="">-- Choisir un semestre --</option>
-          {semesters.map(s => (
-            <option key={s.id} value={s.id}>{s.code}</option>
-          ))}
-        </select>
-        {getError("semester") && <span className="text-xs text-red-500">{getError("semester")}</span>}
-      </div>
-
-      {/* UNITÉ D'ENSEIGNEMENT */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Unité d'enseignement</label>
-        {!selectedCourseUnit ? (
-          <SearchWithDropdown
-            value={cuDropdown.value}
-            onChange={cuDropdown.onChange}
-            isOpen={cuDropdown.isOpen}
-            close={cuDropdown.close}
-            containerRef={cuDropdown.containerRef}
-            options={cuResults}
-            loading={isCuFetching}
-            onSelect={handleSelectCourseUnit}
-            renderOption={(option) => (
-              <div className="flex gap-x-2 items-center">
-                <div>{option.text}</div>
-                <Badge content={option.code} color="blue" />
-              </div>
-            )}
-            placeholder="Rechercher une UE"
-            inputClassName="w-full"
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">{selectedCourseUnit.text}</span>
-            <button
-              type="button"
-              onClick={() => { setSelectedCourseUnit(null); setForm(prev => ({ ...prev, course_unit: "" })) }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("course_unit") && <span className="text-xs text-red-500">{getError("course_unit")}</span>}
-      </div>
-
-      {/* ENSEIGNANT (optionnel) */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">
-          Enseignant <span className="text-slate-400 text-xs">(optionnel)</span>
-        </label>
-        {!selectedTeacher ? (
-          <SearchWithDropdown
-            value={teacherDropdown.value}
-            onChange={teacherDropdown.onChange}
-            isOpen={teacherDropdown.isOpen}
-            close={teacherDropdown.close}
-            containerRef={teacherDropdown.containerRef}
-            options={teacherResults}
-            loading={isTeacherFetching}
-            onSelect={handleSelectTeacher}
-            renderOption={(option) => (
-              <div className="flex gap-x-2 items-center">
-                <div>{option.user?.full_name || option.full_name || `${option.first_name} ${option.last_name}`}</div>
-              </div>
-            )}
-            placeholder="Rechercher un enseignant"
-            inputClassName="w-full"
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">
-              {selectedTeacher.user?.full_name || selectedTeacher.full_name || `${selectedTeacher.first_name} ${selectedTeacher.last_name}`}
-            </span>
-            <button
-              type="button"
-              onClick={() => { setSelectedTeacher(null); setForm(prev => ({ ...prev, teacher: "" })) }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("teacher") && <span className="text-xs text-red-500">{getError("teacher")}</span>}
-      </div>
-
       {/* VOLUME HORAIRE (optionnel) */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 mb-16">
         <label className="text-sm text-slate-600">
           Volume horaire <span className="text-slate-400 text-xs">(optionnel)</span>
         </label>
@@ -449,14 +432,14 @@ export default function CourseModulesPanel() {
   const {
     search, setSearch,
     page, setPage,
-    courseunit, setCourseunit,
-    semester, setSemester,
+    courseunit_id, setCourseunit_id,
+    semester_id, setSemester_id,
     status, setStatus,
   } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
-    courseunit: { key: "courseunit", type: "string", default: "" },
-    semester: { key: "semester", type: "string", default: "" },
+    courseunit_id: { key: "courseunit_id", type: "string", default: "" },
+    semester_id: { key: "semester_id", type: "number", default: "" },
     status: { key: "status", type: "string", default: "" },
   })
 
@@ -469,26 +452,27 @@ export default function CourseModulesPanel() {
   const debouncedSearch = useDebounced(search)
 
   // ── Filtre : UE search dropdown ──
-  const cuDropdown = useSearchDropdown({ delay: 300, minChars: 1 })
-  const { data: cuOptions, isFetching: isCuFetching } = useCourseunits(
-    cuDropdown.query ? { search: cuDropdown.query } : {},
-    cuDropdown.query.length >= 1,
-    0
-  )
-  const cuOptionResults = cuOptions?.results || []
-  const { data: selectedCuData } = useCourseunit(courseunit)
+  const cudd = useSearchDropdown({ delay: 300, minChars: 1 })
+  const sdd = useSearchDropdown({ delay: 300, minChars: 1 })
 
-  // ── Semestres (pour filtre) ──
-  const { data: semesterData } = useSemesters()
-  const semesters = semesterData?.results || []
+
+  const { data: cuOptions, isFetching: cuFetching } = useCourseunits(cudd.query ? { search: cudd.query } : {}, { enabled: cudd.enabled })
+  const { data: sOptions, isFetching: sFetching } = useSemesters(sdd.query ? { search: sdd.query } : {}, { enabled: sdd.enabled })
+
+  const cuOptionResults = cuOptions?.results || []
+  const sOptionResults = sOptions?.results || []
+
+  const { data: courseunit } = useCourseunit(courseunit_id)
+  const { data: semester } = useSemester(semester_id)
+
 
   const filters = useMemo(() => ({
     ...(debouncedSearch && { search: debouncedSearch }),
-    ...(courseunit && { course_unit: courseunit }),
-    ...(semester && { semester }),
+    ...(courseunit && { course_unit: courseunit_id }),
+    ...(semester && { semester: semester_id }),
     ...(page && { page }),
     ...(status && { is_active: status }),
-  }), [debouncedSearch, page, courseunit, semester, status])
+  }), [debouncedSearch, page, courseunit_id, semester_id, status])
 
   const { data, isLoading: isDataLoading } = useCoursemodules(filters)
   const results = data?.results || []
@@ -502,7 +486,7 @@ export default function CourseModulesPanel() {
     { header: "Crédits", key: "credits" },
     { header: "Note min.", key: "min_val_score" },
     { header: "Vol. h.", key: "volume_hours", render: (v) => v ?? "—" },
-    { header: "Enseignant", key: "teacher", render: (v) => v ? (v.username || `${v.first_name} ${v.last_name}`) : "—" },
+    { header: "Enseignant", key: "teacher", render: (v) => v ? (`${v.first_name} ${v.last_name}`) : "—" },
     {
       header: "Statut", key: "is_active",
       render: (v) => v
@@ -588,55 +572,42 @@ export default function CourseModulesPanel() {
           <div className="flex flex-wrap gap-3 border-b pb-2 mb-2 border-slate-200 items-end">
 
             {/* Filtre UE */}
-            <div>
-              <label className="text-slate-600 font-bold block text-sm mb-1">Unité d'enseignement</label>
-              {!selectedCuData ? (
-                <SearchWithDropdown
-                  value={cuDropdown.value}
-                  onChange={cuDropdown.onChange}
-                  isOpen={cuDropdown.isOpen}
-                  close={cuDropdown.close}
-                  containerRef={cuDropdown.containerRef}
-                  options={cuOptionResults}
-                  loading={isCuFetching}
-                  onSelect={(cu) => { setCourseunit(cu.id); cuDropdown.close() }}
-                  renderOption={(option) => (
-                    <div className="flex gap-x-2 items-center">
-                      <div>{option.text}</div>
-                      <Badge content={option.code} color="blue" />
-                    </div>
-                  )}
-                  placeholder="Rechercher une UE"
-                  inputClassName="w-[200px]"
-                />
-              ) : (
-                <div className="flex items-center justify-between border h-[35px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                  <span className="text-sm">{selectedCuData?.text}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCourseunit(null)}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    Changer
-                  </button>
+            <SearchableSelect
+              label="Unité d'enseignement"
+              selectedValue={courseunit}
+              onSelect={(cu) => { setCourseunit_id(cu.id); cudd.close() }}
+              onClear={() => setCourseunit_id("")}
+              options={cuOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text}</div>
+                  <Badge content={option.code} color="blue" />
                 </div>
               )}
-            </div>
+              searchDropdownProps={cudd}
+              loading={cuFetching}
+              placeholder="Rechercher une UE"
+              width="w-[200px]"
+            />
 
             {/* Filtre Semestre */}
-            <div>
-              <label className="text-slate-600 font-bold block text-sm mb-1">Semestre</label>
-              <select
-                value={semester}
-                onChange={(e) => setSemester(e.target.value)}
-                className="border rounded-md px-3 py-2 h-[35px] outline-none focus:ring-2 focus:ring-red-500 bg-white text-sm w-[160px]"
-              >
-                <option value="">Tous</option>
-                {semesters.map(s => (
-                  <option key={s.id} value={s.id}>{s.code}</option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Semestre"
+              selectedValue={semester}
+              onSelect={(s) => setSemester_id(s.id)}
+              onClear={() => setSemester_id("")}
+              options={sOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text}</div>
+                  <Badge content={option.code} color="blue" />
+                </div>
+              )}
+              searchDropdownProps={sdd}
+              loading={sFetching}
+              placeholder="Rechercher un semestre"
+              width="w-[160px]"
+            />
 
             {/* Filtre Statut */}
             <Filter

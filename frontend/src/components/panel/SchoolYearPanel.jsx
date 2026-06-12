@@ -243,22 +243,42 @@ export default function SchoolYearPanel() {
     },
     {
       label: "Bloquer",
-      handler: (row) => { toggleLock.mutate(row.id) },
+      handler: (row) => { toggleLock.mutate(row.id,{
+        onError:(error) => {
+          const msg = error.response.data.detail
+          toast.error(msg)
+        }
+      })},
       conditionRow: (row) => !row.is_locked
     },
     {
       label: "Debloquer",
-      handler: (row) => { toggleLock.mutate(row.id) },
+      handler: (row) => { toggleLock.mutate(row.id,{
+        onError:(error) => {
+          const msg = error.response.data.detail
+          toast.error(msg)
+        }
+      })},
       conditionRow: (row) => row.is_locked
     },
     {
       label: "Activer",
-      handler: (row) => { changeStatus.mutate({ id: row.id, status: "ACTIVE" }) },
+      handler: (row) => { changeStatus.mutate({ id: row.id, status: "ACTIVE" },{
+        onError:(error) => {
+          const msg = error.response.data.detail
+          toast.error(msg)
+        }
+      })},
       conditionRow: (row) => row.status == "UPCOMING"
     },
     {
       label: "Cloturer",
-      handler: (row) => { changeStatus.mutate({ id: row.id, status: "CLOSED" }) },
+      handler: (row) => { changeStatus.mutate({ id: row.id, status: "CLOSED" },{
+        onError:(error) => {
+          const msg = error.response.data.detail
+          toast.error(msg)
+        }
+      }) },
       conditionRow: (row) => row.status == "ACTIVE"
     },
   ]

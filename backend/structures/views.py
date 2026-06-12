@@ -79,12 +79,6 @@ class MentionViewSet(ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ["text","code"]
 
-    def get_permissions(self):
-        if self.action in ['list',"retrieve"]:
-            return [IsInMention()]
-        else:
-            return [IsDepartmentStaff()]
-
     def get_queryset(self):
         user = self.request.user
         return get_mention_queryset(user).order_by('id')
@@ -99,7 +93,6 @@ class MentionViewSet(ModelViewSet):
             return None
         return super().paginate_queryset(queryset)
  
-
 class FormationViewSet(ModelViewSet):
     serializer_class = FormationSerializer
     filter_backends = [DjangoFilterBackend,SearchFilter]
@@ -142,7 +135,6 @@ class FormationViewSet(ModelViewSet):
         serializer = self.get_serializer(formation)
         return Response(serializer.data)
       
-
 class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
     filter_backends = [SearchFilter,DjangoFilterBackend]
@@ -281,8 +273,6 @@ class CourseUnitViewSet(ModelViewSet):
         delete_course_unit(course_unit)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-
 class CourseModuleViewSet(ModelViewSet):
     serializer_class = CourseModuleSerializer
     permission_classes = [IsDepartmentStaff]
@@ -299,6 +289,8 @@ class CourseModuleViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action in ['list',"retrieve"]:
             return [IsInMention()]
+        elif self.action in ["update","partial_update"]:
+            return [IsAcademicStaff()]
         else:
             return [IsDepartmentStaff()]
         
@@ -317,7 +309,6 @@ class CourseModuleViewSet(ModelViewSet):
         course_module = toggle_course_module_activation(instance)
         serializer = self.get_serializer(course_module)
         return Response(serializer.data)
-
 
 class CourseModuleChoice(GenericViewSet,mixins.ListModelMixin):
     serializer_class = CourseModuleSerializer

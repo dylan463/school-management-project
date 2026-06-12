@@ -36,7 +36,7 @@ class EnrollmentFilter(django_filters.FilterSet):
 class AssessmentFilter(django_filters.FilterSet):
     class Meta:
         model = Assessment
-        fields = ["school_year","course_module"]
+        fields = ["school_year","course_module","session"]
 
 class EnrollmentResultFilter(django_filters.FilterSet):
     school_year = django_filters.NumberFilter(field_name="enrollment__school_year__id")

@@ -57,3 +57,7 @@ export const PILL_COLORS = {
   'Examen': 'bg-blue-100  text-blue-800',
   'TP': 'bg-green-100 text-green-800',
 }
+
+export const EMAIL_AVAILABLE = import.meta.env.EMAIL_SERVER_AVAILABLE
+
+export const EMAIL_SERVICE_UNAVAILABLE_TITLE = "Service email temporairement indisponible."

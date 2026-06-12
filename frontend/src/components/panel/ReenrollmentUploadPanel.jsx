@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import Card from "../ui/Card"
-import Filter from "../Filter"
+import { useSearchDropdown } from "../../hooks/useSearchDropdown"
+import SearchableSelect from "../SearchableSelect"
 import Button from "../ui/Button"
 import { useTaskPolling } from "../../hooks/Usetaskpolling"
 import { useFormations } from "../../hooks/formations/useFormations"
@@ -84,20 +85,29 @@ function ResultBadges({ result }) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 const ReenrollmentUploadPanel = () => {
+    const fdd = useSearchDropdown({ delay: 300, minChars: 1 })
+    const sydd = useSearchDropdown({ delay: 300, minChars: 1 })
+    const sdd = useSearchDropdown({ delay: 300, minChars: 1 })
+
+    const [selectedFormation, setSelectedFormation] = useState(null)
+    const [selectedSchoolyear, setSelectedSchoolyear] = useState(null)
+    const [selectedSemester, setSelectedSemester] = useState(null)
+
     // ── Données des filtres ────────────────────────────────────────────────────
-    const { data: formations, isLoading: isLoadingFormations } = useFormations({ no_pagination:true, is_active: true },{enabled:true,staleTime:5*60*1000})
-    const { data: semesters, isLoading: isLoadingSemesters } = useSemesters({ no_pagination:true, is_active: true })
-    const { data: schoolyears, isLoading: isLoadingSchoolyears } = useSchoolyears({ no_pagination:true, status: 'OPEN' },{enabled:true,staleTime:5*60*1000})
+    const { data: formationsData, isFetching: isLoadingFormations } = useFormations({ no_pagination:true, is_active: true, ...(fdd.query ? { search: fdd.query } : {}) },{enabled:fdd.enabled,staleTime:5*60*1000})
+    const { data: semestersData, isFetching: isLoadingSemesters } = useSemesters({ no_pagination:true, is_active: true, ...(sdd.query ? { search: sdd.query } : {}) },{enabled:sdd.enabled})
+    const { data: schoolyearsData, isFetching: isLoadingSchoolyears } = useSchoolyears({ no_pagination:true, status: 'OPEN', ...(sydd.query ? { search: sydd.query } : {}) },{enabled:sydd.enabled,staleTime:5*60*1000})
+
+    const formations = formationsData?.results || formationsData || []
+    const semesters = semestersData?.results || semestersData || []
+    const schoolyears = schoolyearsData?.results || schoolyearsData || []
+
     // ── État des filtres ───────────────────────────────────────────────────────
     const [filters, setFilters] = useState({
         formation: "",
         school_year: "",
         semester: "",
     })
-
-    const handleFilterChange = (e) => {
-        setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    }
 
     // ── Fichier ────────────────────────────────────────────────────────────────
     const [file, setFile] = useState(null)
@@ -184,35 +194,59 @@ const ReenrollmentUploadPanel = () => {
                     </p>
                     {/* Filtres */}
                     <div className="my-2 flex flex-col gap-3">
-                        <Filter
-                            value={filters.formation}
+                        <SearchableSelect
                             label="Parcours"
-                            onChange={handleFilterChange}
-                            name="formation"
-                            options={formations ? formations : []}
-                            otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une formation", value: "" }]}
-                            render={(f) => f.text ?? f.code ?? f}
-                            className="grid grid-cols-1"
+                            selectedValue={selectedFormation}
+                            onSelect={(f) => {
+                                setSelectedFormation(f)
+                                setFilters(prev => ({ ...prev, formation: f.id }))
+                            }}
+                            onClear={() => {
+                                setSelectedFormation(null)
+                                setFilters(prev => ({ ...prev, formation: "" }))
+                            }}
+                            options={formations}
+                            renderOption={(op) => op.text}
+                            searchDropdownProps={fdd}
+                            loading={isLoadingFormations}
+                            placeholder="Rechercher un parcours"
+                            width="w-full"
                         />
-                        <Filter
-                            value={filters.school_year}
+                        <SearchableSelect
                             label="Année scolaire"
-                            onChange={handleFilterChange}
-                            name="school_year"
-                            options={schoolyears ? schoolyears : []}
-                            otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez une année", value: "" }]}
-                            render={(y) => y.text ?? y.code ?? y}
-                            className="grid grid-cols-1"
+                            selectedValue={selectedSchoolyear}
+                            onSelect={(y) => {
+                                setSelectedSchoolyear(y)
+                                setFilters(prev => ({ ...prev, school_year: y.id }))
+                            }}
+                            onClear={() => {
+                                setSelectedSchoolyear(null)
+                                setFilters(prev => ({ ...prev, school_year: "" }))
+                            }}
+                            options={schoolyears}
+                            renderOption={(op) => op.text}
+                            searchDropdownProps={sydd}
+                            loading={isLoadingSchoolyears}
+                            placeholder="Rechercher une année"
+                            width="w-full"
                         />
-                        <Filter
-                            value={filters.semester}
+                        <SearchableSelect
                             label="Semestre"
-                            onChange={handleFilterChange}
-                            name="semester"
-                            options={semesters ? semesters : []}
-                            otherOptions={[{ key: loadingFilters ? "Chargement…" : "Choisissez un semestre", value: "" }]}
-                            render={(s) => s.code ?? s.order ?? s}
-                            className="grid grid-cols-1"
+                            selectedValue={selectedSemester}
+                            onSelect={(s) => {
+                                setSelectedSemester(s)
+                                setFilters(prev => ({ ...prev, semester: s.id }))
+                            }}
+                            onClear={() => {
+                                setSelectedSemester(null)
+                                setFilters(prev => ({ ...prev, semester: "" }))
+                            }}
+                            options={semesters}
+                            renderOption={(op) => op.code}
+                            searchDropdownProps={sdd}
+                            loading={isLoadingSemesters}
+                            placeholder="Rechercher un semestre"
+                            width="w-full"
                         />
                     </div>
                 </div>

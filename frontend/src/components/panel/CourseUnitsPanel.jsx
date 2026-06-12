@@ -19,7 +19,7 @@ import { useUpdateCourseunit } from "../../hooks/courseunits/useUpdateCourseunit
 import { useDeleteCourseunit } from "../../hooks/courseunits/useDeleteCourseunit";
 import { useFormation } from "../../hooks/formations/useFormation";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
-import SearchWithDropdown from "../SearchWithDropdown";
+import SearchableSelect from "../SearchableSelect";
 import { ROLES } from "../../utils/constants"
 import { useAuth } from "../../context/AuthContext"
 import Badge from "../Badge"
@@ -43,17 +43,17 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
   const [loading, setLoading] = useState(false);
 
-  const { value, query, onChange, isOpen, close, containerRef } = useSearchDropdown({
+  const fdd = useSearchDropdown({
     delay: 300,
     minChars: 1,
   });
-  const { data: optionsData, isFetching } = useFormations(query ? { search: query } : {}, {enabled:!!query ,staleTime:5*60*1000});
+  const { data: optionsData, isFetching } = useFormations(fdd.query ? { search: fdd.query } : {}, { enabled: !!fdd.query, staleTime: 5 * 60 * 1000 });
   const optionResults = optionsData?.results || [];
 
   const handleSelectFormation = (formation) => {
     setSelectedFormation(formation);
     setForm(prev => ({ ...prev, formation: formation.id }));
-    close();
+    fdd.close();
   };
 
 
@@ -106,6 +106,30 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-3">
 
+      {/* FORMATION */}
+      <div className="flex flex-col gap-1">
+        <SearchableSelect
+          label="Parcours"
+          selectedValue={selectedFormation}
+          onSelect={handleSelectFormation}
+          onClear={() => {
+            setSelectedFormation(null);
+            setForm(prev => ({ ...prev, formation: "" }));
+          }}
+          options={optionResults}
+          renderOption={(option) => option.text}
+          searchDropdownProps={fdd}
+          loading={isFetching}
+          placeholder="Rechercher un parcours"
+          width="w-full"
+        />
+        {getError("formation") && (
+          <span className="text-xs text-red-500">
+            {getError("formation")}
+          </span>
+        )}
+      </div>
+
       {/* TEXT */}
       <div className="flex flex-col gap-1">
         <label className="text-sm text-slate-600">Nom</label>
@@ -137,49 +161,6 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
         {getError("code") && (
           <span className="text-xs text-red-500">
             {getError("code")}
-          </span>
-        )}
-      </div>
-
-      {/* FORMATION */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-600">Parcours</label>
-        {!selectedFormation ? (
-          <SearchWithDropdown
-            value={value}
-            onChange={onChange}
-            isOpen={isOpen}
-            close={close}
-            containerRef={containerRef}
-            options={optionResults}
-            loading={isFetching}
-            onSelect={handleSelectFormation}
-            renderOption={(option) => <div className="flex gap-x-2 items-center">
-              <div>
-                {option.text}
-              </div>
-              <Badge content={option.code} color="blue" />
-            </div>}
-            inputClassName="w-full"
-          />
-        ) : (
-          <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-slate-50">
-            <span className="text-sm">{selectedFormation.text}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedFormation(null);
-                setForm(prev => ({ ...prev, formation: "" }));
-              }}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Changer
-            </button>
-          </div>
-        )}
-        {getError("formation") && (
-          <span className="text-xs text-red-500">
-            {getError("formation")}
           </span>
         )}
       </div>
@@ -250,10 +231,10 @@ export default function CourseUnitsPanel() {
   const { role } = useAuth()
   const navigate = useNavigate()
 
-  const { search, page, setSearch, setPage, formation, setFormation, status, setStatus } = useQueryParams({
+  const { search, page, setSearch, setPage, formation_id, setFormation_id, status, setStatus } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
-    formation: { key: "formation", type: "string", default: "" },
+    formation_id: { key: "formation_id", type: "number", default: "" },
     status: { key: "status", type: "string", default: "" },
   })
   useEffect(() => {
@@ -265,28 +246,27 @@ export default function CourseUnitsPanel() {
 
   const [showFilters, setShowFilters] = useState(false)
   const debouncedSearch = useDebounced(search)
-  const { value, query, onChange, isOpen, close, containerRef } = useSearchDropdown({
+  const fdd = useSearchDropdown({
     delay: 300,
     minChars: 1,
   })
-  const { data: formationOptions, isLoading: isFormationsLoading, isFetching: isFormationFetching } = useFormations(query ? { search: query } : {}, {enabled:query.length >= 1, staleTime:0})
+  const { data: fOptions, isFetching: fFetching } = useFormations(fdd.query ? { search: fdd.query } : {}, { enabled: fdd.enabled, staleTime: 0 })
 
-  const formationOptionResults = formationOptions?.results || []
-  const { data: formationData, isLoading: isFormationLoading } = useFormation(formation)
-  const isFilterLoading = isFormationLoading || isFormationsLoading
+  const fOptionResults = fOptions?.results || []
+  const { data: formation } = useFormation(formation_id)
 
-  const handleSelectFormation = (formation) => {
-    setFormation(formation.id)
-    close()
+  const handleSelectFormation = (f) => {
+    setFormation_id(f.id)
+    fdd.close()
   }
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
-      ...(formation && { formation: formation }),
+      ...(formation_id && { formation: formation_id }),
       ...(page && { page }),
       ...(status && { is_active: status })
     }
-  }, [debouncedSearch, page, formation, status])
+  }, [debouncedSearch, page, formation_id, status])
 
   // actual fetching of the data with the filters
   const { data, isLoading: isDataLoading } = useCourseunits(filters);
@@ -345,7 +325,7 @@ export default function CourseUnitsPanel() {
           value={search}
           onChange={(e) => { setSearch(e.target.value) }}
         ></SearchInput>
-        { canCreate && <Button
+        {canCreate && <Button
           variant="primary"
           onClick={() => {
             openModal({ title: "ajouter une UE", content: <AddOrEditForm onSuccess={closeModal} /> })
@@ -357,45 +337,23 @@ export default function CourseUnitsPanel() {
       {showFilters && (
         <div className="ml-2 mb-2">
           <div className="flex gap-2 border-b pb-2 mb-2 border-slate-200">
-            {!formationData ? (
-              <div>
-                <label className="text-slate-600 font-bold block">Parcours</label>
-                <SearchWithDropdown
-                  value={value}
-                  onChange={onChange}
-                  isOpen={isOpen}
-                  close={close}
-                  containerRef={containerRef}
-                  options={formationOptionResults}
-                  loading={isFormationFetching}
-                  onSelect={handleSelectFormation}
-                  renderOption={(option) => <div className="flex gap-x-2 items-center">
-                    <div>
-                      {option.text}
-                    </div>
-                    <Badge content={option.code} color="blue" />
-                  </div>}
-                  placeholder="Rechercher une formation"
-                  inputClassName="w-[200px]"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="text-slate-600 font-bold block">Parcours</label>
-                <div className="flex items-center justify-between border h-[35px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                  <span className="text-sm">{formationData?.text}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormation(null);
-                    }}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    Changer
-                  </button>
+            <SearchableSelect
+              label="Parcours"
+              selectedValue={formation}
+              onSelect={handleSelectFormation}
+              onClear={() => setFormation_id("")}
+              options={fOptionResults}
+              renderOption={(option) => (
+                <div className="flex gap-x-2 items-center">
+                  <div>{option.text || option.code}</div>
+                  {option.code && <Badge content={option.code} color="blue" />}
                 </div>
-              </div>
-            )}
+              )}
+              searchDropdownProps={fdd}
+              loading={fFetching}
+              placeholder="Rechercher un parcours"
+              width="w-[200px]"
+            />
             <Filter
               value={status}
               label="Statut"

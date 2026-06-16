@@ -33,6 +33,7 @@ from .services import (
     create_assessment,
     delete_assessment,
     toggle_assessment_publication,
+    bulk_deliberate
 )
 
 from .queryset import (
@@ -111,6 +112,10 @@ class EnrollmentViewSet(ModelViewSet):
             return None
         return super().paginate_queryset(queryset)
 
+    @action(methods=["post"],detail=False)
+    def deliberate(self,request):
+        bulk_deliberate()
+        return Response({"detail":"déliberation terminée"})
 
 class AssessmentViewSet(ModelViewSet):
     serializer_class = AssessmentSerializer

@@ -7,9 +7,11 @@ from django.db import transaction
 from django.db.models import Prefetch
 from collections import defaultdict
 from .query import attend_to_assessment,promoted_people,people_with_course_debt
-from structures.models import User,Formation,Semester,SchoolYear
+from structures.models import User,Formation,Semester,SchoolYear,CourseUnit,CourseModule
 from notifications.utils import create_notification
 from .task import create_notifications_for_assessment
+from django.db.models import Sum, F, FloatField, ExpressionWrapper
+
 # ----------------- enrollment -----------------
 
 @transaction.atomic
@@ -70,7 +72,6 @@ def create_enrollment(student : User,school_year: SchoolYear,semester : Semester
         school_year=school_year
     )
 
-
 @transaction.atomic
 def change_enrollment_status(enrollment: Enrollment, status: str):
     if status not in Enrollment.Status.values:
@@ -108,36 +109,27 @@ def change_enrollment_status(enrollment: Enrollment, status: str):
     else:
         # on a annuler le resultat de l'inscription donc on dit que les debt ne sont pas encore délibéré
         if status == Enrollment.Status.ACTIVE:
-            debts = list(
-                Debt.objects.filter(result__enrollment=enrollment)
-                .select_related("result")
-            )
-            if debts:
-                for debt in debts:
-                    debt.last_deliberation = None
-                Debt.objects.bulk_update(debts,["last_deliberation"])
-        # on délibére les resultat de l'inscription endétté donc on spécifie une date de délibération pour pouvoir suivre l'inscription au cas ou l'utilisateur commet une erreur.
+            Debt.objects.filter(result__enrollment=enrollment).update(last_deliberation=None)
         else:
-            debts = list(
-                Debt.objects.filter(result__enrollment=enrollment)
-                .select_related("result")
-            )
+            debts = Debt.objects.filter(result__enrollment=enrollment).select_related("result")
 
-            if debts:
-                for debt in debts:
-                    debt.cleared = debt.result.status != EnrollmentResult.Status.NOT_VALIDATED
-                    debt.last_deliberation = active_sy
-                Debt.objects.bulk_update(debts, ["cleared","last_deliberation"])
+            to_update = []
+
+            for debt in debts:
+                debt.cleared = debt.result.status != EnrollmentResult.Status.NOT_VALIDATED
+                debt.last_deliberation = active_sy
+                to_update.append(debt)
+
+            if to_update:
+                Debt.objects.bulk_update(to_update, ["cleared", "last_deliberation"])
 
     enrollment.status = status
     enrollment.save()
     return enrollment
 
-
 @transaction.atomic
 def delete_enrollment(enrollment : Enrollment):
     enrollment.delete()
-
 
 # --------------- Assessments ----------------
 
@@ -392,3 +384,52 @@ def delete_assessment(assessment : Assessment):
     update_results(assessment.course_module)
     assessment.delete()
 
+@transaction.atomic
+def bulk_deliberate():
+
+    active_sy = SchoolYear.objects.filter(
+        status=SchoolYear.Status.ACTIVE
+    ).exists()
+
+    if not active_sy:
+        raise ValidationError({
+            "detail": "aucune année scolaire est active pour le moment."
+        })
+
+    # 1. Trouver les UE non validées par enrollment
+    failed_enrollments = (
+        EnrollmentResult.objects
+        .filter(enrollment__status=Enrollment.Status.ACTIVE)
+        .values(
+            "enrollment_id",
+            "course_module__course_unit_id",
+            "course_module__course_unit__min_val_score",
+        )
+        .annotate(
+            weighted_score=Sum(
+                F("final_score") * F("course_module__credits"),
+                output_field=FloatField()
+            ),
+            total_credits=Sum("course_module__credits"),
+        )
+        .annotate(
+            average=ExpressionWrapper(
+                F("weighted_score") / F("total_credits"),
+                output_field=FloatField(),
+            )
+        )
+        .filter(
+            average__lt=F("course_module__course_unit__min_val_score")
+        )
+        .values_list("enrollment_id", flat=True)
+        .distinct()
+    )
+
+    # 2. Tous les enrollments actifs
+    qs = Enrollment.objects.filter(
+        status=Enrollment.Status.ACTIVE
+    )
+
+    qs.exclude(
+        id__in=failed_enrollments
+    ).update(status=Enrollment.Status.VALIDATED)

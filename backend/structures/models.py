@@ -111,6 +111,10 @@ class CourseUnit(models.Model):
 
     formation = models.ForeignKey(Formation, on_delete=models.PROTECT, related_name='course_units')
 
+    min_val_score = models.IntegerField(default=1,validators=[
+        MinValueValidator(1),MaxValueValidator(20)
+    ])
+
     is_active = models.BooleanField(default=True)
 
     class Meta:

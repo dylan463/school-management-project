@@ -190,7 +190,7 @@ def enterTeachers():
 if __name__ == "__main__":
     create_system_admin()
     create_tco_head()
-    # setup_database_structure()
-    # enterStudents()
-    # enterEC()
-    # enterTeachers()
+    setup_database_structure()
+    enterStudents()
+    enterEC()
+    enterTeachers()

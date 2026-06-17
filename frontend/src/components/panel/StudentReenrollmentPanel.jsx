@@ -2,7 +2,7 @@ import { useState } from "react";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import DataTable from "../DataTable";
-import SearchWithDropdown from "../SearchWithDropdown";
+import SearchWithDropdown from "../SearchWithDropDown";
 import { useSearchDropdown } from "../../hooks/useSearchDropdown";
 import SearchableSelect from "../SearchableSelect";
 import { useStudents } from "../../hooks/students/useStudents";

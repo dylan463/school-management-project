@@ -6,6 +6,7 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import { toast } from 'react-toastify'
 import background from '../assets/fondlogin.jpg'
+import logoTco from '../assets/telecom.png'
 
 export default function LoginPage() {
   const { login, loading, isAuthenticated, role, error, setError } = useAuth()
@@ -65,7 +66,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative font-[Poppins]"
-      style={{ backgroundImage: background }}
+      style={{ backgroundImage: `url(${background})` }}
     >
       {/* Overlay sombre */}
       <div className="absolute inset-0 bg-black/40"></div>
@@ -75,7 +76,7 @@ export default function LoginPage() {
         {/* Logo + phrase de bienvenue */}
         <div className="flex flex-col items-center mb-6">
           <img
-            src="src/assets/telecom.png"
+            src={logoTco}
             alt="Logo Mention Télécommunication"
             className="w-40 h-auto mb-4 drop-shadow-lg"
           />

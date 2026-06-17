@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Assessment, Grade, EnrollmentResult,Debt
-from structures.models import CourseModule,SchoolYear,Formation
+from structures.models import CourseModule,SchoolYear,Formation,CourseUnit
 from structures.serializers import UserSerializer,SchoolYearSerializer,FormationSerializer,SemesterSerializer
 from rest_framework.exceptions import ValidationError
 from .models import Enrollment
@@ -90,6 +90,7 @@ class BulletinSerializer(serializers.ModelSerializer):
 
         for er in enrollmentresults:
             course_unit = er.course_module.course_unit.text
+            course_unit_val_score = er.course_module.course_unit.min_val_score
             course_module = er.course_module.text
             score = er.final_score
             credit = er.course_module.credits
@@ -115,7 +116,9 @@ class BulletinSerializer(serializers.ModelSerializer):
                     "modules": [],
                     "total_score": 0,
                     "total_credit": 0,
+                    "min_val_score":course_unit_val_score,
                     "validated": True,
+                    'average':0
                 }
                 cours_units.append(unit)
 
@@ -125,10 +128,11 @@ class BulletinSerializer(serializers.ModelSerializer):
             unit["total_score"] += score * credit
             unit["total_credit"] += credit
 
-            if status == "NOT_VALIDATED":
-                unit["validated"] = False
-
             unit["modules"].append(course_module)
+
+        for unit in cours_units:
+            unit['average'] = unit['total_score'] / unit['total_credit'] if not unit['total_credit'] == 0 else 0
+            unit['validated'] = unit['average'] >= unit['min_val_score']
 
         return {
             "coursUnits": cours_units,

@@ -10,35 +10,37 @@ import { useModal } from '../../context/ModalContext'
 import useDRFErrors from "../../hooks/useDRFError"
 import { toast } from 'react-toastify'
 import Badge from "../Badge"
-import { useSearchDropdown } from "../../hooks/useSearchDropdown"
-import SearchableSelect from "../SearchableSelect"
+import Filter from "../Filter"
 import { useQueryParams } from "../../hooks/useQueryParams"
 import { useNavigate } from 'react-router-dom'
 
 import { useEnrollments } from "../../hooks/enrollments/useEnrollments"
+import { useSearchDropdown } from "../../hooks/useSearchDropdown"
+import SearchWithDropdown from "../SearchWithDropdown"
 
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
 import { useSchoolyear } from "../../hooks/schoolyears/useSchoolyear"
 import { useFormations } from "../../hooks/formations/useFormations"
 import { useFormation } from "../../hooks/formations/useFormation"
 import { useSemesters } from "../../hooks/semesters/useSemesters"
-import { useSemester } from "../../hooks/semesters/useSemester"
 import { useSelected } from "../../context/SelectedContext"
 import Switch from "../Switch"
 import { useChangeEnrollmentStatus } from "../../hooks/enrollments/useChangeEnrollmentStatus"
+import { useAutoDeliberation } from "../../hooks/enrollments/useAutoDeliberation"  // ← AJOUT
 
 
-
-export default function DeliberationPanel({enrollment, setEnrollment}) {
+export default function DeliberationPanel() {
   const { openModal, closeModal } = useModal();
+  const { selected: SelectedEnrollment, setSelected: setSelectedEnrollment } = useSelected()
   const navigate = useNavigate();
 
-  const { search, page, setSearch, setPage, school_year: schoolyear, formation_id, setFormation_id, semester_id, setSemester_id, status, setStatus } = useQueryParams({
+  const { search, page, setSearch, setPage, school_year: schoolyear, formation, setFormation, semester, enrollment, setEnrollment, setSemester, status, setStatus } = useQueryParams({
     search: { key: "search", type: "string", default: "" },
     page: { key: "page", type: "number", default: 1 },
-    formation_id: { key: "formation_id", type: "number", default: "" },
-    semester_id: { key: "semester_id", type: "number", default: "" },
+    formation: { key: "formation", type: "string", default: "" },
+    semester: { key: "semester", type: "string", default: "" },
     status: { key: "status", type: "string", default: "NOT_DELIBERATED" },
+    enrollment: { key: "enrollment", type: "string", default: "" },
   });
 
   useEffect(() => {
@@ -51,65 +53,68 @@ export default function DeliberationPanel({enrollment, setEnrollment}) {
   const debouncedSearch = useDebounced(search);
 
   const changeEnrollmentStatusMutation = useChangeEnrollmentStatus();
+  const autoDeliberationMutation = useAutoDeliberation();  // ← AJOUT
 
   // Filters hooks
-  const fdd = useSearchDropdown({ delay: 300, minChars: 1 });
-  const { data: fOptions, isFetching: fFetching } = useFormations(fdd.query ? { search: fdd.query } : {}, { enabled: fdd.enabled, staleTime: 0 });
-  const fOptionResults = fOptions?.results || [];
-  const { data: formation } = useFormation(formation_id);
+  const { value: formationValue, query: formationQuery, onChange: formationOnChange, isOpen: formationIsOpen, close: formationClose, containerRef: formationContainerRef } = useSearchDropdown({ delay: 300, minChars: 1 });
+  const { data: formationOptions, isFetching: isFormationFetching } = useFormations(formationQuery ? { search: formationQuery } : {}, formationQuery.length >= 1, 0);
+  const formationOptionResults = formationOptions?.results || [];
+  const { data: formationData } = useFormation(formation);
 
-  const sdd = useSearchDropdown({ delay: 300, minChars: 1 })
-  const { data: semester } = useSemester(semester_id)
-  const { data: sOptions, isFetching: sFetching } = useSemesters(sdd.query ? { search: sdd.query } : {}, { enabled: sdd.enabled, staleTime: 0 })
-  const sOptionResults = sOptions?.results || sOptions || []
+  const { data: semesterOptions, isSemesterFetching } = useSemesters({ no_pagination: true })
+  const semesterOptionResults = semesterOptions || []
 
   const { data: activeSyData } = useSchoolyears({ status: "ACTIVE", no_pagination: true })
   const activeSy = activeSyData?.[0] || null
 
-  const handleSelectFormation = (f) => {
-    setFormation_id(f.id);
-    fdd.close();
-  };
-
-  const handleSelectSemester = (s) => {
-    setSemester_id(s.id);
-    sdd.close();
+  const handleSelectFormation = (selectedFormation) => {
+    setFormation(selectedFormation.id);
+    formationClose();
   };
 
   const handleSelectEnrollment = (selectedEnrollment) => {
     const enrollmentId = selectedEnrollment?.[0]?.id || ""
     setEnrollment(enrollmentId);
-  }
-
-  const handleCancel = (enrollment) => {
-    changeEnrollmentStatusMutation.mutate({ id: enrollment.id, data: { status: "ACTIVE" } }, {
-    onSuccess: () => {
-      toast.success("Inscription annulée avec succès")
-    },
-    onError: (error) => {
-      toast.error("Erreur lors de l'annulation de l'inscription")
-    }
-    })
-    setEnrollment('')
+    setSelectedEnrollment(enrollmentId)
   }
 
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
-      ...(formation_id && { formation: formation_id }),
-      ...(semester_id && { semester: semester_id }),
+      ...(formation && { formation: formation }),
+      ...(semester && { semester }),
       ...(status && { status }),
       ...(page && { page }),
     };
-  }, [debouncedSearch, page, formation_id, schoolyear, status, semester_id]);
+  }, [debouncedSearch, page, formation, schoolyear, status, semester]);
 
   const { data, isLoading: isDataLoading } = useEnrollments(filters);
   const results = data?.results || [];
   const totalPages = Math.max(1, Math.ceil((data?.count || 0) / PAGINATION_SIZE));
 
+  // ── AJOUT : handler délibération automatique ──────────────────────────────
+  const handleAutoDeliberation = () => {
+    // On transmet les filtres actifs pour cibler le même sous-ensemble
+    // que ce qui est affiché à l'écran (même semestre / même parcours)
+    const payload = {
+      ...(semester  && { semester:  Number(semester)  }),
+      ...(formation && { formation: Number(formation) }),
+    }
+
+    autoDeliberationMutation.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Les étudiant qui ont validé tout leur UE sont validés.")
+      },
+      onError: () => {
+        toast.error("Erreur lors de la délibération automatique.")
+      },
+    })
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const columns = [
     {
-      header: "Etudiants", key: "student",
+      header: "Etudiant", key: "student",
       render: (student) => student.first_name || student.last_name ? `${student.first_name} ${student.last_name}` : "-"
     },
     {
@@ -117,7 +122,7 @@ export default function DeliberationPanel({enrollment, setEnrollment}) {
       render: (formation) => formation.text
     },
     {
-      header: "Semestres", key: "semester",
+      header: "Semestre", key: "semester",
       render: (semester) => semester.code
     },
     {
@@ -130,17 +135,22 @@ export default function DeliberationPanel({enrollment, setEnrollment}) {
   const actions = [
     {
       label: "Annuler",
-      handler: handleCancel,
+      handler: (row) => changeEnrollmentStatusMutation.mutate({ id: row.id, data: { status: "ACTIVE" } }, {
+        onSuccess: () => {
+          toast.success("Inscription annulée avec succès")
+        },
+        onError: (error) => {
+          toast.error("Erreur lors de l'annulation de l'inscription")
+        }
+      }),
       conditionGlobal: status == "DELIBERATED" && !!activeSy
     },
   ];
 
   const statusTabs = [
-    { key: "Non Délibéré", value: "NOT_DELIBERATED" },
-    { key: "Délibéré", value: "DELIBERATED" },
+    { key: "non délibéré", value: "NOT_DELIBERATED" },
+    { key: "délibéré", value: "DELIBERATED" },
   ]
-
-
 
   return (
     <div>
@@ -158,6 +168,25 @@ export default function DeliberationPanel({enrollment, setEnrollment}) {
             <Button variant="primary" onClick={() => setShowFilters(!showFilters)}>
               Filtres
             </Button>
+
+            {/* ── AJOUT : bouton Délibération Automatique ───────────────────
+                - Visible uniquement sur l'onglet "non délibéré"
+                - Visible uniquement quand une année scolaire est active
+                - Désactivé pendant le traitement (isPending)
+                - Placé dans la même barre d'outils, à droite de "Filtres"
+            ─────────────────────────────────────────────────────────────── */}
+            {status === "NOT_DELIBERATED" && activeSy && (
+              <Button
+                variant="secondary"
+                onClick={handleAutoDeliberation}
+                disabled={autoDeliberationMutation.isPending}
+              >
+                {autoDeliberationMutation.isPending
+                  ? "Traitement en cours..."
+                  : "Délibération Automatique"}
+              </Button>
+            )}
+
           </div>
           <SearchInput
             placeholder="Rechercher..."
@@ -170,41 +199,53 @@ export default function DeliberationPanel({enrollment, setEnrollment}) {
         {showFilters && (
           <div className="ml-2 mb-2">
             <div className="flex flex-wrap gap-4 border-b pb-4 mb-2 border-slate-200">
-              <SearchableSelect
-                label="Parcours"
-                selectedValue={formation}
-                onSelect={handleSelectFormation}
-                onClear={() => setFormation_id("")}
-                options={fOptionResults}
-                renderOption={(option) => (
-                  <div className="flex gap-x-2 items-center">
-                    <div>{option.text || option.code}</div>
-                    {option.code && <Badge content={option.code} color="blue" />}
+              {/* Parcours */}
+              <div>
+                <label className="text-slate-600 text-sm font-bold block mb-1">Parcours</label>
+                {!formationData ? (
+                  <SearchWithDropdown
+                    value={formationValue}
+                    onChange={formationOnChange}
+                    isOpen={formationIsOpen}
+                    close={formationClose}
+                    containerRef={formationContainerRef}
+                    options={formationOptionResults}
+                    loading={isFormationFetching}
+                    onSelect={handleSelectFormation}
+                    renderOption={(option) => <div className="flex gap-x-2 items-center">
+                      <div>{option.text || option.name}</div>
+                    </div>}
+                    placeholder="Rechercher..."
+                    inputClassName="w-[200px]"
+                  />
+                ) : (
+                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
+                    <span className="text-sm truncate">{formationData?.text || formationData?.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormation(null)}
+                      className="text-xs text-red-500 hover:underline ml-2"
+                    >
+                      Changer
+                    </button>
                   </div>
                 )}
-                searchDropdownProps={fdd}
-                loading={fFetching}
-                placeholder="Rechercher un parcours"
-                width="w-[200px]"
-              />
+              </div>
 
-              <SearchableSelect
-                label="Semestre"
-                selectedValue={semester}
-                onSelect={handleSelectSemester}
-                onClear={() => setSemester_id("")}
-                options={sOptionResults}
-                renderOption={(option) => (
-                  <div className="flex gap-x-2 items-center">
-                    <div>{option.code || option.order}</div>
-                    {option.code && <Badge content={option.code} color="blue" />}
-                  </div>
-                )}
-                searchDropdownProps={sdd}
-                loading={sFetching}
-                placeholder="Rechercher un semestre"
-                width="w-[200px]"
-              />
+              {/* Semestre */}
+              <div>
+                <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
+                <Filter
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  otherOptions={[
+                    { key: "Toutes", value: "" },
+                  ]}
+                  options={semesterOptionResults}
+                  render={(value) => value.code}
+                  className="w-[200px] h-[38px]"
+                />
+              </div>
             </div>
           </div>
         )}

@@ -29,7 +29,11 @@ export const enrollmentService = {
   bulletin: async (id) => {
     const response = await api.post(`/assessments/enrollments/${id}/bulletin/`)
     return response.data
-  }
+  },
+  autoDeliberate: async (filters = {}) => {
+    const response = await api.post('/assessments/enrollments/deliberate/', filters)
+    return response.data
+  },
 }
 
 export const assessmentService = {

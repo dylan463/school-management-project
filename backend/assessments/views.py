@@ -114,7 +114,9 @@ class EnrollmentViewSet(ModelViewSet):
 
     @action(methods=["post"],detail=False)
     def deliberate(self,request):
-        bulk_deliberate()
+        formation_id = request.query_params.get("formation_id")
+        semester_id = request.query_params.get("semester_id")
+        bulk_deliberate(formation_id,semester_id)
         return Response({"detail":"déliberation terminée"})
 
 class AssessmentViewSet(ModelViewSet):

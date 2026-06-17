@@ -4,7 +4,7 @@ from .models import (
 from structures.models import SchoolYear,CourseModule
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch,Q
 from collections import defaultdict
 from .query import attend_to_assessment,promoted_people,people_with_course_debt
 from structures.models import User,Formation,Semester,SchoolYear,CourseUnit,CourseModule
@@ -385,7 +385,7 @@ def delete_assessment(assessment : Assessment):
     assessment.delete()
 
 @transaction.atomic
-def bulk_deliberate():
+def bulk_deliberate(formation_id=None,semester_id=None):
 
     active_sy = SchoolYear.objects.filter(
         status=SchoolYear.Status.ACTIVE
@@ -396,10 +396,17 @@ def bulk_deliberate():
             "detail": "aucune année scolaire est active pour le moment."
         })
 
+    query = Q(enrollment__status=Enrollment.Status.ACTIVE)
+    if formation_id:
+        query = query & Q(enrollment__formation__id=formation_id)
+    if semester_id:
+        query = query & Q(enrollment__semester_id=semester_id)
+
+
     # 1. Trouver les UE non validées par enrollment
     failed_enrollments = (
         EnrollmentResult.objects
-        .filter(enrollment__status=Enrollment.Status.ACTIVE)
+        .filter(query)
         .values(
             "enrollment_id",
             "course_module__course_unit_id",

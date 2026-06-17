@@ -122,7 +122,7 @@ class CourseUnitSerializer(serializers.ModelSerializer):
     total_credits = serializers.SerializerMethodField()
     class Meta:
         model = CourseUnit
-        fields = ["id","code","text","formation","is_active","total_credits"]
+        fields = ["id","code","text","formation","min_val_score","is_active","total_credits"]
         read_only_fields = ["id"]
         extra_kwargs = {
             "is_active":{"required":False}
@@ -158,4 +158,4 @@ class CourseModuleCreateSerializer(serializers.ModelSerializer):
 class CourseUnitCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseUnit
-        fields = ["code","text","formation"]        
+        fields = ["code","text","formation","min_val_score"]        

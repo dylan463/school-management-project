@@ -32,6 +32,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
     formation: initialData.formation?.id || "",
     code: initialData.code || "",
     text: initialData.text || "",
+    min_val_score: initialData.min_val_score || 1,
   });
 
   const [selectedFormation, setSelectedFormation] = useState(initialData.formation || null);
@@ -68,7 +69,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.code || !form.text || !form.formation) return;
+    if (!form.code || !form.text || !form.formation || !form.min_val_score) return;
 
     setLoading(true);
 
@@ -90,7 +91,7 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
 
         await create.mutateAsync(data, {
           onSuccess: () => {
-            setForm({ code: "", text: "", formation: "" });
+            setForm({ code: "", text: "", formation: "" ,min_val_score:""});
             setSelectedFormation(null);
             onSuccess?.();
           },
@@ -163,6 +164,20 @@ function AddOrEditForm({ initialData = {}, onSuccess }) {
             {getError("code")}
           </span>
         )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm text-slate-600">note de validation UE (1-19)</label>
+        <input
+          name="min_val_score"
+          type="number"
+          min="1"
+          max="19"
+          value={form.min_val_score}
+          onChange={handleChange}
+          className="border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+        />
+        {getError("min_val_score") && <span className="text-xs text-red-500">{getError("min_val_score")}</span>}
       </div>
 
       {/* GLOBAL ERROR */}
@@ -280,6 +295,7 @@ export default function CourseUnitsPanel() {
     { header: "Parcours", key: "formation", render: (value) => value?.text || "" },
     { header: "Code UE", key: "code" },
     { header: "Nom UE", key: "text" },
+    { header: "note de validation", key: "min_val_score" },
     {
       header: "Statut", key: "is_active", render: (value) => {
         return value ? <Badge content="Active" color="green" /> : <Badge content="Inactive" color="red" />

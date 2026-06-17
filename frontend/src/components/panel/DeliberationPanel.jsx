@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useEnrollments } from "../../hooks/enrollments/useEnrollments"
 import { useSearchDropdown } from "../../hooks/useSearchDropdown"
-import SearchWithDropdown from "../SearchWithDropdown"
+import SearchableSelect from "../SearchableSelect"
 
 import { useSchoolyears } from "../../hooks/schoolyears/useSchoolyears"
 import { useSchoolyear } from "../../hooks/schoolyears/useSchoolyear"
@@ -202,34 +202,27 @@ export default function DeliberationPanel() {
               {/* Parcours */}
               <div>
                 <label className="text-slate-600 text-sm font-bold block mb-1">Parcours</label>
-                {!formationData ? (
-                  <SearchWithDropdown
-                    value={formationValue}
-                    onChange={formationOnChange}
-                    isOpen={formationIsOpen}
-                    close={formationClose}
-                    containerRef={formationContainerRef}
-                    options={formationOptionResults}
-                    loading={isFormationFetching}
-                    onSelect={handleSelectFormation}
-                    renderOption={(option) => <div className="flex gap-x-2 items-center">
-                      <div>{option.text || option.name}</div>
-                    </div>}
-                    placeholder="Rechercher..."
-                    inputClassName="w-[200px]"
-                  />
-                ) : (
-                  <div className="flex items-center justify-between border h-[38px] w-[200px] rounded-md px-3 py-2 bg-slate-50">
-                    <span className="text-sm truncate">{formationData?.text || formationData?.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFormation(null)}
-                      className="text-xs text-red-500 hover:underline ml-2"
-                    >
-                      Changer
-                    </button>
-                  </div>
-                )}
+                <SearchableSelect
+                  label={null}
+                  selectedValue={formationData}
+                  onSelect={(selected) => {
+                    handleSelectFormation(selected)
+                  }}
+                  onClear={() => setFormation(null)}
+                  options={formationOptionResults}
+                  renderOption={(option) => option.text || option.name}
+                  renderSelected={(selected) => selected?.text || selected?.name}
+                  searchDropdownProps={{
+                    value: formationValue,
+                    onChange: formationOnChange,
+                    isOpen: formationIsOpen,
+                    close: formationClose,
+                    containerRef: formationContainerRef,
+                  }}
+                  loading={isFormationFetching}
+                  placeholder="Rechercher..."
+                  width="w-[200px]"
+                />
               </div>
 
               {/* Semestre */}

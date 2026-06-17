@@ -1,4 +1,4 @@
-import SearchWithDropdown from "./SearchWithDropdown"
+import SearchWithDropdown from "./SearchWithDropDown"
 
 /**
  * Composant de sélection réutilisable qui alterne entre:

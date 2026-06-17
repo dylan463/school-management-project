@@ -79,7 +79,7 @@ def setup_database_structure():
 
 def enterStudents():
     """setup users"""
-    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\listeTCO.csv"
+    file_name = "listeTCO.csv"
     df = pd.read_csv(file_name)[:20]
     total = len(df)
     current = 0
@@ -129,7 +129,7 @@ def enterEC():
         )
 
     formation , _= Formation.objects.get_or_create(code="ACAD",text="ACAD",mention=mention)
-    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\matieres_db.csv"
+    file_name = "matieres_db.csv"
     df = pd.read_csv(file_name)
     total= len(df)
     current = 0
@@ -165,7 +165,7 @@ def enterEC():
 
 def enterTeachers():
     """setup users"""
-    file_name = "c:\\Users\\Anthony\\Documents\\projet\\school-management-project\\backend\\professeurs.csv"
+    file_name = "professeurs.csv"
     df = pd.read_csv(file_name)
     total = len(df)
     current = 0

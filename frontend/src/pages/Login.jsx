@@ -5,6 +5,7 @@ import { ROUTES, ROLES } from '../utils/constants'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import { toast } from 'react-toastify'
+import background from '../assets/fondlogin.jpg'
 
 export default function LoginPage() {
   const { login, loading, isAuthenticated, role, error, setError } = useAuth()
@@ -64,7 +65,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative font-[Poppins]"
-      style={{ backgroundImage: "url('src/assets/fondlogin.jpg')" }}
+      style={{ backgroundImage: background }}
     >
       {/* Overlay sombre */}
       <div className="absolute inset-0 bg-black/40"></div>

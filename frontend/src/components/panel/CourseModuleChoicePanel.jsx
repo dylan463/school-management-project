@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES } from "../../utils/constants";
 
-import { useCoursemodulechoices } from "../../hooks/coursemodules/useCoursemoduleChoices";
+import { useCoursemodulechoices } from "../../hooks/coursemodules/useCoursemodulechoices";
 import { useChooseCoursemodule } from "../../hooks/coursemodules/useChooseCoursemodule";
 
 import { useQueryParams } from "../../hooks/useQueryParams";

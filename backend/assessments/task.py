@@ -28,7 +28,7 @@ def create_notifications_for_assessment(assessment):
     content = f"Vous avez un examen session {session} pour le cours {cours} le {date.day} {maptomonth(date.month)} {date.year}."
 
     enrollments = Enrollment.objects.filter(
-        semester=assessment.semester,
+        semester=assessment.course_module.semester,
         school_year=assessment.school_year,
         formation=assessment.course_module.course_unit.formation
     ).select_related("student")

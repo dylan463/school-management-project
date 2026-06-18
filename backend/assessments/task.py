@@ -39,7 +39,7 @@ def create_notifications_for_assessment(assessment):
         student = enrollment.student
         to_create.append(
             Notification(
-                student=student,
+                user=student,
                 title=title,
                 content=content
                 )

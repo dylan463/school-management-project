@@ -12,24 +12,24 @@ from .models import ImportJob
 
 @shared_task(bind=True,acks_late=True)
 def create_users_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int,inculde_auth=False):
-    formation = Formation.objects.get(pk=formation_id)
-    semester = Semester.objects.get(pk=semester_id)
-    school_year = SchoolYear.objects.get(pk=school_year_id)
-    mention = semester.mention
-    role = Role.STUDENT
-    report = []
-    name = f"IE-{semester.code}-{formation.text}-{school_year.text}"
-
-    df = pd.DataFrame(records)
-    total = len(df)
-
-    import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
-    import_job.import_type = "STUDENT_CREATION"
-    import_job.name = name
-    import_job.total_rows = total
-    import_job.status = ImportJob.Status.PROGRESS
-    import_job.save()
     try:
+        formation = Formation.objects.get(pk=formation_id)
+        semester = Semester.objects.get(pk=semester_id)
+        school_year = SchoolYear.objects.get(pk=school_year_id)
+        mention = semester.mention
+        role = Role.STUDENT
+        report = []
+        name = f"IE-{semester.code}-{formation.text}-{school_year.text}"
+
+        df = pd.DataFrame(records)
+        total = len(df)
+
+        import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
+        import_job.import_type = "STUDENT_CREATION"
+        import_job.name = name
+        import_job.total_rows = total
+        import_job.status = ImportJob.Status.PROGRESS
+        import_job.save()
         for i, row in df.iterrows():
             sid = transaction.savepoint()
             try:
@@ -104,24 +104,24 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
 
 @shared_task(bind=True ,acks_late=True)
 def create_enrollment_from_dataset(self, records: list, formation_id: int, semester_id: int, school_year_id: int):
-    formation = Formation.objects.get(pk=formation_id)
-    semester = Semester.objects.get(pk=semester_id)
-    school_year = SchoolYear.objects.get(pk=school_year_id)
-    report = []
-    name = f"RE-{semester.code}-{formation.text}-{school_year.text}"
-
-    df = pd.DataFrame(records)
-    total = len(df)
-
-    import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
-    import_job.import_type = "ENROLLMENT"
-    import_job.name = name
-    import_job.total_rows = total
-    import_job.status = ImportJob.Status.PROGRESS
-    import_job.save()
-    base_query = Q(role=Role.STUDENT, mention=semester.mention)
-
     try :
+        formation = Formation.objects.get(pk=formation_id)
+        semester = Semester.objects.get(pk=semester_id)
+        school_year = SchoolYear.objects.get(pk=school_year_id)
+        report = []
+        name = f"RE-{semester.code}-{formation.text}-{school_year.text}"
+
+        df = pd.DataFrame(records)
+        total = len(df)
+
+        import_job, _ = ImportJob.objects.get_or_create(task_id=self.request.id)
+        import_job.import_type = "ENROLLMENT"
+        import_job.name = name
+        import_job.total_rows = total
+        import_job.status = ImportJob.Status.PROGRESS
+        import_job.save()
+        base_query = Q(role=Role.STUDENT, mention=semester.mention)
+
         for i, row in df.iterrows():
             sid = transaction.savepoint()
             try:

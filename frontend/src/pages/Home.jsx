@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { ROUTES, ROLES } from '../utils/constants'
 import { useEffect } from 'react'
 import bgImage from '../assets/Departement.jpeg'
-
+import espaImg from '../assets/espa.png'
 
 export default function LandingPage() {
   return (
@@ -13,7 +13,7 @@ export default function LandingPage() {
         {/* Logo et titre centré */}
         <div className="flex flex-col items-center mb-10">
           <img
-            src="src/assets/espa.png"
+            src={espaImg}
             alt="Logo ESPA"
             className="w-20 h-20 mb-3"
           />

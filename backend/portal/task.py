@@ -18,7 +18,7 @@ def create_users_from_dataset(self, records: list, formation_id: int, semester_i
     mention = semester.mention
     role = Role.STUDENT
     report = []
-    name = f"IE-{semester.code}-{formation.text}-{school_year.label}"
+    name = f"IE-{semester.code}-{formation.text}-{school_year.text}"
 
     df = pd.DataFrame(records)
     total = len(df)
@@ -108,7 +108,7 @@ def create_enrollment_from_dataset(self, records: list, formation_id: int, semes
     semester = Semester.objects.get(pk=semester_id)
     school_year = SchoolYear.objects.get(pk=school_year_id)
     report = []
-    name = f"RE-{semester.code}-{formation.text}-{school_year.label}"
+    name = f"RE-{semester.code}-{formation.text}-{school_year.text}"
 
     df = pd.DataFrame(records)
     total = len(df)

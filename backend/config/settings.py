@@ -162,6 +162,8 @@ EMAIL_FILE_PATH = BASE_DIR / "sent_emails"
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+USE_X_FORWARDED_HOST = True
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 

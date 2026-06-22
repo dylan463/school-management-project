@@ -390,14 +390,6 @@ export default function ReenrollmentPanel() {
   const { openModal, closeModal } = useModal();
 
   
-  useEffect(() => {
-    setPage1(1);
-  }, [debouncedSearch, semester1_id, formation1_id, schoolyear1_id, schoolyear2_id]);
-
-  useEffect(() => {
-    setPage2(1);
-  }, [debouncedSearch, semester2_id, formation2_id, schoolyear2_id]);
-
   const filters1 = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -439,26 +431,33 @@ export default function ReenrollmentPanel() {
 
   const handleSelectFormation1 = (formation) => {
     setFormation1_id(formation.id)
+    setPage1(1)
     fdd1.close()
   }
   const handleSelectSchoolyear1 = (schoolyear) => {
     setSchoolyear1_id(schoolyear.id)
+    setPage1(1)
     sydd1.close()
   }
   const handleSelectSemester1 = (semester) => {
     setSemester1_id(semester.id)
+    setPage1(1)
     sdd1.close()
   }
   const handleSelectFormation2 = (formation) => {
     setFormation2_id(formation.id)
+    setPage2(1)
     fdd2.close()
   }
   const handleSelectSchoolyear2 = (schoolyear) => {
     setSchoolyear2_id(schoolyear.id)
+    setPage1(1) // schoolyear2_id influence aussi filters1 (exclude_year)
+    setPage2(1)
     sydd2.close()
   }
   const handleSelectSemester2 = (semester) => {
     setSemester2_id(semester.id)
+    setPage2(1)
     sdd2.close()
   }
 
@@ -515,7 +514,7 @@ export default function ReenrollmentPanel() {
             placeholder="Rechercher un étudiant..."
             className="w-[300px]"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage1(1); setPage2(1); }}
           />
         </div>
         {/* {ancienne année scolaire} */}
@@ -529,7 +528,7 @@ export default function ReenrollmentPanel() {
                 label="Parcours"
                 selectedValue={formation1Data}
                 onSelect={handleSelectFormation1}
-                onClear={() => setFormation1_id("")}
+                onClear={() => { setFormation1_id(""); setPage1(1); }}
                 options={formation1results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -546,7 +545,7 @@ export default function ReenrollmentPanel() {
                 label="Année Scolaire (clôturée)"
                 selectedValue={schoolyear1Data}
                 onSelect={handleSelectSchoolyear1}
-                onClear={() => setSchoolyear1_id("")}
+                onClear={() => { setSchoolyear1_id(""); setPage1(1); }}
                 options={schoolyear1results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -563,7 +562,7 @@ export default function ReenrollmentPanel() {
                 label="Semestre"
                 selectedValue={semester1Data}
                 onSelect={handleSelectSemester1}
-                onClear={() => setSemester1_id("")}
+                onClear={() => { setSemester1_id(""); setPage1(1); }}
                 options={semester1results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -615,7 +614,7 @@ export default function ReenrollmentPanel() {
                 label="Parcours"
                 selectedValue={formation2Data}
                 onSelect={handleSelectFormation2}
-                onClear={() => setFormation2_id("")}
+                onClear={() => { setFormation2_id(""); setPage2(1); }}
                 options={formation2results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -632,7 +631,7 @@ export default function ReenrollmentPanel() {
                 label="Année Scolaire (ouverte)"
                 selectedValue={schoolyear2Data}
                 onSelect={handleSelectSchoolyear2}
-                onClear={() => setSchoolyear2_id("")}
+                onClear={() => { setSchoolyear2_id(""); setPage1(1); setPage2(1); }}
                 options={schoolyear2results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -649,7 +648,7 @@ export default function ReenrollmentPanel() {
                 label="Semestre"
                 selectedValue={semester2Data}
                 onSelect={handleSelectSemester2}
-                onClear={() => setSemester2_id("")}
+                onClear={() => { setSemester2_id(""); setPage2(1); }}
                 options={semester2results}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">

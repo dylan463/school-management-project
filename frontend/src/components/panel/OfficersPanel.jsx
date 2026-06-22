@@ -221,10 +221,6 @@ export default function OfficiersPanel() {
   const { openModal, closeModal } = useModal();
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -274,7 +270,7 @@ export default function OfficiersPanel() {
           placeholder="Rechercher un officier..."
           className="w-[200px]"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
         <Button
           variant="primary"

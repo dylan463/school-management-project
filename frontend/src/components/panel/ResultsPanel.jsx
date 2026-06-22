@@ -84,29 +84,29 @@ export default function ResultsPanel() {
   // Select Handlers
   const handleSelectFormation = (f) => {
     setFormation_id(f.id)
+    setPage(1)
     fdd.close()
   }
 
   const handleSelectSchoolYear = (sy) => {
     setSchool_year_id(sy.id)
+    setPage(1)
     sydd.close()
   }
 
   const handleSelectSemester = (s) => {
     setSemester_id(s.id)
+    setPage(1)
     sdd.close()
   }
 
   const handleSelectCourse = (c) => {
     setCourse_module_id(c.id)
+    setPage(1)
     cmdd.close()
   }
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, formation_id, school_year_id, semester_id, course_module_id, status]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -159,7 +159,7 @@ export default function ResultsPanel() {
           placeholder="Rechercher..."
           className="w-[200px]"
           value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         ></SearchInput>
         <div></div> {/* Dummy div to keep alignment if Add button is omitted */}
       </div>
@@ -171,7 +171,7 @@ export default function ResultsPanel() {
               label="Parcours"
               selectedValue={formation}
               onSelect={handleSelectFormation}
-              onClear={() => setFormation_id("")}
+              onClear={() => { setFormation_id(""); setPage(1); }}
               options={fOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -189,7 +189,7 @@ export default function ResultsPanel() {
               label="Année scolaire"
               selectedValue={school_year}
               onSelect={handleSelectSchoolYear}
-              onClear={() => setSchool_year_id("")}
+              onClear={() => { setSchool_year_id(""); setPage(1); }}
               options={syOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -207,7 +207,7 @@ export default function ResultsPanel() {
               label="Semestre"
               selectedValue={semester}
               onSelect={handleSelectSemester}
-              onClear={() => setSemester_id("")}
+              onClear={() => { setSemester_id(""); setPage(1); }}
               options={sOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -225,7 +225,7 @@ export default function ResultsPanel() {
               label="Cours"
               selectedValue={course_module}
               onSelect={handleSelectCourse}
-              onClear={() => setCourse_module_id("")}
+              onClear={() => { setCourse_module_id(""); setPage(1); }}
               options={cmOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -245,7 +245,7 @@ export default function ResultsPanel() {
               <label className="text-slate-600 text-sm font-bold block mb-1">Statut</label>
               <Filter
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => { setStatus(e.target.value); setPage(1); }}
                 otherOptions={[
                   { key: "Tous", value: "" },
                   { key: "Validé", value: "VALIDATED" },

@@ -465,10 +465,6 @@ export default function CourseModulesPanel() {
   const { data: courseunit } = useCourseunit(courseunit_id)
   const { data: semester } = useSemester(semester_id)
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, courseunit_id, semester_id, status]);
-
   const filters = useMemo(() => ({
     ...(debouncedSearch && { search: debouncedSearch }),
     ...(courseunit && { course_unit: courseunit_id }),
@@ -557,7 +553,7 @@ export default function CourseModulesPanel() {
           placeholder="Rechercher un EC"
           className="w-[200px]"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
         {canCreate && <Button
           variant="primary"
@@ -579,8 +575,8 @@ export default function CourseModulesPanel() {
             <SearchableSelect
               label="Unité d'enseignement"
               selectedValue={courseunit}
-              onSelect={(cu) => { setCourseunit_id(cu.id); cudd.close() }}
-              onClear={() => setCourseunit_id("")}
+              onSelect={(cu) => { setCourseunit_id(cu.id); setPage(1); cudd.close() }}
+              onClear={() => { setCourseunit_id(""); setPage(1); }}
               options={cuOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -598,8 +594,8 @@ export default function CourseModulesPanel() {
             <SearchableSelect
               label="Semestre"
               selectedValue={semester}
-              onSelect={(s) => setSemester_id(s.id)}
-              onClear={() => setSemester_id("")}
+              onSelect={(s) => { setSemester_id(s.id); setPage(1); }}
+              onClear={() => { setSemester_id(""); setPage(1); }}
               options={sOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -617,7 +613,7 @@ export default function CourseModulesPanel() {
             <Filter
               value={status}
               label="Statut"
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               otherOptions={[
                 { key: "Tous", value: "" },
                 { key: "Actif", value: "true" },

@@ -285,16 +285,13 @@ export default function HeadsPanel() {
 
   const handleSelectMention = (m) => {
     setMention_id(m.id)
+    setPage(1)
     mdd.close()
   }
 
   const { openModal, closeModal } = useModal()
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, mention_id]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -343,7 +340,7 @@ export default function HeadsPanel() {
           placeholder="Rechercher un responsable"
           className="w-[200px]"
           value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         ></SearchInput>
         <Button
           variant="primary"
@@ -362,7 +359,7 @@ export default function HeadsPanel() {
                 label="Mention"
                 selectedValue={mention}
                 onSelect={handleSelectMention}
-                onClear={() => setMention_id("")}
+                onClear={() => { setMention_id(""); setPage(1); }}
                 options={mOptionResults}
                 renderOption={(option) => (
                   <div className="flex gap-x-2 items-center">
@@ -403,4 +400,4 @@ export default function HeadsPanel() {
       />
     </Card>
   )
-}
+}

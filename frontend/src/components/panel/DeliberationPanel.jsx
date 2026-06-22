@@ -69,6 +69,7 @@ export default function DeliberationPanel() {
 
   const handleSelectFormation = (selectedFormation) => {
     setFormation(selectedFormation.id);
+    setPage(1);
     formationClose();
   };
 
@@ -77,10 +78,6 @@ export default function DeliberationPanel() {
     setEnrollment(enrollmentId);
     setSelectedEnrollment(enrollmentId)
   }
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, formation, schoolyear, status, semester]);
 
   const filters = useMemo(() => {
     return {
@@ -167,7 +164,7 @@ export default function DeliberationPanel() {
             <Switch
               tabs={statusTabs}
               active={status}
-              onChange={(value) => setStatus(value)}
+              onChange={(value) => { setStatus(value); setPage(1); }}
             />
             <Button variant="primary" onClick={() => setShowFilters(!showFilters)}>
               Filtres
@@ -196,7 +193,7 @@ export default function DeliberationPanel() {
             placeholder="Rechercher..."
             className="w-[200px]"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
 
@@ -212,7 +209,7 @@ export default function DeliberationPanel() {
                   onSelect={(selected) => {
                     handleSelectFormation(selected)
                   }}
-                  onClear={() => setFormation(null)}
+                  onClear={() => { setFormation(null); setPage(1); }}
                   options={formationOptionResults}
                   renderOption={(option) => option.text || option.name}
                   renderSelected={(selected) => selected?.text || selected?.name}
@@ -234,7 +231,7 @@ export default function DeliberationPanel() {
                 <label className="text-slate-600 text-sm font-bold block mb-1">Semester</label>
                 <Filter
                   value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
+                  onChange={(e) => { setSemester(e.target.value); setPage(1); }}
                   otherOptions={[
                     { key: "Toutes", value: "" },
                   ]}

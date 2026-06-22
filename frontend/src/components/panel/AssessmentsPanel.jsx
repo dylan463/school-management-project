@@ -289,11 +289,13 @@ export default function AssessmentsPanel() {
 
   const handleSelectCourse = (c) => {
     setCourse_module_id(c.id);
+    setPage(1);
     cmdd.close();
   };
 
   const handleSelectSy = (sy) => {
     setSchool_year_id(sy.id);
+    setPage(1);
     sydd.close();
   };
 
@@ -308,10 +310,6 @@ export default function AssessmentsPanel() {
   };
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, course_module_id, school_year_id, session]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -389,7 +387,7 @@ export default function AssessmentsPanel() {
           placeholder="Rechercher..."
           className="w-[200px]"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
         {canCreate && (
           <Button variant="primary" onClick={() => openModal({ title: "Ajouter un examen", content: <AddOrEditForm onSuccess={closeModal} /> })}>
@@ -405,7 +403,7 @@ export default function AssessmentsPanel() {
               label="Cours"
               selectedValue={course_module}
               onSelect={handleSelectCourse}
-              onClear={() => setCourse_module_id("")}
+              onClear={() => { setCourse_module_id(""); setPage(1); }}
               options={cmOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -424,7 +422,7 @@ export default function AssessmentsPanel() {
               label="Année scolaire"
               selectedValue={school_year}
               onSelect={handleSelectSy}
-              onClear={() => setSchool_year_id("")}
+              onClear={() => { setSchool_year_id(""); setPage(1); }}
               options={syOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -443,7 +441,7 @@ export default function AssessmentsPanel() {
               <label className="text-slate-600 text-sm font-bold block mb-1">Session</label>
               <Filter
                 value={session}
-                onChange={(e) => setSession(e.target.value)}
+                onChange={(e) => { setSession(e.target.value); setPage(1); }}
                 otherOptions={[
                   { key: "Toutes", value: "" },
                   { key: "Normale", value: "NORMAL" },

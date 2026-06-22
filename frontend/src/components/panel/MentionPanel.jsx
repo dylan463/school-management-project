@@ -191,10 +191,6 @@ export default function MentionPanel() {
   const { openModal, closeModal } = useModal()
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -232,7 +228,7 @@ export default function MentionPanel() {
           placeholder="Rechercher une mention"
           className="w-[200px]"
           value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         ></SearchInput>
         <Button
           variant="primary"
@@ -267,4 +263,4 @@ export default function MentionPanel() {
       />
     </Card>
   )
-}
+}

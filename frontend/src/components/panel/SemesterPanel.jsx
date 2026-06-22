@@ -186,10 +186,6 @@ export default function SemesterPanel() {
   const { openModal, closeModal } = useModal()
 
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, is_active]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -235,12 +231,12 @@ export default function SemesterPanel() {
   return (
     <Card>
       <div className="px-2 py-2 flex justify-between">
-        <Switch tabs={tabs} active={is_active} onChange={(value) => { setIs_active(value) }} />
+        <Switch tabs={tabs} active={is_active} onChange={(value) => { setIs_active(value); setPage(1); }} />
         <SearchInput
           placeholder="Rechercher un semestre"
           className="w-[200px]"
           value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         ></SearchInput>
         <Button
           variant="primary"
@@ -275,4 +271,4 @@ export default function SemesterPanel() {
       />
     </Card>
   )
-}
+}

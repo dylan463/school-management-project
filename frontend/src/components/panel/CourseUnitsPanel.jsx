@@ -272,13 +272,10 @@ export default function CourseUnitsPanel() {
 
   const handleSelectFormation = (f) => {
     setFormation_id(f.id)
+    setPage(1)
     fdd.close()
   }
   
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, formation_id, status]);
-
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),
@@ -344,7 +341,7 @@ export default function CourseUnitsPanel() {
           placeholder="Rechercher une UE"
           className="w-[200px]"
           value={search}
-          onChange={(e) => { setSearch(e.target.value) }}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         ></SearchInput>
         {canCreate && <Button
           variant="primary"
@@ -362,7 +359,7 @@ export default function CourseUnitsPanel() {
               label="Parcours"
               selectedValue={formation}
               onSelect={handleSelectFormation}
-              onClear={() => setFormation_id("")}
+              onClear={() => { setFormation_id(""); setPage(1); }}
               options={fOptionResults}
               renderOption={(option) => (
                 <div className="flex gap-x-2 items-center">
@@ -378,7 +375,7 @@ export default function CourseUnitsPanel() {
             <Filter
               value={status}
               label="Statut"
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               otherOptions={[
                 { key: "Tous", value: "" },
                 { key: "Active", value: "true" },
@@ -413,4 +410,4 @@ export default function CourseUnitsPanel() {
       />
     </Card>
   )
-}
+}

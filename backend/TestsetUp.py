@@ -80,7 +80,7 @@ def setup_database_structure():
 def enterStudents():
     """setup users"""
     file_name = "listeTCO.csv"
-    df = pd.read_csv(file_name)[:20]
+    df = pd.read_csv(file_name)
     total = len(df)
     current = 0
     mention,_ = Mention.objects.get_or_create(

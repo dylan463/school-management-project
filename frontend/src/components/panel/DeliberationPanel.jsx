@@ -40,7 +40,7 @@ export default function DeliberationPanel() {
     formation: { key: "formation", type: "string", default: "" },
     semester: { key: "semester", type: "string", default: "" },
     status: { key: "status", type: "string", default: "NOT_DELIBERATED" },
-    enrollment: { key: "enrollment", type: "string", default: "", clearPage: false },
+    enrollment: { key: "enrollment", type: "string", default: "" },
   });
 
   useEffect(() => {
@@ -78,9 +78,8 @@ export default function DeliberationPanel() {
     setSelectedEnrollment(enrollmentId)
   }
 
-  
   useEffect(() => {
-    setPage(1);
+    setPage(1)
   }, [debouncedSearch, formation, schoolyear, status, semester]);
 
   const filters = useMemo(() => {
@@ -102,7 +101,7 @@ export default function DeliberationPanel() {
     // On transmet les filtres actifs pour cibler le même sous-ensemble
     // que ce qui est affiché à l'écran (même semestre / même parcours)
     const payload = {
-      ...(semester  && { semester:  Number(semester)  }),
+      ...(semester && { semester: Number(semester) }),
       ...(formation && { formation: Number(formation) }),
     }
 
@@ -134,7 +133,7 @@ export default function DeliberationPanel() {
       header: "Année", key: "school_year",
       render: (sy) => sy.text
     },
-    { header: "Statut", key: "status" ,render : (val) => val == "VALIDATED"? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Active" },
+    { header: "Statut", key: "status", render: (val) => val == "VALIDATED" ? "Validé" : val == "NOT_VALIDATED" ? "Non Validé" : "Active" },
   ];
 
   const actions = [

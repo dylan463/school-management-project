@@ -94,7 +94,8 @@ def enterStudents():
     role = Role.STUDENT 
     for i, row in df.iterrows():
         try:
-            order = int(re.search(r"\d+", row["Niveau"]).group()) * 2 - 1
+            cycle = 0 if row["Niveau"][0] == "L" else 3
+            order = (int(re.search(r"\d+", row["Niveau"]).group()) + cycle) * 2 - 1
             code = f"S{order}"
 
             semester, _ = Semester.objects.get_or_create(

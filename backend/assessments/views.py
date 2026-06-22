@@ -48,7 +48,7 @@ class EnrollmentViewSet(ModelViewSet):
     serializer_class = EnrollmentSerializer
     permission_classes = [IsDepartmentStaff]
     filter_backends = [DjangoFilterBackend,SearchFilter]
-    search_fields = ["student__firs_name","student__last_name","student__email","student__username"]
+    search_fields = ["student__first_name","student__last_name","student__email","student__username"]
     filterset_class = EnrollmentFilter
 
     def get_permissions(self):

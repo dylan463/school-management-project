@@ -290,6 +290,11 @@ export default function HeadsPanel() {
 
   const { openModal, closeModal } = useModal()
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, mention_id]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

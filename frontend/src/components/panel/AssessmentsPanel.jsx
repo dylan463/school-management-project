@@ -307,6 +307,11 @@ export default function AssessmentsPanel() {
     }
   };
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, course_module_id, school_year_id, session]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

@@ -274,6 +274,11 @@ export default function CourseUnitsPanel() {
     setFormation_id(f.id)
     fdd.close()
   }
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, formation_id, status]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

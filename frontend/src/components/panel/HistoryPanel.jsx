@@ -122,6 +122,11 @@ export default function HistoryPanel({enrollment, setEnrollment}) {
     }} /> })
   }
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, formation_id, school_year_id, status, semester_id]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

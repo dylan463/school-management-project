@@ -185,6 +185,11 @@ export default function SemesterPanel() {
   const debouncedSearch = useDebounced(search)
   const { openModal, closeModal } = useModal()
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, is_active]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

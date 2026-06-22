@@ -389,6 +389,15 @@ export default function ReenrollmentPanel() {
   const debouncedSearch = useDebounced(search);
   const { openModal, closeModal } = useModal();
 
+  
+  useEffect(() => {
+    setPage1(1);
+  }, [debouncedSearch, semester1_id, formation1_id, schoolyear1_id, schoolyear2_id]);
+
+  useEffect(() => {
+    setPage2(1);
+  }, [debouncedSearch, semester2_id, formation2_id, schoolyear2_id]);
+
   const filters1 = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

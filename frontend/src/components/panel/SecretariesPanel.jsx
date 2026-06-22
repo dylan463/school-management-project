@@ -220,6 +220,11 @@ export default function SecretariesPanel() {
   const debouncedSearch = useDebounced(search);
   const { openModal, closeModal } = useModal();
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

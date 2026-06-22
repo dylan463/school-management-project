@@ -465,6 +465,9 @@ export default function CourseModulesPanel() {
   const { data: courseunit } = useCourseunit(courseunit_id)
   const { data: semester } = useSemester(semester_id)
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, courseunit_id, semester_id, status]);
 
   const filters = useMemo(() => ({
     ...(debouncedSearch && { search: debouncedSearch }),
@@ -473,6 +476,7 @@ export default function CourseModulesPanel() {
     ...(page && { page }),
     ...(status && { is_active: status }),
   }), [debouncedSearch, page, courseunit_id, semester_id, status])
+
 
   const { data, isLoading: isDataLoading } = useCoursemodules(filters)
   const results = data?.results || []

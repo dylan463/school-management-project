@@ -40,7 +40,7 @@ export default function DeliberationPanel() {
     formation: { key: "formation", type: "string", default: "" },
     semester: { key: "semester", type: "string", default: "" },
     status: { key: "status", type: "string", default: "NOT_DELIBERATED" },
-    enrollment: { key: "enrollment", type: "string", default: "" },
+    enrollment: { key: "enrollment", type: "string", default: "", clearPage: false },
   });
 
   useEffect(() => {
@@ -77,6 +77,11 @@ export default function DeliberationPanel() {
     setEnrollment(enrollmentId);
     setSelectedEnrollment(enrollmentId)
   }
+
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, formation, schoolyear, status, semester]);
 
   const filters = useMemo(() => {
     return {

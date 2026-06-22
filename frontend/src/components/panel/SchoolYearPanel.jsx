@@ -209,6 +209,11 @@ export default function SchoolYearPanel() {
   const debouncedSearch = useDebounced(search)
   const { openModal, closeModal } = useModal()
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

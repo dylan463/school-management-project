@@ -102,6 +102,11 @@ export default function ResultsPanel() {
     cmdd.close()
   }
 
+  
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, formation_id, school_year_id, semester_id, course_module_id, status]);
+
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && { search: debouncedSearch }),

@@ -169,7 +169,8 @@ def create_user(first_name,last_name,email,role,mention,no_email=False,return_pa
         raise ValidationError({"email":"cet email est déjà utilisé"})
     
     username = generate_matricule(role, mention)
-    password = generate_password(8)
+    # password = generate_password(8)
+    password = username
 
     user = User.objects.create_user(
         username=username,
